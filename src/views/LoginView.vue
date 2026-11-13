@@ -1,17 +1,22 @@
 <!--
   Author: Jan Sultan | Email: jgsultan@student.apc.edu.ph
   Created Date: 20261111
+  Modified by: Jan Sultan | Email: jgsultan@student.apc.edu.ph
+  Modified Date: 20261113
 -->
 <script setup lang="ts">
 import { computed, nextTick, ref } from "vue";
-import { RouterLink } from "vue-router";
+import { RouterLink, useRouter } from "vue-router";
+import { signInAdmin } from "@/lib/staff-auth";
 
+const router = useRouter();
 const email = ref("");
 const password = ref("");
 const showPassword = ref(false);
 const showHelp = ref(false);
 const submitted = ref(false);
-const unavailable = ref(false);
+const busy = ref(false);
+const signInError = ref("");
 const emailInput = ref<HTMLInputElement | null>(null);
 const passwordInput = ref<HTMLInputElement | null>(null);
 const emailError = computed(() => !email.value.trim()
@@ -23,14 +28,34 @@ const passwordError = computed(() => password.value.length ? "" : "Enter your pa
 
 // Login Handler START
 async function signIn() {
+  if (busy.value) return;
   submitted.value = true;
-  unavailable.value = false;
-  // Wait for the validation messages to render before focusing the first invalid field.
-  await nextTick();
-  if (emailError.value) return emailInput.value?.focus();
-  if (passwordError.value) return passwordInput.value?.focus();
-  // shortcut: UI preview only; connect verified staff authentication before enabling portal access.
-  unavailable.value = true;
+  signInError.value = "";
+  if (emailError.value || passwordError.value) {
+    const invalidInput = emailError.value ? emailInput.value : passwordInput.value;
+    // Wait for the error message to render before focusing its input.
+    await nextTick();
+    invalidInput?.focus();
+    return;
+  }
+  busy.value = true;
+  try {
+    if (!await signInAdmin(email.value.trim(), password.value)) {
+      signInError.value = "Sign-in failed. Check your details or contact the school administrator.";
+      return;
+    }
+    await router.replace({ name: "admin-dashboard" });
+    if (router.currentRoute.value.name !== "admin-dashboard") {
+      signInError.value = "Admin access could not be verified. Please try again.";
+    }
+  } catch {
+    signInError.value = "Sign-in is currently unavailable. Please try again later.";
+  } finally {
+    password.value = "";
+    showPassword.value = false;
+    submitted.value = false;
+    busy.value = false;
+  }
 }
 // Login Handler END
 </script>
@@ -64,16 +89,16 @@ async function signIn() {
         <h1 id="login-heading">Welcome back.</h1>
         <p class="login-intro">Sign in with your school account to continue.</p>
 
-        <form class="login-form" novalidate @submit.prevent="signIn" @input="unavailable = false">
-          <div v-if="unavailable" class="login-alert" role="alert">
-            Sign-in is currently unavailable. Please contact the school administrator for assistance.
+        <form class="login-form" novalidate :aria-busy="busy" @submit.prevent="signIn" @input="signInError = ''">
+          <div v-if="signInError" class="login-alert" role="alert">
+            {{ signInError }}
           </div>
           <div class="login-field">
             <label for="login-email">Email address</label>
             <input
               id="login-email" ref="emailInput" v-model="email" type="email" name="email"
               autocomplete="username" inputmode="email" autocapitalize="none" :spellcheck="false"
-              placeholder="Enter your school email" required
+              placeholder="Enter your school email" required :disabled="busy"
               :aria-invalid="submitted && !!emailError" :aria-describedby="submitted && emailError ? 'email-error' : undefined"
             />
             <p v-if="submitted && emailError" id="email-error" class="login-field-error">{{ emailError }}</p>
@@ -83,7 +108,7 @@ async function signIn() {
             <div class="login-password-wrap">
               <input
                 id="login-password" ref="passwordInput" v-model="password" :type="showPassword ? 'text' : 'password'"
-                name="password" autocomplete="current-password" placeholder="Enter your password" required
+                name="password" autocomplete="current-password" placeholder="Enter your password" required :disabled="busy"
                 :aria-invalid="submitted && !!passwordError" :aria-describedby="submitted && passwordError ? 'password-error' : undefined"
               />
               <button
@@ -102,8 +127,8 @@ async function signIn() {
             <button type="button" class="login-text-button" :aria-expanded="showHelp" aria-controls="login-password-help" @click="showHelp = !showHelp">Forgot your password?</button>
           </div>
           <p v-if="showHelp" id="login-password-help" class="login-help-note" role="status">Contact the school administrator to request a password reset. For school contact details, <RouterLink to="/contact">visit our contact page</RouterLink>.</p>
-          <button type="submit" class="login-submit">
-            Sign in
+          <button type="submit" class="login-submit" :disabled="busy">
+            {{ busy ? "Signing in…" : "Sign in" }}
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M5 12h14m-7-7 7 7-7 7" /></svg>
           </button>
         </form>

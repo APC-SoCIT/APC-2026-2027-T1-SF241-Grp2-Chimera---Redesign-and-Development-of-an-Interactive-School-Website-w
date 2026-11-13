@@ -2,7 +2,7 @@
  * Author: gemillan321 | Email: miles.gemillan77@gmail.com
  * Created Date: 20261001
  * Modified by: Jan Sultan | Email: jgsultan@student.apc.edu.ph
- * Modified Date: 20261112
+ * Modified Date: 20261113
  */
 import { createRouter, createWebHistory } from "vue-router";
 import AboutView from "@/views/AboutView.vue";
@@ -24,6 +24,7 @@ const router = createRouter({
   },
   routes: [
     { path: "/login", name: "login", component: () => import("@/views/LoginView.vue"), meta: { title: "Staff sign in", authLayout: true } },
+    { path: "/admin", name: "admin-dashboard", component: () => import("@/views/AdminDashboardView.vue"), meta: { title: "Admin dashboard", authLayout: true, adminOnly: true } },
     { path: "/enrollment", name: "enrollment", component: () => import("@/views/EnrollmentView.vue"), meta: { title: "Enrollment application" } },
     { path: "/", name: "home", component: HomeView, meta: { title: "Home" } },
     { path: "/about", name: "about", component: AboutView, meta: { title: "About" } },
@@ -37,6 +38,19 @@ const router = createRouter({
     { path: "/:pathMatch(.*)*", name: "not-found", component: NotFoundView, meta: { title: "Page not found" } },
   ],
 });
+
+// Admin Route Guard START
+router.beforeEach(async (to) => {
+  if (!to.meta.adminOnly) return;
+  try {
+    const { hasAdminAccess } = await import("@/lib/staff-auth");
+    if (await hasAdminAccess()) return;
+  } catch {
+    // Configuration or network errors must not open the protected view.
+  }
+  return { name: "login", replace: true };
+});
+// Admin Route Guard END
 
 router.afterEach((to) => {
   const title = typeof to.meta.title === "string" ? `${to.meta.title} | ` : "";
