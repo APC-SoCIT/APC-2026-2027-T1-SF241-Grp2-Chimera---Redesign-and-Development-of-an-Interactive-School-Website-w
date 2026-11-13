@@ -1,3 +1,9 @@
+/*
+ * Author: gemillan321 | Email: miles.gemillan77@gmail.com
+ * Created Date: 20261001
+ * Modified by: Jan Sultan | Email: jgsultan@student.apc.edu.ph
+ * Modified Date: 20261112
+ */
 import { createRouter, createWebHistory } from "vue-router";
 import AboutView from "@/views/AboutView.vue";
 import AdmissionsView from "@/views/AdmissionsView.vue";
@@ -17,6 +23,7 @@ const router = createRouter({
     return { top: 0 };
   },
   routes: [
+    { path: "/login", name: "login", component: () => import("@/views/LoginView.vue"), meta: { title: "Staff sign in", authLayout: true } },
     { path: "/enrollment", name: "enrollment", component: () => import("@/views/EnrollmentView.vue"), meta: { title: "Enrollment application" } },
     { path: "/", name: "home", component: HomeView, meta: { title: "Home" } },
     { path: "/about", name: "about", component: AboutView, meta: { title: "About" } },
