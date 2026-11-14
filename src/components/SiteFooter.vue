@@ -1,3 +1,9 @@
+<!--
+  Author: gemillan321 | Email: miles.gemillan77@gmail.com
+  Created Date: 20261001
+  Modified by: Jan Sultan | Email: jgsultan@student.apc.edu.ph
+  Modified Date: 20261112
+-->
 <script setup lang="ts">
 import { RouterLink } from "vue-router";
 import { getPublicSchoolContactInformation } from "@/lib/content/directory";
@@ -27,6 +33,7 @@ const schoolInformation = getPublicSchoolContactInformation();
         <p class="footer-heading">Visit</p>
         <template v-if="schoolInformation"><p>{{ schoolInformation.address }}</p><p>{{ schoolInformation.officeHours }}</p></template>
         <RouterLink to="/contact">Contact the school</RouterLink>
+        <RouterLink to="/login">Staff portal</RouterLink>
       </div>
     </div>
     <div class="container footer-bottom">
