@@ -6,10 +6,11 @@
 -->
 <script setup lang="ts">
 import { computed, nextTick, ref } from "vue";
-import { RouterLink, useRouter } from "vue-router";
+import { RouterLink, useRoute, useRouter } from "vue-router";
 import { signInStaff, staffDashboard } from "@/lib/staff-auth";
 
 const router = useRouter();
+const route = useRoute();
 const email = ref("");
 const password = ref("");
 const showPassword = ref(false);
@@ -45,9 +46,9 @@ async function signIn() {
       signInError.value = "Sign-in failed. Check your details or contact the school administrator.";
       return;
     }
-    const dashboard = staffDashboard[role];
-    await router.replace({ name: dashboard });
-    if (router.currentRoute.value.name !== dashboard) {
+    const destination = role === "password-change" ? role : staffDashboard[role];
+    await router.replace({ name: destination });
+    if (router.currentRoute.value.name !== destination) {
       signInError.value = "Staff access could not be verified. Please try again.";
     }
   } catch {
@@ -90,6 +91,7 @@ async function signIn() {
         <div class="login-portal-label"><span aria-hidden="true"></span> SNCS staff portal</div>
         <h1 id="login-heading">Welcome back.</h1>
         <p class="login-intro">Sign in with your school account to continue.</p>
+        <p v-if="route.query.passwordChanged === '1'" role="status">Password changed. Sign in with your new password.</p>
 
         <form class="login-form" novalidate :aria-busy="busy" @submit.prevent="signIn" @input="signInError = ''">
           <div v-if="signInError" class="login-alert" role="alert">

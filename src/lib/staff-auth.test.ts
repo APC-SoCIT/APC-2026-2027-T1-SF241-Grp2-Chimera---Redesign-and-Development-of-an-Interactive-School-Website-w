@@ -35,7 +35,7 @@ describe("staff session access", () => {
     expect(client.rpc).not.toHaveBeenCalled();
   });
 
-  it.each(["admin", "registrar"])("keeps a session for an active %s", async (role) => {
+  it.each(["admin", "registrar", "teacher", "password-change"])("keeps a session with %s access", async (role) => {
     client.rpc.mockResolvedValue({ data: role, error: null });
     await expect(signInStaff("staff@example.com", "test-password")).resolves.toBe(role);
     expect(client.rpc).toHaveBeenCalledWith("get_staff_portal_role");

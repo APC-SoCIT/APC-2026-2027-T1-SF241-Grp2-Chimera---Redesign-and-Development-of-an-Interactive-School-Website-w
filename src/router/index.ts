@@ -5,7 +5,7 @@
  * Modified Date: 20261114
  */
 import { createRouter, createWebHistory } from "vue-router";
-import type { StaffRole } from "@/lib/staff-auth";
+import type { StaffAccess } from "@/lib/staff-auth";
 import AboutView from "@/views/AboutView.vue";
 import AdmissionsView from "@/views/AdmissionsView.vue";
 import AnnouncementView from "@/views/AnnouncementView.vue";
@@ -18,7 +18,7 @@ import NewsView from "@/views/NewsView.vue";
 
 declare module "vue-router" {
   interface RouteMeta {
-    staffRole?: StaffRole;
+    staffRole?: StaffAccess;
   }
 }
 
@@ -31,8 +31,10 @@ const router = createRouter({
   },
   routes: [
     { path: "/login", name: "login", component: () => import("@/views/LoginView.vue"), meta: { title: "Staff sign in", authLayout: true } },
+    { path: "/login/change-password", name: "password-change", component: () => import("@/views/StaffPasswordChangeView.vue"), meta: { title: "Change your password", authLayout: true, staffRole: "password-change" } },
     { path: "/admin", name: "admin-dashboard", component: () => import("@/views/StaffDashboardView.vue"), props: { heading: "Admin dashboard", role: "admin" }, meta: { title: "Admin dashboard", authLayout: true, staffRole: "admin" } },
     { path: "/registrar", name: "registrar-dashboard", component: () => import("@/views/StaffDashboardView.vue"), props: { heading: "Registrar dashboard", role: "registrar" }, meta: { title: "Registrar dashboard", authLayout: true, staffRole: "registrar" } },
+    { path: "/teacher", name: "teacher-dashboard", component: () => import("@/views/StaffDashboardView.vue"), props: { heading: "Teacher dashboard", role: "teacher" }, meta: { title: "Teacher dashboard", authLayout: true, staffRole: "teacher" } },
     { path: "/enrollment", name: "enrollment", component: () => import("@/views/EnrollmentView.vue"), meta: { title: "Enrollment application" } },
     { path: "/", name: "home", component: HomeView, meta: { title: "Home" } },
     { path: "/about", name: "about", component: AboutView, meta: { title: "About" } },
@@ -52,7 +54,9 @@ router.beforeEach(async (to) => {
   if (!to.meta.staffRole) return;
   try {
     const { getStaffPortalRole } = await import("@/lib/staff-auth");
-    if (await getStaffPortalRole() === to.meta.staffRole) return;
+    const access = await getStaffPortalRole();
+    if (access === to.meta.staffRole) return;
+    if (access === "password-change") return { name: "password-change", replace: true };
   } catch {
     // Configuration or network errors must not open the protected view.
   }

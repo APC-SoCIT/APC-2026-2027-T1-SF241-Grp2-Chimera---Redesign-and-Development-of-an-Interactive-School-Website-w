@@ -64,7 +64,7 @@ describe("staff login and protected routes", () => {
     expect(wrapper.get("#login-password").attributes("type")).toBe("password");
   });
 
-  it.each(["admin", "registrar"] as const)("opens the guarded dashboard after a valid %s login", async (role) => {
+  it.each(["admin", "registrar", "teacher"] as const)("opens the guarded dashboard after a valid %s login", async (role) => {
     vi.mocked(signInStaff).mockResolvedValue(role);
     vi.mocked(getStaffPortalRole).mockResolvedValue(role);
     const wrapper = render();
@@ -98,12 +98,23 @@ describe("staff login and protected routes", () => {
   it.each([
     [null, "/admin"],
     [null, "/registrar"],
+    [null, "/teacher"],
     ["registrar", "/admin"],
     ["admin", "/registrar"],
+    ["admin", "/teacher"],
+    ["registrar", "/teacher"],
+    ["teacher", "/admin"],
+    ["teacher", "/registrar"],
   ] as const)("redirects a %s session trying to open %s", async (role, path) => {
     vi.mocked(getStaffPortalRole).mockResolvedValue(role);
     await router.push(path);
     expect(router.currentRoute.value.name).toBe("login");
+  });
+
+  it("requires a password change before opening a protected dashboard", async () => {
+    vi.mocked(getStaffPortalRole).mockResolvedValue("password-change");
+    await router.push("/teacher");
+    expect(router.currentRoute.value.path).toBe("/login/change-password");
   });
 
   it("denies direct dashboard visits if the server cannot verify access", async () => {

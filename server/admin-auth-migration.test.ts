@@ -21,10 +21,11 @@ describe("staff authorization migrations", () => {
   const managerId = "00000000-0000-4000-8000-000000000007";
   let reference: string;
 
-  function asUser<T>(userId: string, sql: string, values: unknown[] = []) {
+  function asUser<T>(userId: string, sql: string, values: unknown[] = [], sessionId = userId) {
     return db.transaction(async (tx) => {
       await tx.exec("set local role authenticated");
       await tx.query("select set_config('request.jwt.claim.sub', $1, true)", [userId]);
+      await tx.query("select set_config('request.jwt.claims', $1, true)", [JSON.stringify({ session_id: sessionId })]);
       return tx.query<T>(sql, values);
     });
   }
@@ -36,24 +37,29 @@ describe("staff authorization migrations", () => {
       create role authenticated;
       create role service_role;
       create schema auth;
-      create table auth.users (id uuid primary key, email text, raw_app_meta_data jsonb);
+      create table auth.users (id uuid primary key, email text, raw_app_meta_data jsonb, encrypted_password text);
+      create table auth.sessions (id uuid primary key, user_id uuid references auth.users(id));
       create function auth.uid() returns uuid language sql stable as
         $$ select nullif(current_setting('request.jwt.claim.sub', true), '')::uuid $$;
+      create function auth.jwt() returns jsonb language sql stable as
+        $$ select nullif(current_setting('request.jwt.claims', true), '')::jsonb $$;
     `);
     const schema = readFileSync(new URL("../supabase/reference/SNCS_Schema_Final.sql", import.meta.url), "utf8");
-    await db.exec(schema.slice(schema.indexOf("CREATE TABLE users ("), schema.indexOf("CREATE TABLE sessions (")));
+    await db.exec(schema.slice(schema.indexOf("CREATE TABLE users ("), schema.indexOf("-- 2. WEBSITE CONTENT")));
     await db.exec(schema.slice(schema.indexOf("CREATE TABLE enrollment_periods ("), schema.indexOf("-- 4. SCHEDULING")));
     await db.exec("grant select, insert, update, delete on public.users to anon, authenticated");
     await db.exec("grant select on public.enrollment_applications to anon, authenticated");
     for (const migration of [
       "202611130001_sc13_admin_auth.sql", "202611140001_sc20_staff_portal_role.sql",
       "202611140002_sc18_manage_staff_accounts.sql", "202611140003_sc21_registrar_application_access.sql",
+      "202611140004_sc19_sc30_staff_access.sql",
     ]) {
       await db.exec(readFileSync(new URL(`../supabase/migrations/${migration}`, import.meta.url), "utf8"));
     }
     await db.query("insert into auth.users (id) values ($1), ($2), ($3), ($4), ($5), ($6), ($7)", [
       adminId, teacherId, inactiveId, unlinkedId, resetId, registrarId, managerId,
     ]);
+    await db.exec("insert into auth.sessions (id, user_id) select id, id from auth.users");
     await db.query(`
       insert into public.users (email, full_name, role, account_status, auth_user_id, must_change_password) values
         ('admin@example.com', 'Admin', 'admin', 'active', $1, false),
@@ -75,10 +81,10 @@ describe("staff authorization migrations", () => {
   it.each([
     ["active admin", adminId, "admin"],
     ["active Registrar", registrarId, "registrar"],
-    ["teacher", teacherId, null],
+    ["active Teacher", teacherId, "teacher"],
     ["inactive admin", inactiveId, null],
     ["unlinked Auth user", unlinkedId, null],
-    ["Registrar who must reset their password", resetId, null],
+    ["Registrar who must change their password", resetId, "password-change"],
     ["missing Auth subject", "", null],
   ])("checks the current role and status for %s", async (_name, userId, role) => {
     const result = await asUser(userId, "select public.get_staff_portal_role() as role, public.has_active_admin_access() as legacy_admin");
@@ -134,6 +140,8 @@ describe("staff authorization migrations", () => {
     await provision(managerId, "NEW@example.com", newId);
     expect((await db.query("select email, role, password_hash, manage_staff_accounts from public.users where auth_user_id = $1", [newId])).rows)
       .toEqual([{ email: "new@example.com", role: "registrar", password_hash: null, manage_staff_accounts: false }]);
+    expect((await db.query("select action, new_value from public.audit_logs where action = 'account.create'")).rows)
+      .toEqual([{ action: "account.create", new_value: { role: "registrar" } }]);
   });
 
   it("lists and assigns roles only for authorized account managers", async () => {
@@ -148,5 +156,43 @@ describe("staff authorization migrations", () => {
     expect((await asUser(teacherId, "select public.get_staff_portal_role() as role")).rows).toEqual([{ role: "registrar" }]);
     await asUser(managerId, "select public.assign_staff_role($1, 'teacher')", [account.id]);
     await expect(asUser(teacherId, "select * from public.list_registrar_applications()")).rejects.toMatchObject({ code: "42501" });
+    expect((await db.query("select action from public.audit_logs where entity_id = $1 order by id", [account.id])).rows)
+      .toEqual([{ action: "role.change" }, { action: "role.change" }]);
   });
+
+  // Reset and Deactivation Tests START
+  it("locks out revoked sessions and requires the current reset before restoring dashboard access", async () => {
+    const { rows: [account] } = await db.query<{ id: string }>("select id::text from public.users where auth_user_id = $1", [teacherId]);
+    const freshSession = "00000000-0000-4000-8000-000000000010";
+    const resetSession = "00000000-0000-4000-8000-000000000011";
+    const role = "select public.get_staff_portal_role() as role";
+    const authAction = (password: string, action: Record<string, string>) => db.transaction(async (tx) => {
+      // Model the Auth Admin password update, session revocation, and metadata transaction.
+      await tx.query("update auth.users set encrypted_password = $1 where id = $2", [password, teacherId]);
+      await tx.query("delete from auth.sessions where user_id = $1", [teacherId]);
+      await tx.query("update auth.users set raw_app_meta_data = $1 where id = $2", [{ chimera_staff_action: action }, teacherId]);
+    });
+    const reset = { action: "reset-password", staff_id: account.id, actor_id: managerId, request_id: "reset-1" };
+    await expect(authAction("rejected", { ...reset, actor_id: adminId })).rejects.toMatchObject({ code: "42501" });
+    expect((await asUser(teacherId, role)).rows).toEqual([{ role: "teacher" }]);
+    await authAction("temporary", reset);
+    expect((await asUser(teacherId, role)).rows).toEqual([{ role: null }]);
+    await db.query("insert into auth.sessions values ($1, $2)", [resetSession, teacherId]);
+    expect((await asUser(teacherId, role, [], resetSession)).rows).toEqual([{ role: "password-change" }]);
+    await expect(asUser(teacherId, "select * from public.list_registrar_applications()", [], resetSession)).rejects.toMatchObject({ code: "42501" });
+    const complete = { action: "complete-password-change", reset_id: "reset-1", request_id: "complete-1" };
+    await expect(authAction("rejected", { ...complete, reset_id: "older-reset" })).rejects.toMatchObject({ code: "42501" });
+    expect((await asUser(teacherId, role, [], resetSession)).rows).toEqual([{ role: "password-change" }]);
+    await authAction("new-password", complete);
+    expect((await asUser(teacherId, role, [], resetSession)).rows).toEqual([{ role: null }]);
+    await db.query("insert into auth.sessions values ($1, $2)", [freshSession, teacherId]);
+    expect((await asUser(teacherId, role, [], freshSession)).rows).toEqual([{ role: "teacher" }]);
+    await authAction("unavailable", { ...reset, action: "deactivate", request_id: "deactivate-1" });
+    expect((await asUser(teacherId, role, [], freshSession)).rows).toEqual([{ role: null }]);
+    await db.query("insert into auth.sessions values ($1, $2)", [freshSession, teacherId]);
+    expect((await asUser(teacherId, role, [], freshSession)).rows).toEqual([{ role: null }]);
+    expect((await db.query("select action, actor_user_id = (select id from public.users where auth_user_id = $1) as authorized from public.audit_logs where entity_id = $2 and action like 'account.%' order by id", [managerId, account.id])).rows)
+      .toEqual([{ action: "account.password_reset", authorized: true }, { action: "account.deactivate", authorized: true }]);
+  });
+  // Reset and Deactivation Tests END
 });

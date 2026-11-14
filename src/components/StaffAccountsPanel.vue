@@ -1,6 +1,8 @@
 <!--
   Author: Jan Sultan | Email: jgsultan@student.apc.edu.ph
   Created Date: 20261114
+  Modified by: Jan Sultan | Email: jgsultan@student.apc.edu.ph
+  Modified Date: 20261114
 -->
 <script setup lang="ts">
 import { onMounted, ref } from "vue";
@@ -21,6 +23,8 @@ const accessDenied = ref(false);
 const listError = ref("");
 const formError = ref("");
 const notice = ref("");
+const resetResult = ref<{ email: string; password: string }>();
+const confirmation = ref<{ account: StaffAccount; action: "reset-password" | "deactivate" }>();
 const editingId = ref<string>();
 const selectedRole = ref<Role>("teacher");
 const fullName = ref("");
@@ -58,6 +62,7 @@ async function createAccount() {
   saving.value = true;
   formError.value = "";
   notice.value = "";
+  resetResult.value = undefined;
   try {
     const { data: { session }, error } = await client.auth.getSession();
     if (error || !session) throw new Error("Sign in again to create a staff account.");
@@ -89,6 +94,7 @@ async function assignRole(account: StaffAccount) {
   saving.value = true;
   formError.value = "";
   notice.value = "";
+  resetResult.value = undefined;
   try {
     const { error } = await client.rpc("assign_staff_role", { p_staff_id: account.id, p_role: selectedRole.value });
     if (error?.code === "42501") {
@@ -105,6 +111,40 @@ async function assignRole(account: StaffAccount) {
     saving.value = false;
   }
 }
+
+// Reset and Deactivate START
+async function confirmAccountAction() {
+  if (saving.value || !confirmation.value) return;
+  const { account, action } = confirmation.value;
+  confirmation.value = undefined;
+  saving.value = true;
+  formError.value = "";
+  notice.value = "";
+  resetResult.value = undefined;
+  try {
+    const { data: { session }, error } = await client.auth.getSession();
+    if (error || !session) throw new Error("Sign in again to update a staff account.");
+    const response = await fetch("/api/staff/accounts", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.access_token}` },
+      body: JSON.stringify({ action, staffId: account.id }),
+    });
+    const result = await response.json().catch(() => null);
+    if (!response.ok) throw new Error(result?.message ?? "Could not complete the staff account request.");
+    if (action === "deactivate") {
+      notice.value = "Staff account deactivated.";
+    } else {
+      if (typeof result?.temporaryPassword !== "string") throw new Error("The temporary password was unavailable. Reset again to generate a new one.");
+      resetResult.value = { email: account.email, password: result.temporaryPassword };
+    }
+    await loadAccounts();
+  } catch (error) {
+    formError.value = error instanceof Error ? error.message : "Could not update this account.";
+  } finally {
+    saving.value = false;
+  }
+}
+// Reset and Deactivate END
 
 onMounted(() => void loadAccounts());
 </script>
@@ -133,6 +173,11 @@ onMounted(() => void loadAccounts());
       </form>
       <p v-if="formError" role="alert">{{ formError }}</p>
       <p v-if="notice" role="status">{{ notice }}</p>
+      <div v-if="resetResult" class="account-notice" role="status">
+        <p>Temporary password for {{ resetResult.email }}. Share it privately. It’s shown only here.</p>
+        <p><code>{{ resetResult.password }}</code></p>
+        <button type="button" @click="resetResult = undefined">Dismiss password</button>
+      </div>
       <p v-if="!accounts.length">No staff accounts found.</p>
       <div v-else class="account-table">
         <table aria-label="Staff account list">
@@ -153,7 +198,18 @@ onMounted(() => void loadAccounts());
                   <button type="button" :disabled="saving || selectedRole === account.role" @click="assignRole(account)">Save role</button>
                   <button type="button" :disabled="saving" @click="editingId = undefined">Cancel</button>
                 </template>
-                <button v-else type="button" :disabled="saving" @click="editingId = account.id; selectedRole = account.role">Change role</button>
+                <template v-else-if="confirmation?.account.id === account.id">
+                  <p>Confirm {{ confirmation.action === "deactivate" ? "deactivation" : "password reset" }} for {{ account.full_name }}.</p>
+                  <button type="button" :disabled="saving" @click="confirmAccountAction">Confirm</button>
+                  <button type="button" :disabled="saving" @click="confirmation = undefined">Cancel</button>
+                </template>
+                <template v-else>
+                  <button type="button" :disabled="saving" @click="editingId = account.id; selectedRole = account.role; confirmation = undefined">Change role</button>
+                  <template v-if="account.account_status === 'active'">
+                    <button type="button" :disabled="saving" @click="confirmation = { account, action: 'reset-password' }; editingId = undefined">Reset password</button>
+                    <button type="button" :disabled="saving" @click="confirmation = { account, action: 'deactivate' }; editingId = undefined">Deactivate</button>
+                  </template>
+                </template>
               </td>
             </tr>
           </tbody>
@@ -177,4 +233,5 @@ input, select { min-height: 44px; border: 1px solid var(--muted); border-radius:
 table { width: 100%; border-collapse: collapse; background: var(--white); }
 th, td { border-bottom: 1px solid var(--line); padding: .7rem; text-align: left; }
 .account-actions button { margin: .25rem; min-height: 36px; }
+.account-notice { background: var(--cream-100); padding: 0 1rem 1rem; overflow-wrap: anywhere; }
 </style>
