@@ -49,9 +49,32 @@ Preview URL for peer review.
 
 Supabase checks the caller's token before `get_staff_portal_role()` reads the
 current staff assignment by Auth UUID. Only authenticated callers can execute
-it, and the browser cannot read or write staff rows directly. The Registrar
-landing page is protected by the route guard. Enrollment records and actions
-need their own database or server authorization when they are added.
+it, and the browser cannot read or write staff rows directly.
+
+## SC-18 staff accounts and SC-21 enrollment access
+
+Apply `202611140002_sc18_manage_staff_accounts.sql` and
+`202611140003_sc21_registrar_application_access.sql` after the login migrations
+on the Supabase test project. The staff creation endpoint uses the existing
+server-side `SUPABASE_URL` and `SUPABASE_SECRET_KEY` (or
+`SUPABASE_SERVICE_ROLE_KEY`). Use the same project for the server and browser
+settings. For local account creation, run the API server alongside Vite.
+
+In the test database, set `manage_staff_accounts = true` on an existing active
+Admin's linked `public.users` row. Sign in as that Admin, create a staff account
+with a unique email, and select Registrar as its role. Verify the account appears
+in the staff list and can sign in with the initial password. To test role
+assignment, change that account to Teacher, save, and confirm it can no longer
+open `/registrar`. An Admin without the management flag cannot list, create,
+or reassign accounts. A Teacher account can be created here for the teacher
+login workstream.
+
+Submit a fictional enrollment application on the test site and keep its
+reference number. Confirm the linked active Registrar sees that reference
+under **Enrollment applications**. Use a signed-out window to verify that
+`/registrar` redirects to `/login`. The automated database check also calls
+the enrollment RPC directly as public and non-Registrar roles and verifies
+that those requests are denied.
 
 Run `pnpm lint`, `pnpm build`, and `pnpm test`. Component tests simulate Supabase
 sessions, and the migration tests run the role checks in local PostgreSQL via

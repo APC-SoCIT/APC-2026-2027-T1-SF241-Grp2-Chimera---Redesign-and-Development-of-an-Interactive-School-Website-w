@@ -8,8 +8,11 @@
 import { onUnmounted, ref } from "vue";
 import { RouterLink, useRouter } from "vue-router";
 import { getStaffSupabaseClient } from "@/lib/supabase";
+import type { StaffRole } from "@/lib/staff-auth";
+import StaffAccountsPanel from "@/components/StaffAccountsPanel.vue";
+import RegistrarApplicationsPanel from "@/components/RegistrarApplicationsPanel.vue";
 
-defineProps<{ heading: string }>();
+defineProps<{ heading: string; role?: StaffRole }>();
 
 const router = useRouter();
 const { auth } = getStaffSupabaseClient();
@@ -61,5 +64,7 @@ async function signOut() {
     </div>
     <p v-if="signOutError" role="alert">Could not sign out. Please try again.</p>
     <RouterLink class="text-link" to="/">Back to school website</RouterLink>
+    <StaffAccountsPanel v-if="role === 'admin'" />
+    <RegistrarApplicationsPanel v-if="role === 'registrar'" />
   </section>
 </template>
