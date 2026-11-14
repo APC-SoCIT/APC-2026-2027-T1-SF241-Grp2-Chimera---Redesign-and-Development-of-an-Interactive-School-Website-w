@@ -2,12 +2,12 @@
   Author: Jan Sultan | Email: jgsultan@student.apc.edu.ph
   Created Date: 20261111
   Modified by: Jan Sultan | Email: jgsultan@student.apc.edu.ph
-  Modified Date: 20261113
+  Modified Date: 20261114
 -->
 <script setup lang="ts">
 import { computed, nextTick, ref } from "vue";
 import { RouterLink, useRouter } from "vue-router";
-import { signInAdmin } from "@/lib/staff-auth";
+import { signInStaff, staffDashboard } from "@/lib/staff-auth";
 
 const router = useRouter();
 const email = ref("");
@@ -40,13 +40,15 @@ async function signIn() {
   }
   busy.value = true;
   try {
-    if (!await signInAdmin(email.value.trim(), password.value)) {
+    const role = await signInStaff(email.value.trim(), password.value);
+    if (!role) {
       signInError.value = "Sign-in failed. Check your details or contact the school administrator.";
       return;
     }
-    await router.replace({ name: "admin-dashboard" });
-    if (router.currentRoute.value.name !== "admin-dashboard") {
-      signInError.value = "Admin access could not be verified. Please try again.";
+    const dashboard = staffDashboard[role];
+    await router.replace({ name: dashboard });
+    if (router.currentRoute.value.name !== dashboard) {
+      signInError.value = "Staff access could not be verified. Please try again.";
     }
   } catch {
     signInError.value = "Sign-in is currently unavailable. Please try again later.";

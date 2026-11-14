@@ -1,33 +1,42 @@
 /*
  * Author: Jan Sultan | Email: jgsultan@student.apc.edu.ph
  * Created Date: 20261113
+ * Modified by: Jan Sultan | Email: jgsultan@student.apc.edu.ph
+ * Modified Date: 20261114
  */
 import { getStaffSupabaseClient } from "./supabase";
 
+export type StaffRole = "admin" | "registrar";
+export const staffDashboard = {
+  admin: "admin-dashboard",
+  registrar: "registrar-dashboard",
+} as const satisfies Record<StaffRole, string>;
+
 // The database verifies the caller's token and checks the current staff record.
-export async function hasAdminAccess(): Promise<boolean> {
+export async function getStaffPortalRole(): Promise<StaffRole | null> {
   const client = getStaffSupabaseClient();
   const { data: { session }, error: sessionError } = await client.auth.getSession();
   if (sessionError) throw sessionError;
-  if (!session) return false;
-  const { data, error } = await client.rpc("has_active_admin_access");
+  if (!session?.expires_at || session.expires_at * 1000 <= Date.now()) return null;
+  const { data, error } = await client.rpc("get_staff_portal_role");
   if (error) throw error;
-  return data === true;
+  return data === "admin" || data === "registrar" ? data : null;
 }
 
-// Admin Sign-in START
-export async function signInAdmin(email: string, password: string): Promise<boolean> {
+// Staff Sign-in START
+export async function signInStaff(email: string, password: string): Promise<StaffRole | null> {
   const { auth } = getStaffSupabaseClient();
   const { data, error } = await auth.signInWithPassword({ email, password });
   if (error) {
-    if (["invalid_credentials", "email_not_confirmed", "user_banned"].includes(error.code ?? "")) return false;
+    if (["invalid_credentials", "email_not_confirmed", "user_banned"].includes(error.code ?? "")) return null;
     throw error;
   }
-  if (!data.session) return false;
+  if (!data.session) return null;
 
   let accessError: unknown;
   try {
-    if (await hasAdminAccess()) return true;
+    const role = await getStaffPortalRole();
+    if (role) return role;
   } catch (error) {
     accessError = error;
   }
@@ -35,6 +44,6 @@ export async function signInAdmin(email: string, password: string): Promise<bool
   const { error: signOutError } = await auth.signOut({ scope: "local" });
   if (accessError) throw accessError;
   if (signOutError) throw signOutError;
-  return false;
+  return null;
 }
-// Admin Sign-in END
+// Staff Sign-in END

@@ -2,9 +2,10 @@
  * Author: gemillan321 | Email: miles.gemillan77@gmail.com
  * Created Date: 20261001
  * Modified by: Jan Sultan | Email: jgsultan@student.apc.edu.ph
- * Modified Date: 20261113
+ * Modified Date: 20261114
  */
 import { createRouter, createWebHistory } from "vue-router";
+import type { StaffRole } from "@/lib/staff-auth";
 import AboutView from "@/views/AboutView.vue";
 import AdmissionsView from "@/views/AdmissionsView.vue";
 import AnnouncementView from "@/views/AnnouncementView.vue";
@@ -15,6 +16,12 @@ import EventsView from "@/views/EventsView.vue";
 import HomeView from "@/views/HomeView.vue";
 import NewsView from "@/views/NewsView.vue";
 
+declare module "vue-router" {
+  interface RouteMeta {
+    staffRole?: StaffRole;
+  }
+}
+
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   scrollBehavior: (to, _from, savedPosition) => {
@@ -24,7 +31,8 @@ const router = createRouter({
   },
   routes: [
     { path: "/login", name: "login", component: () => import("@/views/LoginView.vue"), meta: { title: "Staff sign in", authLayout: true } },
-    { path: "/admin", name: "admin-dashboard", component: () => import("@/views/AdminDashboardView.vue"), meta: { title: "Admin dashboard", authLayout: true, adminOnly: true } },
+    { path: "/admin", name: "admin-dashboard", component: () => import("@/views/StaffDashboardView.vue"), props: { heading: "Admin dashboard" }, meta: { title: "Admin dashboard", authLayout: true, staffRole: "admin" } },
+    { path: "/registrar", name: "registrar-dashboard", component: () => import("@/views/StaffDashboardView.vue"), props: { heading: "Registrar dashboard" }, meta: { title: "Registrar dashboard", authLayout: true, staffRole: "registrar" } },
     { path: "/enrollment", name: "enrollment", component: () => import("@/views/EnrollmentView.vue"), meta: { title: "Enrollment application" } },
     { path: "/", name: "home", component: HomeView, meta: { title: "Home" } },
     { path: "/about", name: "about", component: AboutView, meta: { title: "About" } },
@@ -39,18 +47,18 @@ const router = createRouter({
   ],
 });
 
-// Admin Route Guard START
+// Staff Route Guard START
 router.beforeEach(async (to) => {
-  if (!to.meta.adminOnly) return;
+  if (!to.meta.staffRole) return;
   try {
-    const { hasAdminAccess } = await import("@/lib/staff-auth");
-    if (await hasAdminAccess()) return;
+    const { getStaffPortalRole } = await import("@/lib/staff-auth");
+    if (await getStaffPortalRole() === to.meta.staffRole) return;
   } catch {
     // Configuration or network errors must not open the protected view.
   }
   return { name: "login", replace: true };
 });
-// Admin Route Guard END
+// Staff Route Guard END
 
 router.afterEach((to) => {
   const title = typeof to.meta.title === "string" ? `${to.meta.title} | ` : "";
