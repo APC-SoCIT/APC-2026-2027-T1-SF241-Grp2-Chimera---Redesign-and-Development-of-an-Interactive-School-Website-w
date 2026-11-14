@@ -106,6 +106,13 @@ describe("staff authorization migrations", () => {
     })).rejects.toMatchObject({ code: "42501" });
   });
 
+  it("denies Teacher access when the JWT session is missing or belongs to another account", async () => {
+    const sql = "select public.get_staff_portal_role() as role";
+    for (const sessionId of ["", registrarId]) {
+      expect((await asUser(teacherId, sql, [], sessionId)).rows).toEqual([{ role: null }]);
+    }
+  });
+
   it("returns an application saved through PB-12 to an active Registrar", async () => {
     const result = await asUser(registrarId, "select * from public.list_registrar_applications()");
     expect(result.rows).toEqual([{ reference_no: reference, status: "pending", submitted_at: expect.any(Date) }]);

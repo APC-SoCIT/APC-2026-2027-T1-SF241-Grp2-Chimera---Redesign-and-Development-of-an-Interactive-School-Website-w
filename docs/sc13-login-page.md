@@ -95,6 +95,22 @@ account to start this flow. Review `public.audit_logs` as a database
 administrator to verify that resets, deactivations, and role changes record
 the initiating account and target. The audit rows contain no passwords.
 
+## SC-31 Teacher route and session verification
+
+Run `npm exec -- vitest run src/views/TeacherAccess.test.ts server/admin-auth-migration.test.ts`
+for the focused check. The tests use the app's router and dashboard with
+simulated Auth responses. PGlite runs the authorization SQL and verifies
+that a Teacher session claim must belong to the requesting account.
+
+| Preview check | Expected result |
+| --- | --- |
+| Go directly to `/teacher` while signed out, as Admin, and as Registrar. | Each visit redirects to `/login`; the Teacher dashboard never renders. |
+| Sign in as an active Teacher. Reload `/teacher`, open it in a second tab, then click **Sign out** in the first tab. Try `/teacher` again and use the browser Back button. | Reload works while signed in. Both tabs return to sign-in, and reopening the route or using Back does not reveal the dashboard. |
+| Sign in as Teacher and let the session refresh online, then repeat the offline expiry check above. | A refreshed session keeps the dashboard open. Without refresh, the dashboard returns to `/login` at expiry. |
+
+Record the preview URL, commit, and observed result for each check so the
+reviewer can reproduce it.
+
 Run `pnpm lint`, `pnpm build`, and `pnpm test`. Component tests simulate Supabase
 sessions, and the migration tests run the role checks in local PostgreSQL via
 PGlite.
