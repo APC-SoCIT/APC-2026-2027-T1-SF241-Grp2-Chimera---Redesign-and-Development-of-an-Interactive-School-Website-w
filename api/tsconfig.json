@@ -7,6 +7,6 @@
     "lib": ["ES2022", "DOM", "DOM.Iterable"],
     "rootDir": ".."
   },
-  "include": ["enrollment/**/*.ts", "../server/**/*.ts"],
+  "include": ["enrollment/**/*.ts", "staff/**/*.ts", "../server/**/*.ts"],
   "exclude": ["../server/**/*.test.ts"]
 }
