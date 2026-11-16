@@ -17,6 +17,12 @@ const router = createRouter({
     return { top: 0 };
   },
   routes: [
+    ...(import.meta.env.DEV || import.meta.env.VITE_CMS_PREVIEW === "true" ? [{
+      path: "/cms-preview",
+      name: "cms-preview",
+      component: () => import("@/views/CmsPreviewView.vue"),
+      meta: { title: "CMS design preview", cmsPreview: true },
+    }] : []),
     { path: "/enrollment", name: "enrollment", component: () => import("@/views/EnrollmentView.vue"), meta: { title: "Enrollment application" } },
     { path: "/", name: "home", component: HomeView, meta: { title: "Home" } },
     { path: "/about", name: "about", component: AboutView, meta: { title: "About" } },
