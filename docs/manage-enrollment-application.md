@@ -44,6 +44,13 @@ staff dashboard, shown only to an active Registrar account.
    on a domain verified in Resend; the default `onboarding@resend.dev` can only deliver to
    the Resend account owner's address) and `APP_ORIGIN` (the site origin, to restrict CORS).
 
+## Undo
+
+`supabase/rollback/202611160001_manage_enrollment_application_rollback.sql` restores the
+database exactly as it was before the migration (applied to the live project on
+2026-11-16). It re-opens applicant data to every signed-in account, so use it only in an
+emergency.
+
 ## Not in scope yet
 
 Applicant document uploads remain disabled (post-MVP), so documents are listed when
