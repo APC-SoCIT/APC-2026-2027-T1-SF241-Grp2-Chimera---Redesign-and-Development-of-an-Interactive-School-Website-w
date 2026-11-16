@@ -244,7 +244,7 @@ function dismissMenu() {
       </button>
       <button ref="menu-toggle" class="cms-mobile-toggle cms-icon-button" type="button"
         aria-label="Toggle CMS navigation" aria-controls="cms-navigation cms-sidebar-footer" :aria-expanded="navOpen"
-        :disabled="Boolean(editor)" @click="navOpen = !navOpen">
+        @click="navOpen = !navOpen">
         <CmsIcon :name="navOpen ? 'close' : 'menu'" />
       </button>
       <nav id="cms-navigation" aria-label="CMS navigation" class="cms-navigation" :class="{ 'cms-nav-open': navOpen }">
@@ -263,8 +263,8 @@ function dismissMenu() {
           <CmsIcon name="trash" :size="18" /> Trash
           <span v-if="deletedItems.length" class="cms-trash-count">{{ deletedItems.length }}</span>
         </button>
-        <RouterLink v-if="!editor" class="cms-public-link" to="/">
-          <CmsIcon name="external" :size="17" /> Public website
+        <RouterLink class="cms-public-link" :to="{ name: 'home' }" target="_blank" rel="noopener">
+          <CmsIcon name="external" :size="17" /> Public website<span class="sr-only"> (opens in a new tab)</span>
         </RouterLink>
         <div class="cms-profile">
           <span class="cms-avatar" aria-hidden="true">DA</span>

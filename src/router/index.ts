@@ -19,7 +19,8 @@ const router = createRouter({
   },
   routes: [
     ...(cmsPreviewEnabled ? [
-      { path: "/cms-preview", name: "cms-preview", component: () => import("@/views/CmsPreviewView.vue"), meta: { title: "CMS design preview", cmsPreview: true } },
+      { path: "/admin", name: "admin", component: () => import("@/views/CmsPreviewView.vue"), meta: { title: "Content Workspace", cmsPreview: true } },
+      { path: "/cms-preview", redirect: { name: "admin" } },
       { path: "/pages/:slug?", name: "published-pages", component: () => import("@/views/PublishedPagesView.vue"), meta: { title: "School pages" } },
     ] : []),
     { path: "/enrollment", name: "enrollment", component: () => import("@/views/EnrollmentView.vue"), meta: { title: "Enrollment application" } },

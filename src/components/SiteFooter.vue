@@ -34,7 +34,7 @@ const { pages } = usePublicWebsite();
         <p class="footer-heading">Visit</p>
         <template v-if="schoolInformation"><p>{{ schoolInformation.address }}</p><p>{{ schoolInformation.officeHours }}</p></template>
         <RouterLink to="/contact">Contact the school</RouterLink>
-        <RouterLink v-if="cmsPreviewEnabled" to="/cms-preview">Staff workspace</RouterLink>
+        <RouterLink v-if="cmsPreviewEnabled" :to="{ name: 'admin' }">Staff workspace</RouterLink>
       </div>
     </div>
     <div class="container footer-bottom">
