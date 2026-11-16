@@ -229,7 +229,8 @@ onUnmounted(() => document.body.classList.remove("printing-application"));
           <dl v-else class="fields">
             <div v-for="guardian in application.guardians" :key="guardian.relationship">
               <dt>{{ relationships[guardian.relationship] }}</dt>
-              <dd>{{ guardian.full_name }}<br />
+              <dd>
+                {{ guardian.full_name }}<br />
                 <span class="muted">{{ guardian.occupation || "Occupation not given" }} · {{ guardian.contact_number || "No contact number" }}</span>
               </dd>
             </div>
@@ -292,8 +293,13 @@ onUnmounted(() => document.body.classList.remove("printing-application"));
           </label>
           <label class="field">
             Registrar remarks (shown in the email update, if you send one)
-            <textarea v-model="newRemarks" rows="3" maxlength="1000" :disabled="confirming || saving"
-              placeholder="For example, which requirements are still missing"></textarea>
+            <textarea
+              v-model="newRemarks"
+              rows="3"
+              maxlength="1000"
+              :disabled="confirming || saving"
+              placeholder="For example, which requirements are still missing"
+            ></textarea>
           </label>
           <p v-if="saveError" class="error" role="alert">{{ saveError }}</p>
           <p v-if="saveNotice" class="success" role="status">{{ saveNotice }}</p>
