@@ -7,11 +7,12 @@
   Manage Enrollment Application use case.
 -->
 <script setup lang="ts">
-import { computed, onUnmounted, ref, watch } from "vue";
+import { computed, nextTick, ref, watch } from "vue";
 import {
   applicationStatuses, getApplication, processingStatuses, RegistrarError, sendStatusEmail, setRequirement, updateStatus,
   type ApplicationDetail, type ProcessingStatus,
 } from "@/lib/enrollment/registrar";
+import { buildPrintDocument, openPrintableDocument, printDocument } from "@/lib/enrollment/print-form";
 import { requirementsFor, splitChecklist, summarizeChecklist } from "@/lib/enrollment/requirements";
 
 const props = defineProps<{ reference: string; hasPrevious: boolean; hasNext: boolean }>();
@@ -154,13 +155,24 @@ async function confirmEmail() {
 
 // Print A4 Verification Form START
 // Printing only opens the browser print dialog; it never changes the application.
-function printForm() {
+const printSource = ref<HTMLElement>();
+
+async function printableDocument(withPrintButton: boolean) {
   printedAt.value = new Date();
-  document.body.classList.add("printing-application");
-  window.addEventListener("afterprint", () => document.body.classList.remove("printing-application"), { once: true });
-  window.print();
+  await nextTick();
+  if (!printSource.value || !application.value) return undefined;
+  return buildPrintDocument(printSource.value.innerHTML, `Verification form ${application.value.reference_no}`, withPrintButton);
 }
-onUnmounted(() => document.body.classList.remove("printing-application"));
+
+async function printForm() {
+  const html = await printableDocument(false);
+  if (html) printDocument(html);
+}
+
+async function openPrintableForm() {
+  const html = await printableDocument(true);
+  if (html) openPrintableDocument(html);
+}
 // Print A4 Verification Form END
 </script>
 
@@ -352,14 +364,17 @@ onUnmounted(() => document.body.classList.remove("printing-application"));
         </section>
 
         <footer class="detail-footer">
-          <button type="button" class="button button-primary" @click="printForm">Print A4 verification form</button>
+          <div class="row">
+            <button type="button" class="button button-primary" @click="printForm">Print A4 verification form</button>
+            <button type="button" class="button-small" @click="openPrintableForm">Open printable form in new tab</button>
+          </div>
           <button type="button" class="button-small" @click="emit('close')">Close</button>
         </footer>
       </div>
     </div>
 
-    <!-- Print A4 Verification Form: shown only when printing. -->
-    <article v-if="application" class="print-form" aria-hidden="true">
+    <!-- Print A4 Verification Form source: never shown; copied into a standalone A4 document. -->
+    <div v-if="application" ref="printSource" class="print-source" aria-hidden="true">
       <header class="print-head">
         <h1>Sto. Niño Catholic School, Inc.</h1>
         <p>Office of the Registrar · Enrollment Verification Form</p>
@@ -386,7 +401,7 @@ onUnmounted(() => document.body.classList.remove("printing-application"));
         <tr><th>Address</th><td colspan="3">{{ application.complete_address }}</td></tr>
       </table>
       <h2>Parents and guardian</h2>
-      <table>
+      <table class="guardians">
         <tr><th>Relationship</th><th>Name</th><th>Occupation</th><th>Contact</th></tr>
         <tr v-for="guardian in application.guardians" :key="guardian.relationship">
           <td>{{ relationships[guardian.relationship] }}</td><td>{{ guardian.full_name }}</td>
@@ -409,7 +424,7 @@ onUnmounted(() => document.body.classList.remove("printing-application"));
         <div><span></span>Verified by (Registrar’s signature over printed name)</div>
         <div><span></span>Date</div>
       </div>
-    </article>
+    </div>
   </div>
 </template>
 
@@ -454,34 +469,6 @@ dd { margin: .15rem 0 0; overflow-wrap: anywhere; }
 .success { margin: 0; color: #1d6b38; font-weight: 700; }
 .button-small { min-height: 40px; padding: .45rem .85rem; border: 1px solid var(--line); border-radius: 4px; background: var(--white); color: var(--ink); font-weight: 700; cursor: pointer; }
 .button-small:disabled, .button:disabled { opacity: .5; cursor: not-allowed; }
-.print-form { display: none; }
-
-@media print {
-  .print-form { display: block; color: #000; font-size: 10.5pt; }
-  .print-head { text-align: center; border-bottom: 2px solid #000; padding-bottom: 6pt; margin-bottom: 8pt; }
-  .print-head h1 { margin: 0; font-size: 15pt; }
-  .print-head p { margin: 2pt 0; }
-  .print-meta { display: flex; justify-content: space-between; gap: 8pt; font-size: 9.5pt; }
-  .print-form h2 { margin: 9pt 0 3pt; font-size: 11pt; text-transform: uppercase; letter-spacing: .03em; }
-  .print-form table { width: 100%; border-collapse: collapse; }
-  .print-form th, .print-form td { padding: 3pt 5pt; border: 1px solid #555; text-align: left; vertical-align: top; }
-  .print-form th { width: 18%; background: #f0f0f0; font-weight: 700; }
-  .print-checklist { margin: 0; padding-left: 0; list-style: none; columns: 2; }
-  .print-remarks { min-height: 30pt; margin: 0; padding: 4pt; border: 1px solid #555; white-space: pre-wrap; }
-  .print-signatures { display: flex; justify-content: space-between; gap: 30pt; margin-top: 28pt; }
-  .print-signatures div { flex: 1; display: grid; gap: 3pt; font-size: 9pt; text-align: center; }
-  .print-signatures span { border-top: 1px solid #000; }
-}
+.print-source { display: none; }
 </style>
 
-<style>
-/* Print A4 Verification Form: print only the form, on A4 paper. */
-@media print {
-  @page { size: A4; margin: 14mm; }
-  body.printing-application * { visibility: hidden; }
-  body.printing-application .print-form, body.printing-application .print-form * { visibility: visible; }
-  body.printing-application .print-form { position: absolute; inset: 0 auto auto 0; width: 100%; }
-  body.printing-application .detail-backdrop { position: static; overflow: visible; padding: 0; background: none; }
-  body.printing-application .detail-card { display: none; }
-}
-</style>
