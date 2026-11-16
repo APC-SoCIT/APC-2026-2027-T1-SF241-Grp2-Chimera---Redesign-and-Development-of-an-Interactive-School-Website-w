@@ -8,6 +8,7 @@ import CmsTrash from "@/components/cms/CmsTrash.vue";
 import { recordChange, stepHistory, type CmsLibrary } from "@/lib/cms/history";
 import { blankItem, demoAdmin, formatCmsDate, itemLabels, type CmsItem, type ItemType } from "@/lib/cms/preview";
 import { useCmsLibrary, writeCmsLibrary } from "@/lib/cms/store";
+import type { CmsImageAssets } from "@/lib/cms/images";
 import type { PublicationStatus } from "@/lib/content/model";
 import { formatFileSize } from "@/lib/resources/model";
 import "@/assets/cms-preview.css";
@@ -145,7 +146,7 @@ function persist(next: CmsLibrary) {
   return signedIn.value && writeCmsLibrary(next);
 }
 
-function saveChange(next: CmsItem, label: string) {
+function saveChange(next: CmsItem, label: string, newAssets?: CmsImageAssets) {
   if (next.id) {
     const current = library.value.items.find((item) => item.id === next.id);
     if (!current || current.updatedAt !== next.updatedAt) return false;
@@ -156,11 +157,11 @@ function saveChange(next: CmsItem, label: string) {
     updatedAt: new Date().toISOString(),
     updatedBy: demoAdmin,
   };
-  return persist(recordChange(library.value, saved, label));
+  return persist(recordChange(library.value, saved, label, newAssets));
 }
 
-function saveItem(next: CmsItem) {
-  if (!saveChange(next, (next.id ? "Edited" : "Created") + " " + next.title)) return false;
+function saveItem(next: CmsItem, images: CmsImageAssets) {
+  if (!saveChange(next, (next.id ? "Edited" : "Created") + " " + next.title, images)) return false;
   if (!next.id || (section.value !== "overview" && section.value !== "content" && section.value !== next.type)) selectSection(next.type);
   else clearFilters();
   closeEditor();
@@ -279,7 +280,8 @@ function dismissMenu() {
         <span class="cms-prototype"><i></i> Local preview</span>
       </header>
       <section ref="cms-main" class="cms-main" aria-label="CMS workspace">
-        <CmsEditor v-if="editor" :item="editor" :items="library.items" :attempt-save="saveItem" @close="closeEditor" />
+        <CmsEditor v-if="editor" :item="editor" :items="library.items" :image-assets="library.imageAssets"
+          :attempt-save="saveItem" @close="closeEditor" />
         <template v-else-if="section === 'trash'">
           <div class="cms-heading">
             <div>

@@ -25,6 +25,7 @@ export interface Announcement extends PublishableContent {
   body: string[];
   formattedBody?: string;
   image?: AnnouncementImage;
+  gallery?: AnnouncementImage[];
 }
 
 export interface SchoolEvent extends PublishableContent {
@@ -34,6 +35,7 @@ export interface SchoolEvent extends PublishableContent {
   endDate: string;
   location: string | null;
   formattedBody?: string;
+  gallery?: AnnouncementImage[];
 }
 
 export interface Facility extends PublishableContent {

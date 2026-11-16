@@ -244,6 +244,15 @@
 .cms-writing textarea { width: 100%; display: block; min-height: 150px; padding: 10px 11px; border: 0; color: var(--cms-ink); resize: vertical; background: transparent; }
 .cms-writing textarea:focus-visible { outline-offset: -3px; }
 .cms-file-current { display: flex; align-items: center; gap: 8px; overflow-wrap: anywhere; }
+.cms-image-list { display: grid; gap: 12px; margin: 0; padding: 0; list-style: none; }
+.cms-image-list li { display: grid; grid-template-columns: minmax(0, 115px) minmax(0, 1fr); gap: 12px; padding: 11px; border: 1px solid var(--cms-border); border-radius: 8px; }
+.cms-image-thumbnail { width: 100%; aspect-ratio: 4 / 3; object-fit: contain; background: var(--cms-ground); border-radius: 5px; }
+.cms-image-details { display: grid; gap: 8px; min-width: 0; }
+.cms-image-heading { display: flex; align-items: center; justify-content: space-between; gap: 8px; overflow-wrap: anywhere; }
+@media (max-width: 540px) {
+  .cms-image-list li { grid-template-columns: minmax(0, 1fr); }
+  .cms-image-thumbnail { width: 115px; }
+}
 .cms-file input::file-selector-button { padding: 6px 9px; margin-right: 8px; color: var(--cms-wine); background: #f6e7ea; border: 0; border-radius: 5px; font: inherit; cursor: pointer; }
 .cms-record-details { display: grid; grid-template-columns: auto 1fr; gap: 7px; margin: 0; padding-top: 12px; border-top: 1px solid var(--cms-border); font-size: .79rem; }
 .cms-record-details dt { color: var(--cms-muted); }

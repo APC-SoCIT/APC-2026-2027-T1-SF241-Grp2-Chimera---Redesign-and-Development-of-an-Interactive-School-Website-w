@@ -1,4 +1,5 @@
 import type { ContentVisibility, PublicationStatus } from "@/lib/content/model";
+import type { CmsImage } from "./images";
 
 export const contentTypes = ["announcement", "event", "page"] as const;
 export type ContentType = typeof contentTypes[number];
@@ -28,6 +29,7 @@ export interface CmsItem {
   updatedAt: string;
   deletedAt?: string;
   publishedAt?: string | null;
+  images?: CmsImage[];
 }
 
 export const demoAdmin = "Demo Administrator";

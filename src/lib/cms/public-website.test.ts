@@ -42,11 +42,11 @@ describe("connected CMS preview", () => {
     expect(pages.value).toEqual([]);
     const published = { ...page, status: "published" as const, publishedAt: timestamp };
     writeCmsLibrary(recordChange(library.value, published, "Publish page"));
-    expect(pages.value).toEqual([published]);
+    expect(pages.value).toEqual([{ ...published, gallery: [] }]);
     writeCmsLibrary(recordChange(library.value, { ...published, deletedAt: timestamp }, "Trash page"));
     expect(pages.value).toEqual([]);
     writeCmsLibrary(stepHistory(library.value, "undo"));
-    expect(pages.value).toEqual([published]);
+    expect(pages.value).toEqual([{ ...published, gallery: [] }]);
 
     const event = { ...blankItem("event"), id: "event-preview", eventDate: "2026-12-01", title: "Campus event", body: "**Event details**", status: "published" as const };
     writeCmsLibrary(recordChange(library.value, event, "Publish event"));
@@ -57,5 +57,29 @@ describe("connected CMS preview", () => {
     const source = library.value.items.find((item) => item.id === "office-transactions")!;
     writeCmsLibrary(recordChange(library.value, { ...source, status: "draft" }, "Unpublish announcement"));
     expect(announcements.value.some((item) => item.id === source.id)).toBe(false);
+  });
+
+  it("stores images once and keeps them available to Undo and the public preview", () => {
+    const library = useCmsLibrary();
+    const { announcements } = usePublicWebsite();
+    const image = { id: "campus-photo", name: "campus.png", alt: "School entrance", caption: "Campus view" };
+    const asset = { src: "data:image/png;base64,eA==", width: 100, height: 50 };
+    const draft = {
+      ...blankItem("announcement"), id: "photo-news", slug: "photo-news", title: "School news", images: [image],
+    };
+    writeCmsLibrary(recordChange(library.value, draft, "Save image", { [image.id]: asset }));
+    expect(announcements.value.some((item) => item.id === draft.id)).toBe(false);
+
+    const published = { ...draft, status: "published" as const, publishedAt: timestamp };
+    writeCmsLibrary(recordChange(library.value, published, "Publish announcement"));
+    expect(announcements.value.find((item) => item.id === draft.id)?.image).toMatchObject({
+      ...asset, alt: image.alt, caption: image.caption,
+    });
+    writeCmsLibrary(recordChange(library.value, { ...published, images: [] }, "Remove image"));
+    expect(announcements.value.find((item) => item.id === draft.id)?.gallery).toEqual([]);
+    const saved = JSON.stringify(library.value);
+    expect(saved.split(asset.src).length).toBe(2);
+    writeCmsLibrary(stepHistory(readLibrary(saved), "undo"));
+    expect(announcements.value.find((item) => item.id === draft.id)?.image?.src).toBe(asset.src);
   });
 });

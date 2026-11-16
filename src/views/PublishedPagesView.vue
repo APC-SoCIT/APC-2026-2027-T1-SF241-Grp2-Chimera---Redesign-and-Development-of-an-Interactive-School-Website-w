@@ -3,6 +3,7 @@ import { computed } from "vue";
 import { RouterLink, useRoute } from "vue-router";
 import PageHero from "@/components/PageHero.vue";
 import CmsFormattedBody from "@/components/cms/CmsFormattedBody.vue";
+import ContentImageGallery from "@/components/ContentImageGallery.vue";
 import { usePublicWebsite } from "@/lib/cms/public-website";
 
 const route = useRoute();
@@ -18,6 +19,7 @@ const page = computed(() => pages.value.find((item) => item.slug === route.param
         <RouterLink class="text-link" to="/pages">← All school pages</RouterLink>
         <div v-if="page" class="published-copy"><CmsFormattedBody :body="page.body" /></div>
         <p v-else>This page may no longer be available.</p>
+        <ContentImageGallery v-if="page?.gallery.length" :images="page.gallery" />
       </template>
       <ul v-else-if="pages.length" class="published-page-list">
         <li v-for="entry in pages" :key="entry.id">

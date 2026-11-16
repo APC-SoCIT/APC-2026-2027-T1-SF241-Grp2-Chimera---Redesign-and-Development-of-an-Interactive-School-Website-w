@@ -229,6 +229,12 @@ h3 { font-size: 1.22rem; letter-spacing: -0.025em; }
 .announcement-image-link { display: block; margin-top: 1.25rem; }
 .announcement-media { margin: 1.5rem 0; }
 .announcement-media img { width: 100%; height: auto; background: white; }
+.content-image-gallery { display: grid; gap: 1rem; margin-block: 1.5rem; min-width: 0; }
+.content-image-gallery .announcement-media { margin: 0; min-width: 0; }
+.content-image-gallery img { max-height: 42rem; object-fit: contain; }
+@media (min-width: 700px) {
+  .content-image-gallery-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; }
+}
 .announcement-media figcaption { margin-top: .75rem; color: var(--muted); font-size: .9rem; line-height: 1.6; }
 .announcement-thumbnail { margin: 0; }
 .announcement-thumbnail img { aspect-ratio: 16 / 9; object-fit: contain; }

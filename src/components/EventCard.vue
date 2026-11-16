@@ -2,6 +2,7 @@
 import type { SchoolEvent } from "@/lib/content/model";
 import { formatEventDates } from "@/lib/content/dates";
 import CmsFormattedBody from "@/components/cms/CmsFormattedBody.vue";
+import ContentImageGallery from "@/components/ContentImageGallery.vue";
 defineProps<{ event: SchoolEvent; compact?: boolean }>();
 </script>
 
@@ -16,6 +17,7 @@ defineProps<{ event: SchoolEvent; compact?: boolean }>();
       <h3>{{ event.title }}</h3>
       <div v-if="!compact && event.formattedBody" class="published-copy"><CmsFormattedBody :body="event.formattedBody" /></div>
       <p v-else-if="!compact">{{ event.summary }}</p>
+      <ContentImageGallery v-if="!compact && event.gallery?.length" :images="event.gallery" />
     </div>
   </article>
 </template>

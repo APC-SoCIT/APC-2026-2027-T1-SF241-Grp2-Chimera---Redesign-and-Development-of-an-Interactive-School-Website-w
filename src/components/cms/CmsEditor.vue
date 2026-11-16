@@ -1,21 +1,76 @@
 <script setup lang="ts">
-import { nextTick, ref, useTemplateRef } from "vue";
+import { computed, nextTick, ref, shallowRef, useTemplateRef } from "vue";
 import CmsIcon from "./CmsIcon.vue";
 import CmsFormattedBody from "./CmsFormattedBody.vue";
+import ContentImageGallery from "@/components/ContentImageGallery.vue";
 import { contentTypes, formatCmsDate, itemLabels, slugify, type CmsItem } from "@/lib/cms/preview";
+import { imageForDisplay, maxContentImages, prepareImage, type CmsImageAssets } from "@/lib/cms/images";
+import { sourceAnnouncements } from "@/lib/cms/website-items";
 import { formatFileSize, MAX_PDF_BYTES } from "@/lib/resources/model";
 
-const props = defineProps<{ item: CmsItem; items: CmsItem[]; attemptSave: (item: CmsItem) => boolean }>();
+const props = defineProps<{
+  item: CmsItem;
+  items: CmsItem[];
+  imageAssets: CmsImageAssets;
+  attemptSave: (item: CmsItem, images: CmsImageAssets) => boolean;
+}>();
 const emit = defineEmits<{ close: [] }>();
-const form = ref({ ...props.item });
+const form = ref({ ...props.item, images: props.item.images?.map((image) => ({ ...image })) });
 const formEl = useTemplateRef<HTMLFormElement>("cms-form");
 const bodyField = useTemplateRef<HTMLTextAreaElement>("body-field");
 const preview = useTemplateRef<HTMLDialogElement>("content-preview");
 const errors = ref<Record<string, string>>({});
 const customSlug = ref(Boolean(props.item.id));
 const readingFile = ref(false);
+const readingImages = ref(false);
+const imageError = ref("");
+const pendingImages = shallowRef<CmsImageAssets>({});
 const saveError = ref("");
 let fileRead = 0;
+
+const existingImage = computed(() => form.value.type === "announcement"
+  ? sourceAnnouncements.find((entry) => entry.id === props.item.id)?.image : undefined);
+const imageSrc = (id: string) => pendingImages.value[id]?.src ?? props.imageAssets[id]?.src;
+const previewImages = computed(() => {
+  const uploads = (form.value.images ?? []).flatMap((image) =>
+    imageForDisplay(image, pendingImages.value[image.id] ?? props.imageAssets[image.id]) ?? [],
+  );
+  return uploads.length ? uploads : existingImage.value ? [existingImage.value] : [];
+});
+
+async function selectImages(event: Event) {
+  const input = event.target as HTMLInputElement;
+  const files = Array.from(input.files ?? []);
+  input.value = "";
+  if (!files.length || readingImages.value) return;
+  imageError.value = "";
+  const images = form.value.images ?? [];
+  if (files.length + images.length > maxContentImages) {
+    imageError.value = `You can attach up to ${maxContentImages} images per item.`;
+    return;
+  }
+  readingImages.value = true;
+  const newAssets: CmsImageAssets = {};
+  const newImages = [];
+  try {
+    for (const file of files) {
+      const { image, asset } = await prepareImage(file);
+      newImages.push(image);
+      newAssets[image.id] = asset;
+    }
+    pendingImages.value = { ...pendingImages.value, ...newAssets };
+    form.value.images = [...images, ...newImages];
+  } catch (error) {
+    imageError.value = error instanceof Error ? error.message : "This image could not be opened.";
+  } finally {
+    readingImages.value = false;
+  }
+}
+
+function removeImage(id: string) {
+  form.value.images = form.value.images?.filter((image) => image.id !== id);
+  imageError.value = "";
+}
 
 function updateTitle(event: Event) {
   form.value.title = (event.target as HTMLInputElement).value;
@@ -63,6 +118,7 @@ async function selectPdf(event: Event) {
 }
 
 async function save() {
+  if (readingFile.value || readingImages.value) return;
   const next = { ...form.value };
   next.title = next.title.trim();
   next.slug = next.slug.trim();
@@ -81,6 +137,12 @@ async function save() {
     if (next.type === "event" && !next.eventDate) issues.eventDate = "Choose the event date.";
     if (next.type !== "event") next.eventDate = "";
     if (!next.body) issues.body = "Enter the content body.";
+    next.images = next.images?.map((image) => ({
+      ...image, alt: image.alt.trim(), caption: image.caption?.trim() || undefined,
+    }));
+    for (const image of next.images ?? []) {
+      if (!image.alt) issues[image.id] = "Describe the image for visitors who use a screen reader.";
+    }
   }
   errors.value = issues;
   saveError.value = "";
@@ -89,7 +151,7 @@ async function save() {
     formEl.value?.querySelector<HTMLElement>("[aria-invalid='true']")?.focus();
     return;
   }
-  if (!props.attemptSave(next)) saveError.value = "This browser could not save the changes. Your edits are still in the form.";
+  if (!props.attemptSave(next, pendingImages.value)) saveError.value = "This browser could not save the changes. Check available browser storage and try again. Your edits are still in the form.";
 }
 
 function cancel() {
@@ -176,6 +238,37 @@ function cancel() {
           </div>
           <small v-if="errors.body" id="cms-body-error" class="cms-error">{{ errors.body }}</small>
         </div>
+        <div class="cms-field cms-file">
+          <label for="cms-content-images">Upload images</label>
+          <input id="cms-content-images" type="file" accept="image/jpeg,image/png,image/webp" multiple
+            :disabled="readingImages || (form.images?.length ?? 0) >= maxContentImages"
+            :aria-describedby="imageError ? 'cms-image-help cms-image-error' : 'cms-image-help'" @change="selectImages" />
+          <small id="cms-image-help">Up to {{ maxContentImages }} JPEG, PNG, or WebP files, 5 MB each. The first image is used on announcement cards.</small>
+          <small v-if="readingImages" role="status">Preparing images…</small>
+          <small v-if="imageError" id="cms-image-error" class="cms-error" role="alert">{{ imageError }}</small>
+          <small v-if="existingImage && !form.images?.length">This announcement uses its existing image until you add an upload.</small>
+        </div>
+        <ul v-if="form.images?.length" class="cms-image-list" aria-label="Selected images">
+          <li v-for="image in form.images" :key="image.id">
+            <img v-if="imageSrc(image.id)" :src="imageSrc(image.id)" alt="" class="cms-image-thumbnail" />
+            <div class="cms-image-details">
+              <div class="cms-image-heading">
+                <strong>{{ image.name }}</strong>
+                <button type="button" class="cms-button" :aria-label="'Remove ' + image.name" :disabled="readingImages" @click="removeImage(image.id)">Remove</button>
+              </div>
+              <div class="cms-field">
+                <label :for="'alt-' + image.id">Alt text</label>
+                <input :id="'alt-' + image.id" v-model="image.alt" required maxlength="250" :aria-invalid="Boolean(errors[image.id])"
+                  :aria-describedby="errors[image.id] ? 'image-error-' + image.id : undefined" placeholder="Describe what is in the image" />
+                <small v-if="errors[image.id]" :id="'image-error-' + image.id" class="cms-error">{{ errors[image.id] }}</small>
+              </div>
+              <div class="cms-field">
+                <label :for="'caption-' + image.id">Caption <small>(optional)</small></label>
+                <input :id="'caption-' + image.id" v-model="image.caption" maxlength="250" />
+              </div>
+            </div>
+          </li>
+        </ul>
       </template>
     </div>
 
@@ -205,8 +298,8 @@ function cancel() {
     <div class="cms-editor-footer">
       <p v-if="saveError" class="cms-error" role="alert">{{ saveError }}</p>
       <button type="button" class="cms-button" @click="cancel">Cancel</button>
-      <button type="submit" class="cms-button cms-primary" :disabled="readingFile">
-        {{ readingFile ? 'Checking PDF…' : item.id ? 'Save changes' : 'Save draft' }}
+      <button type="submit" class="cms-button cms-primary" :disabled="readingFile || readingImages">
+        {{ readingFile ? 'Checking PDF…' : readingImages ? 'Preparing images…' : item.id ? 'Save changes' : 'Save draft' }}
       </button>
     </div>
   </form>
@@ -222,6 +315,7 @@ function cancel() {
       <p v-if="form.type === 'event' && form.eventDate">{{ formatCmsDate(form.eventDate) }}</p>
       <CmsFormattedBody v-if="form.body" :body="form.body" />
       <p v-else>Your content will appear here.</p>
+      <ContentImageGallery :images="previewImages" />
     </article>
   </dialog>
 </template>
