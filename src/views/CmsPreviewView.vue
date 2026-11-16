@@ -1,14 +1,18 @@
 <script setup lang="ts">
-import { computed, nextTick, ref, useTemplateRef } from "vue";
+import { computed, nextTick, ref, shallowRef, useTemplateRef } from "vue";
 import CmsEditor from "@/components/cms/CmsEditor.vue";
 import CmsIcon from "@/components/cms/CmsIcon.vue";
-import { blankItem, demoAdmin, formatCmsDate, itemLabels, sampleItems, storageKey, type CmsItem, type ItemType } from "@/lib/cms/preview";
+import CmsSignIn from "@/components/cms/CmsSignIn.vue";
+import CmsTrash from "@/components/cms/CmsTrash.vue";
+import { readLibrary, recordChange, stepHistory, type CmsLibrary } from "@/lib/cms/history";
+import { blankItem, demoAdmin, formatCmsDate, itemLabels, storageKey, type CmsItem, type ItemType } from "@/lib/cms/preview";
 import type { PublicationStatus } from "@/lib/content/model";
 import { formatFileSize } from "@/lib/resources/model";
 import "@/assets/cms-preview.css";
 
-type Section = "overview" | "content" | ItemType;
+type Section = "overview" | "content" | "trash" | ItemType;
 type StatusFilter = "all" | PublicationStatus;
+type ItemAction = PublicationStatus | "trash";
 const navigation: { id: Section; title: string; icon: string }[] = [
   { id: "overview", title: "Overview", icon: "grid" },
   { id: "content", title: "All content", icon: "files" },
@@ -27,10 +31,12 @@ const statusOptions: { id: StatusFilter; label: string }[] = [
   { id: "all", label: "All statuses" }, { id: "published", label: "Published" },
   { id: "draft", label: "Draft" }, { id: "archived", label: "Archived" },
 ];
-const statusActions: Record<PublicationStatus, string> = {
-  published: "Publish", draft: "Unpublish", archived: "Archive",
+const statusActions: Record<ItemAction, string> = {
+  published: "Publish", draft: "Unpublish", archived: "Archive", trash: "Move to Trash",
 };
+const sessionKey = "sncs-cms-preview-session";
 
+const signedIn = ref(readSession());
 const section = ref<Section>("overview");
 const search = ref("");
 const status = ref<StatusFilter>("all");
@@ -40,27 +46,48 @@ const editor = ref<CmsItem | null>(null);
 const notice = ref("");
 const error = ref("");
 const navOpen = ref(false);
-const items = ref(loadItems());
-const pending = ref<{ item: CmsItem; status: PublicationStatus } | null>(null);
+const library = shallowRef(loadLibrary());
+const items = computed(() => library.value.items.filter((item) => !item.deletedAt));
+const deletedItems = computed(() => library.value.items
+  .filter((item): item is CmsItem & { deletedAt: string } => Boolean(item.deletedAt))
+  .sort((a, b) => b.deletedAt.localeCompare(a.deletedAt)));
+const nextUndo = computed(() => library.value.changes[library.value.cursor - 1]);
+const nextRedo = computed(() => library.value.changes[library.value.cursor]);
+const pending = ref<{ item: CmsItem; status: ItemAction } | null>(null);
 const dialog = useTemplateRef<HTMLDialogElement>("publication-dialog");
 const main = useTemplateRef<HTMLElement>("cms-main");
 const menuToggle = useTemplateRef<HTMLButtonElement>("menu-toggle");
+const shell = useTemplateRef<HTMLElement>("cms-shell");
 let actionTrigger: HTMLElement | null = null;
 
-function loadItems(): CmsItem[] {
+function readSession() {
   try {
-    const raw = localStorage.getItem(storageKey);
-    if (raw) {
-      const stored: unknown = JSON.parse(raw);
-      if (Array.isArray(stored)) return stored;
-    }
+    return sessionStorage.getItem(sessionKey) === "signed-in";
   } catch {
-    // The sample library also works when storage is unavailable.
+    return false;
   }
-  return sampleItems.map((item) => ({ ...item }));
 }
 
-const active = computed(() => navigation.find((entry) => entry.id === section.value)!);
+function setSession(active: boolean) {
+  signedIn.value = active;
+  try {
+    if (active) sessionStorage.setItem(sessionKey, "signed-in");
+    else sessionStorage.removeItem(sessionKey);
+  } catch {
+    // The preview login can still be used until the page reloads.
+  }
+  selectSection("overview");
+}
+
+function loadLibrary() {
+  try {
+    return readLibrary(localStorage.getItem(storageKey));
+  } catch {
+    return readLibrary(null);
+  }
+}
+
+const sectionTitle = computed(() => section.value === "trash" ? "Trash" : navigation.find((entry) => entry.id === section.value)?.title);
 const resources = computed(() => section.value === "resource");
 const webContent = computed(() => items.value.filter((item) => item.type !== "resource"));
 const counts = computed(() => ({
@@ -83,7 +110,7 @@ const list = computed(() => {
 });
 
 function focusTitle() {
-  void nextTick(() => main.value?.querySelector("h1")?.focus());
+  void nextTick(() => shell.value?.querySelector("h1")?.focus());
 }
 
 function clearFilters() {
@@ -106,6 +133,7 @@ function selectSection(next: Section, filter: StatusFilter = "all") {
 
 function beginEdit(item?: CmsItem) {
   const area = section.value;
+  if (area === "trash") return;
   editor.value = item ?? blankItem(area === "overview" || area === "content" ? "announcement" : area);
   notice.value = "";
   error.value = "";
@@ -119,25 +147,29 @@ function closeEditor() {
   focusTitle();
 }
 
-function persist(next: CmsItem) {
+function persist(next: CmsLibrary) {
+  if (!signedIn.value) return false;
+  try {
+    localStorage.setItem(storageKey, JSON.stringify(next));
+  } catch {
+    return false;
+  }
+  library.value = next;
+  return true;
+}
+
+function saveChange(next: CmsItem, label: string) {
   const saved = {
     ...next,
     id: next.id || crypto.randomUUID(),
     updatedAt: new Date().toISOString(),
     updatedBy: demoAdmin,
   };
-  const updated = [saved, ...items.value.filter((item) => item.id !== saved.id)];
-  try {
-    localStorage.setItem(storageKey, JSON.stringify(updated));
-  } catch {
-    return false;
-  }
-  items.value = updated;
-  return true;
+  return persist(recordChange(library.value, saved, label));
 }
 
 function saveItem(next: CmsItem) {
-  if (!persist(next)) return false;
+  if (!saveChange(next, (next.id ? "Edited" : "Created") + " " + next.title)) return false;
   if (!next.id || (section.value !== "overview" && section.value !== "content" && section.value !== next.type)) selectSection(next.type);
   else clearFilters();
   closeEditor();
@@ -145,7 +177,7 @@ function saveItem(next: CmsItem) {
   return true;
 }
 
-function openPublication(item: CmsItem, target: PublicationStatus, event: MouseEvent) {
+function openPublication(item: CmsItem, target: ItemAction, event: MouseEvent) {
   const menu = (event.currentTarget as HTMLElement).closest("details");
   actionTrigger = menu?.querySelector("summary") ?? null;
   menu?.removeAttribute("open");
@@ -164,14 +196,43 @@ function closePublication() {
 function updatePublication() {
   const change = pending.value;
   if (!change) return;
-  if (!persist({ ...change.item, status: change.status })) {
-    error.value = "This browser could not save the publication change. Please try again.";
+  const next = change.status === "trash"
+    ? { ...change.item, deletedAt: new Date().toISOString() }
+    : { ...change.item, status: change.status };
+  if (!saveChange(next, statusActions[change.status] + " · " + change.item.title)) {
+    error.value = "This browser could not save the change. Please try again.";
     return;
   }
   actionTrigger = null;
   dialog.value?.close();
-  notice.value = `“${change.item.title}” is now ${change.status === "draft" ? "a draft" : change.status} in the preview.`;
+  notice.value = change.status === "trash"
+    ? `“${change.item.title}” moved to Trash.`
+    : `“${change.item.title}” is now ${change.status === "draft" ? "a draft" : change.status} in the preview.`;
   focusTitle();
+}
+
+function restoreItem(item: CmsItem) {
+  error.value = "";
+  notice.value = "";
+  if (!saveChange({ ...item, deletedAt: undefined, status: "draft" }, "Restored " + item.title)) {
+    error.value = "This browser could not restore the item. Please try again.";
+    return;
+  }
+  notice.value = `“${item.title}” was restored as a draft.`;
+  focusTitle();
+}
+
+function changeHistory(action: "undo" | "redo") {
+  const change = action === "undo" ? nextUndo.value : nextRedo.value;
+  if (!change) return;
+  error.value = "";
+  notice.value = "";
+  if (!persist(stepHistory(library.value, action))) {
+    error.value = "This browser could not update the change history. Please try again.";
+    return;
+  }
+  notice.value = (action === "undo" ? "Undid" : "Redid") + " change to “" + change.after.title + "”.";
+  if (action === "undo" ? !nextUndo.value : !nextRedo.value) focusTitle();
 }
 
 function dismissMenu() {
@@ -181,14 +242,16 @@ function dismissMenu() {
 </script>
 
 <template>
-  <div class="cms-shell" @keydown.esc="navOpen && dismissMenu()">
+  <div ref="cms-shell" class="cms-shell" :class="{ 'cms-signed-out': !signedIn }" @keydown.esc="navOpen && dismissMenu()">
+    <CmsSignIn v-if="!signedIn" @sign-in="setSession(true)" />
+    <template v-else>
     <aside class="cms-sidebar">
       <button type="button" class="cms-brand" :disabled="Boolean(editor)" @click="selectSection('overview')">
         <img src="/images/source-site/sncs-seal.png" alt="" width="40" height="40" />
         <span><strong>SNCS</strong><small>Content workspace</small></span>
       </button>
       <button ref="menu-toggle" class="cms-mobile-toggle cms-icon-button" type="button"
-        aria-label="Toggle CMS navigation" aria-controls="cms-navigation" :aria-expanded="navOpen"
+        aria-label="Toggle CMS navigation" aria-controls="cms-navigation cms-sidebar-footer" :aria-expanded="navOpen"
         :disabled="Boolean(editor)" @click="navOpen = !navOpen">
         <CmsIcon :name="navOpen ? 'close' : 'menu'" />
       </button>
@@ -202,7 +265,12 @@ function dismissMenu() {
           </button>
         </template>
       </nav>
-      <div class="cms-sidebar-footer">
+      <div id="cms-sidebar-footer" class="cms-sidebar-footer">
+        <button type="button" class="cms-nav-item" :class="{ 'cms-nav-active': section === 'trash' }"
+          :aria-current="section === 'trash' ? 'page' : undefined" :disabled="Boolean(editor)" @click="selectSection('trash')">
+          <CmsIcon name="trash" :size="18" /> Trash
+          <span v-if="deletedItems.length" class="cms-trash-count">{{ deletedItems.length }}</span>
+        </button>
         <a class="cms-public-link" href="/" target="_blank" rel="noopener">
           <CmsIcon name="external" :size="17" /> Public website
         </a>
@@ -210,16 +278,29 @@ function dismissMenu() {
           <span class="cms-avatar" aria-hidden="true">DA</span>
           <span><strong>{{ demoAdmin }}</strong><small>Design preview</small></span>
         </div>
+        <button type="button" class="cms-public-link" :disabled="Boolean(editor)" @click="setSession(false)">Sign out</button>
       </div>
     </aside>
 
     <div class="cms-workspace">
       <header class="cms-topbar">
-        <div class="cms-breadcrumb"><span>Workspace</span><CmsIcon name="chevron" :size="14" /><strong>{{ editor ? 'Editor' : active.title }}</strong></div>
+        <div class="cms-breadcrumb"><span>Workspace</span><CmsIcon name="chevron" :size="14" /><strong>{{ editor ? 'Editor' : sectionTitle }}</strong></div>
         <span class="cms-prototype"><i></i> Local preview</span>
       </header>
       <section ref="cms-main" class="cms-main" aria-label="CMS workspace">
-        <CmsEditor v-if="editor" :item="editor" :items="items" :attempt-save="saveItem" @close="closeEditor" />
+        <CmsEditor v-if="editor" :item="editor" :items="library.items" :attempt-save="saveItem" @close="closeEditor" />
+        <template v-else-if="section === 'trash'">
+          <div class="cms-heading">
+            <div>
+              <h1 tabindex="-1">Trash</h1>
+              <p>Recover deleted items and revisit changes to the website preview.</p>
+            </div>
+          </div>
+          <p v-if="notice" class="cms-notice" role="status"><CmsIcon name="check" :size="18" />{{ notice }}</p>
+          <p v-if="error" class="cms-error" role="alert">{{ error }}</p>
+          <CmsTrash :items="deletedItems" :next-undo="nextUndo?.label" :next-redo="nextRedo?.label"
+            @restore="restoreItem" @step="changeHistory" />
+        </template>
         <template v-else>
           <div v-if="section === 'overview'" class="cms-hero">
             <div class="cms-hero-copy">
@@ -232,7 +313,7 @@ function dismissMenu() {
 
           <div v-else class="cms-heading">
             <div>
-              <h1 tabindex="-1">{{ active.title }}</h1>
+              <h1 tabindex="-1">{{ sectionTitle }}</h1>
               <p>{{ resources ? 'Manage official PDFs, categories and public visibility.' : 'Find, edit and publish updates for the school website.' }}</p>
             </div>
             <button type="button" class="cms-button cms-primary" @click="beginEdit()">
@@ -315,6 +396,7 @@ function dismissMenu() {
                         <button v-if="item.status === 'draft'" type="button" @click="openPublication(item, 'published', $event)">Publish</button>
                         <button v-if="item.status === 'published'" type="button" @click="openPublication(item, 'draft', $event)">Unpublish</button>
                         <button v-if="item.status !== 'archived'" type="button" @click="openPublication(item, 'archived', $event)">Archive</button>
+                        <button type="button" class="cms-trash-action" @click="openPublication(item, 'trash', $event)">Move to Trash</button>
                       </div>
                     </details>
                   </td>
@@ -337,13 +419,14 @@ function dismissMenu() {
 
     <dialog ref="publication-dialog" class="cms-dialog" aria-labelledby="cms-publication-title" @close="closePublication">
       <div v-if="pending" class="cms-dialog-inner">
-        <h2 id="cms-publication-title">{{ statusActions[pending.status] }} item?</h2>
+        <h2 id="cms-publication-title">{{ pending.status === 'trash' ? 'Move item to Trash?' : statusActions[pending.status] + ' item?' }}</h2>
         <p><strong>{{ pending.item.title }}</strong></p>
         <p v-if="pending.status === 'published' && (pending.item.type !== 'resource' || pending.item.visibility === 'public')">
           In the live CMS, this would make the item visible on the school website.
         </p>
         <p v-else-if="pending.status === 'published'">This PDF will still be private after publishing.</p>
         <p v-else-if="pending.status === 'draft'">This returns the item to Draft and removes it from public listings.</p>
+        <p v-else-if="pending.status === 'trash'">This removes the item from the library and any public listings. You can restore it from Trash.</p>
         <p v-else>This moves the item to the archive and removes it from public listings.</p>
         <p v-if="error" class="cms-error" role="alert">{{ error }}</p>
         <div class="cms-dialog-actions">
@@ -352,5 +435,6 @@ function dismissMenu() {
         </div>
       </div>
     </dialog>
+    </template>
   </div>
 </template>

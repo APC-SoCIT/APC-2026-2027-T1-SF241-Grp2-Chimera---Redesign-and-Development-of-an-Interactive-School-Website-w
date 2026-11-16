@@ -1,6 +1,9 @@
 <script setup lang="ts">
 defineProps<{ name: string; size?: number }>();
 const paths: Record<string, string> = {
+  trash: "M4 7h16 M9 7V4h6v3 M6 7l1 14h10l1-14 M10 11v6m4-6v6",
+  undo: "M9 5 4 10l5 5 M4 10h11a5 5 0 0 1 0 10",
+  redo: "m15 5 5 5-5 5 M20 10H9a5 5 0 0 0 0 10",
   grid: "M3 3h7v7H3z M14 3h7v7h-7z M3 14h7v7H3z M14 14h7v7h-7z",
   files: "M8 3h9l4 4v14H8z M17 3v5h4 M4 7v14 M11 12h7m-7 4h7",
   announcement: "M3 10v4l5 1 9 4V5L8 9z M8 15l2 6h3l-2-5 M20 9l2-2m-2 8 2 2",

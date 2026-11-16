@@ -26,6 +26,7 @@ export interface CmsItem {
   createdBy: string;
   updatedBy: string;
   updatedAt: string;
+  deletedAt?: string;
 }
 
 export const demoAdmin = "Demo Administrator";
