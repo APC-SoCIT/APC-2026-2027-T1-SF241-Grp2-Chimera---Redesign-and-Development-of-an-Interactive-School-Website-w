@@ -12,6 +12,7 @@ const schoolInformation = getPublicSchoolContactInformation();
       <div>
         <p class="footer-brand">Sto. Niño Catholic School, Inc.</p>
         <p>A faith-centered learning community in Taguig City.</p>
+        <a href="https://www.sncstaguig.com/home">Official school website ↗</a>
       </div>
       <div>
         <p class="footer-heading">Explore</p>
@@ -22,6 +23,8 @@ const schoolInformation = getPublicSchoolContactInformation();
         <RouterLink to="/events">School events</RouterLink>
         <RouterLink to="/admissions">Admissions guidance</RouterLink>
         <RouterLink to="/resources">Forms & downloads</RouterLink>
+        <a href="https://www.sncstaguig.com/multimedia">Multimedia ↗</a>
+        <a href="https://www.sncstaguig.com/alumni">Alumni ↗</a>
       </div>
       <div>
         <p class="footer-heading">Visit</p>

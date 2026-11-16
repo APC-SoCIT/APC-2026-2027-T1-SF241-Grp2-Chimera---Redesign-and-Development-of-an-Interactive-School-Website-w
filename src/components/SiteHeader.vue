@@ -1,23 +1,31 @@
 <script setup lang="ts">
-import { ref } from "vue";
-import { RouterLink } from "vue-router";
+import { ref, watch } from "vue";
+import { RouterLink, useRoute } from "vue-router";
 
 const menu = ref<HTMLDetailsElement | null>(null);
+const route = useRoute();
 
 const navigation = [
-  { to: "/enrollment", label: "Apply" },
   { to: "/about", label: "About" },
   { to: "/campus", label: "Campus" },
   { to: "/news", label: "News" },
-  { to: "/events", label: "Events" },
-  { to: "/admissions", label: "Admissions" },
-  { to: "/resources", label: "Resources" },
-  { to: "/contact", label: "Contact" },
+  { to: "/events", label: "Calendar" },
+  { to: "/resources", label: "TLC Forms" },
+  { to: "/contact", label: "Contacts" },
 ];
 
 function closeMenu() {
   if (menu.value) menu.value.open = false;
 }
+
+function dismissMenu(event: KeyboardEvent) {
+  if (!menu.value?.open) return;
+  event.preventDefault();
+  closeMenu();
+  menu.value.querySelector("summary")?.focus();
+}
+
+watch(() => route.fullPath, closeMenu);
 </script>
 
 <template>
@@ -41,11 +49,13 @@ function closeMenu() {
         <RouterLink v-for="item in navigation" :key="item.to" :to="item.to">
           {{ item.label }}
         </RouterLink>
+        <RouterLink class="button button-secondary nav-registration" to="/admissions">Registration</RouterLink>
       </nav>
 
-      <details ref="menu" class="mobile-menu">
-        <summary aria-label="Open navigation">Menu</summary>
+      <details ref="menu" class="mobile-menu" @keydown.esc="dismissMenu">
+        <summary>Menu</summary>
         <nav aria-label="Mobile navigation">
+          <RouterLink class="mobile-registration" to="/admissions" @click="closeMenu">Registration</RouterLink>
           <RouterLink
             v-for="item in navigation"
             :key="item.to"
@@ -54,6 +64,7 @@ function closeMenu() {
           >
             {{ item.label }}
           </RouterLink>
+          <RouterLink to="/enrollment" @click="closeMenu">Apply for enrollment</RouterLink>
         </nav>
       </details>
     </div>

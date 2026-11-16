@@ -73,7 +73,10 @@ onBeforeUnmount(() => { listingRequest?.abort(); downloadRequest?.abort(); });
   <PageHero class="resources-hero" eyebrow="Forms & downloads" title="School resources" description="Download the TLC forms you need, ready to print and complete." />
   <section class="section resources-section" aria-label="Available downloads" :aria-busy="loading">
     <div class="container">
-      <p class="resources-guidance">Unsure which form applies to your child? <RouterLink class="text-link" to="/contact#registrar">Ask the Registrar →</RouterLink></p>
+      <div class="resources-guidance">
+        <p>Unsure which form applies to your child? <RouterLink class="text-link" to="/contact#registrar">Ask the Registrar →</RouterLink></p>
+        <a class="text-link" href="https://www.sncstaguig.com/registration/tlc-forms">View TLC Forms on the school website →</a>
+      </div>
       <p v-if="loading" class="empty-state" role="status">Loading available forms…</p>
       <div v-else-if="loadError" class="resource-state" role="alert">
         <h2>Forms couldn’t be loaded</h2>

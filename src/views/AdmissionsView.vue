@@ -15,7 +15,11 @@ const selected = computed(() => groups.find((group) => group.id === selectedId.v
     <div class="container">
       <div class="admissions-intro">
         <SectionHeading eyebrow="Before you apply" title="Choose your applicant group" description="Contact the Registrar to confirm enrollment availability and the current requirements for your grade level." />
-        <RouterLink class="button button-secondary" to="/contact#registrar">Contact the Registrar</RouterLink>
+        <div class="registration-actions">
+          <RouterLink class="button button-secondary" to="/enrollment">Apply for enrollment</RouterLink>
+          <a class="text-link" href="https://www.sncstaguig.com/registration">Official registration page →</a>
+          <RouterLink class="text-link" to="/contact#registrar">Contact the Registrar →</RouterLink>
+        </div>
       </div>
       <div v-if="groups.length" class="applicant-options" role="group" aria-label="Applicant group">
         <button v-for="group in groups" :id="`choose-${group.id}`" :key="group.id" type="button" :aria-pressed="selectedId === group.id" aria-controls="admission-checklist" @click="selectedId = group.id">{{ group.title }}</button>

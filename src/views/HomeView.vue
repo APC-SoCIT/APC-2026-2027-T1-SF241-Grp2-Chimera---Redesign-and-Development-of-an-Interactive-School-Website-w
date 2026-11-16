@@ -21,35 +21,43 @@ const schoolInformation = getPublicSchoolContactInformation();
 </script>
 
 <template>
-  <section class="home-hero">
-    <img
-      class="hero-image"
-      src="/images/source-site/campus-front.jpg"
-      alt="Front view of the Sto. Niño Catholic School campus"
-    />
-    <div class="hero-overlay" aria-hidden="true"></div>
-    <div class="container hero-content">
-      <p class="eyebrow light">Faith · Excellence · Service</p>
-      <h1>Forming learners for lives of purpose.</h1>
-      <p class="hero-lead">
-        Sto. Niño Catholic School is a joyful learning community where faith,
-        character, and academic growth come together.
-      </p>
-      <div class="hero-actions">
-        <RouterLink class="button button-primary" to="/admissions">Admissions guidance</RouterLink>
-        <RouterLink class="button button-ghost" to="/contact">Contact the school</RouterLink>
+  <section class="campus-welcome" aria-labelledby="school-name">
+    <div class="container welcome-grid">
+      <div class="welcome-copy">
+        <p class="eyebrow light">Signal Village, Taguig City</p>
+        <h1 id="school-name">Sto. Niño Catholic <span>School, Inc.</span></h1>
+        <p class="welcome-tagline">Forming learners for lives of purpose.</p>
+        <p class="welcome-description">
+          Sto. Niño Catholic School is a joyful learning community where faith,
+          character, and academic growth come together.
+        </p>
+        <div class="welcome-actions">
+          <RouterLink class="button button-primary" to="/admissions">Registration <span aria-hidden="true">→</span></RouterLink>
+          <RouterLink class="welcome-campus-link" to="/campus">Explore campus <span aria-hidden="true">→</span></RouterLink>
+        </div>
       </div>
+      <figure class="welcome-photo">
+        <img src="/images/source-site/campus-front.jpg" width="960" height="541"
+          alt="Front entrance and courtyard of Sto. Niño Catholic School" fetchpriority="high" />
+        <figcaption>Sampaloc Street campus</figcaption>
+      </figure>
     </div>
   </section>
 
+  <nav class="container welcome-quick-links" aria-label="Quick links">
+    <RouterLink to="/resources">TLC Forms <span aria-hidden="true">→</span></RouterLink>
+    <RouterLink to="/events#school-calendar">School Calendar <span aria-hidden="true">→</span></RouterLink>
+    <RouterLink to="/contact">Contact the school <span aria-hidden="true">→</span></RouterLink>
+  </nav>
+
   <aside v-if="schoolInformation" class="office-notice" aria-label="School office hours"><div class="container"><strong>School office transactions</strong><span>{{ schoolInformation.officeHours }}</span></div></aside>
 
-  <section class="section section-red">
+  <section class="section welcome-updates">
     <div class="container updates-grid">
       <div>
         <div class="section-row compact">
           <SectionHeading eyebrow="Stay informed" title="Latest news" />
-          <RouterLink class="text-link light" to="/news">All news →</RouterLink>
+          <RouterLink class="text-link" to="/news">All news →</RouterLink>
         </div>
         <div class="update-list">
           <AnnouncementCard v-for="item in announcements" :key="item.id" :item="item" compact />
@@ -59,13 +67,30 @@ const schoolInformation = getPublicSchoolContactInformation();
       <div>
         <div class="section-row compact">
           <SectionHeading eyebrow="Mark your calendar" title="Upcoming events" />
-          <RouterLink class="text-link light" to="/events">All events →</RouterLink>
+          <RouterLink class="text-link" to="/events">All events →</RouterLink>
         </div>
         <div class="update-list">
           <EventCard v-for="event in events" :key="event.id" :event="event" compact />
-          <div v-if="!events.length" class="update-card"><h3>No upcoming events listed</h3><p>Visit the school calendar for the latest dates and browse past school activities.</p><RouterLink class="text-link light" to="/events">View school dates →</RouterLink></div>
+          <div v-if="!events.length" class="update-card welcome-calendar-link">
+            <h3>School Calendar</h3>
+            <p>Visit the school calendar for the latest dates and browse past school activities.</p>
+            <RouterLink class="text-link" to="/events#school-calendar">View school dates →</RouterLink>
+          </div>
         </div>
       </div>
+    </div>
+  </section>
+
+  <section class="welcome-school-links" aria-labelledby="school-links-title">
+    <div class="container">
+      <h2 id="school-links-title">On the school website</h2>
+      <ul>
+        <li><a href="https://www.sncstaguig.com/home#h.fvyo8xp2gi0z_l">School Director’s Daily Reflection <span aria-hidden="true">↗</span></a></li>
+        <li><a href="https://www.sncstaguig.com/home#h.51144a0500ce888d_3">Announcements <span aria-hidden="true">↗</span></a></li>
+        <li><a href="https://www.sncstaguig.com/home#h.5fc2f1e34ee0d9e0_192">Highlights Library <span aria-hidden="true">↗</span></a></li>
+        <li><a href="https://www.psahelpline.ph/sncs">PSA document ordering <span aria-hidden="true">↗</span></a></li>
+        <li><a href="https://www.facebook.com/messages/t/316900518777">Send Feedback <span aria-hidden="true">↗</span></a></li>
+      </ul>
     </div>
   </section>
 
