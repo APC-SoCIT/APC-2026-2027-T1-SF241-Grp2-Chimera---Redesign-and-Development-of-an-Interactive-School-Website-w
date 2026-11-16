@@ -6,11 +6,11 @@
   font-family: "DM Sans", system-ui, sans-serif;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
-  --red-950: #3f0806;
-  --red-900: #67100a;
-  --red-800: #8f170e;
-  --red-700: #b01b10;
-  --red-600: #cc1300;
+  --red-950: #45100a;
+  --red-900: #681711;
+  --red-800: #861e15;
+  --red-700: #a5291d;
+  --red-600: #b53526;
   --gold-500: #d7a62d;
   --gold-300: #edcf7b;
   --cream-100: #fff8e8;
@@ -49,11 +49,6 @@ h3 { font-size: 1.22rem; letter-spacing: -0.025em; }
 .muted-copy { color: var(--muted); }
 
 .public-site, .site-header, .site-footer {
-  --red-950: #3e1722;
-  --red-900: #531d2b;
-  --red-800: #6e2437;
-  --red-700: #8a3048;
-  --red-600: #9f4057;
   --gold-500: #e7bd62;
   --cream-100: #f6efe5;
   --line: #e7ddd2;
@@ -81,7 +76,7 @@ h3 { font-size: 1.22rem; letter-spacing: -0.025em; }
 
 .campus-welcome { padding-top: clamp(1.1rem, 3vw, 2.3rem); }
 .welcome-grid { display: grid; grid-template-columns: minmax(0, .92fr) minmax(0, 1.08fr); overflow: hidden; border-radius: 5px; }
-.welcome-copy { padding: clamp(1.5rem, 4.1vw, 3.8rem); background: var(--red-900); color: #fff8ef; }
+.welcome-copy { padding: clamp(1.5rem, 4.1vw, 3.8rem); background: linear-gradient(145deg, var(--red-950), var(--red-800)); color: #fff8ef; }
 .welcome-copy .eyebrow { letter-spacing: .11em; }
 .welcome-copy h1 { max-width: 13ch; font-size: clamp(2.45rem, 5vw, 4.55rem); line-height: .99; color: #fff8ef; }
 .welcome-copy h1 span { white-space: nowrap; }
@@ -107,6 +102,11 @@ h3 { font-size: 1.22rem; letter-spacing: -0.025em; }
 .school-calendar { display: block; width: 100%; height: 600px; border: 1px solid var(--line); background: white; }
 .registration-actions { display: flex; flex-wrap: wrap; gap: .5rem 1.15rem; align-items: center; }
 .registration-actions .text-link { display: inline-flex; align-items: center; min-height: 44px; }
+.published-copy { overflow-wrap: anywhere; }
+.published-copy h3 { margin-top: 1.35rem; }
+.published-copy a, .published-page-list a { color: var(--red-800); text-underline-offset: .2rem; }
+.published-page-list { list-style: none; padding: 0; margin: 0; border-top: 1px solid var(--line); }
+.published-page-list a { display: flex; align-items: center; min-height: 48px; padding-block: .5rem; border-bottom: 1px solid var(--line); font-weight: 700; }
 
 .hero-actions { display: flex; flex-wrap: wrap; gap: .9rem; }
 .button { display: inline-flex; align-items: center; justify-content: center; min-height: 48px; padding: .78rem 1.2rem; border: 1px solid transparent; border-radius: 4px; font-weight: 800; text-decoration: none; }

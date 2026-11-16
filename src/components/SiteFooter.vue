@@ -1,9 +1,12 @@
 <script setup lang="ts">
 import { RouterLink } from "vue-router";
+import { cmsPreviewEnabled } from "@/lib/cms/config";
+import { usePublicWebsite } from "@/lib/cms/public-website";
 import { getPublicSchoolContactInformation } from "@/lib/content/directory";
 
 const currentYear = new Date().getFullYear();
 const schoolInformation = getPublicSchoolContactInformation();
+const { pages } = usePublicWebsite();
 </script>
 
 <template>
@@ -23,6 +26,7 @@ const schoolInformation = getPublicSchoolContactInformation();
         <RouterLink to="/events">School events</RouterLink>
         <RouterLink to="/admissions">Admissions guidance</RouterLink>
         <RouterLink to="/resources">Forms & downloads</RouterLink>
+        <RouterLink v-if="pages.length" to="/pages">School pages</RouterLink>
         <a href="https://www.sncstaguig.com/multimedia">Multimedia ↗</a>
         <a href="https://www.sncstaguig.com/alumni">Alumni ↗</a>
       </div>
@@ -30,6 +34,7 @@ const schoolInformation = getPublicSchoolContactInformation();
         <p class="footer-heading">Visit</p>
         <template v-if="schoolInformation"><p>{{ schoolInformation.address }}</p><p>{{ schoolInformation.officeHours }}</p></template>
         <RouterLink to="/contact">Contact the school</RouterLink>
+        <RouterLink v-if="cmsPreviewEnabled" to="/cms-preview">Staff workspace</RouterLink>
       </div>
     </div>
     <div class="container footer-bottom">

@@ -2,9 +2,13 @@
 import { computed, onBeforeUnmount, onMounted, ref } from "vue";
 import PageHero from "@/components/PageHero.vue";
 import EventCard from "@/components/EventCard.vue";
-import { getPublicEvents, officialCalendarUrl } from "@/lib/content/content";
+import { officialCalendarUrl } from "@/lib/content/content";
+import { usePublicWebsite } from "@/lib/cms/public-website";
 import { partitionEvents } from "@/lib/content/dates";
-const { upcoming, past } = partitionEvents(getPublicEvents());
+const { events } = usePublicWebsite();
+const partition = computed(() => partitionEvents(events.value));
+const upcoming = computed(() => partition.value.upcoming);
+const past = computed(() => partition.value.past);
 const compact = ref(false);
 let narrowScreen: MediaQueryList | undefined;
 

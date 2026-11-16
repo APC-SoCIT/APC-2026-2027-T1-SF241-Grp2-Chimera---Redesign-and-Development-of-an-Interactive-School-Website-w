@@ -1,6 +1,6 @@
 .cms-shell {
-  --cms-wine: #4c171d;
-  --cms-accent: #8b2638;
+  --cms-wine: var(--red-900);
+  --cms-accent: var(--red-700);
   --cms-ink: #261d20;
   --cms-muted: #665b60;
   --cms-border: #ece3e1;
@@ -36,15 +36,15 @@
   flex-direction: column;
   gap: 18px;
   padding: 21px 15px 16px;
-  background: linear-gradient(160deg, #47161e, #321117 82%);
+  background: linear-gradient(160deg, var(--red-800), var(--red-950) 82%);
   color: #fff7f4;
 }
 .cms-brand { display: flex; align-items: center; gap: 12px; padding: 3px 8px 16px; text-align: left; border: 0; background: transparent; color: inherit; }
 .cms-brand img { border-radius: 50%; background: white; padding: 2px; }
 .cms-brand strong { display: block; font-size: 1.16rem; font-weight: 800; letter-spacing: .08em; }
-.cms-brand small, .cms-profile small { display: block; margin-top: 2px; color: #e2c5c9; font-size: .72rem; }
+.cms-brand small, .cms-profile small { display: block; margin-top: 2px; color: #f2c8ba; font-size: .72rem; }
 .cms-navigation { display: grid; gap: 4px; }
-.cms-nav-label { margin: 14px 10px 4px; color: #e1bdc1; font-weight: 700; font-size: .67rem; letter-spacing: .11em; text-transform: uppercase; }
+.cms-nav-label { margin: 14px 10px 4px; color: #f0c3b5; font-weight: 700; font-size: .67rem; letter-spacing: .11em; text-transform: uppercase; }
 .cms-nav-label:first-child { margin-top: 0; }
 .cms-nav-item, .cms-public-link {
   min-height: 44px;
@@ -61,7 +61,7 @@
   text-decoration: none;
 }
 .cms-nav-item:hover:not(:disabled), .cms-public-link:hover { background: #ffffff12; }
-.cms-shell .cms-nav-item.cms-nav-active { color: #fff; background: #823247; border-color: #ffffff1f; font-weight: 700; }
+.cms-shell .cms-nav-item.cms-nav-active { color: #fff; background: var(--cms-accent); border-color: #ffffff1f; font-weight: 700; }
 .cms-nav-active svg { color: var(--cms-gold); }
 .cms-sidebar :focus-visible { outline-color: var(--cms-gold); }
 .cms-sidebar-footer { margin-top: auto; }
@@ -92,12 +92,12 @@
   overflow: hidden;
   border-radius: 15px;
   color: white;
-  background: #551825;
-  background-image: linear-gradient(90deg, #551825 41%, #551825bf 59%, #5518258a 73%, #2d121842), url("/images/source-site/campus-front.jpg");
+  background: var(--cms-wine);
+  background-image: linear-gradient(90deg, var(--cms-wine) 41%, #861e15d9 59%, #951e148c 73%, #45100a64), url("/images/source-site/campus-front.jpg");
   background-size: cover, 59% auto;
   background-position: left, right 46%;
   background-repeat: no-repeat;
-  border: 1px solid #672c39;
+  border: 1px solid var(--red-800);
 }
 .cms-hero-copy { position: relative; padding: 26px clamp(21px, 3.4vw, 45px) 29px; }
 .cms-school-label { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; color: #f7db9e; font-size: .65rem; letter-spacing: .13em; font-weight: 800; }
@@ -118,7 +118,7 @@
 }
 .cms-shell .cms-button:hover:not(:disabled) { background: #f5ecec; }
 .cms-shell .cms-primary { border-color: var(--cms-accent); background: var(--cms-accent); color: white; }
-.cms-shell .cms-primary:hover:not(:disabled) { background: #702033; }
+.cms-shell .cms-primary:hover:not(:disabled) { background: var(--red-800); }
 .cms-shell .cms-hero-button { color: #3f2024; background: var(--cms-gold); border-color: var(--cms-gold); }
 .cms-shell .cms-hero-button:hover:not(:disabled) { background: #fce9aa; }
 .cms-hero :focus-visible { outline-color: var(--cms-gold); }
@@ -139,7 +139,7 @@
 }
 .cms-stat:hover { border-color: #bd9098; }
 .cms-stat-top { display: flex; width: 100%; justify-content: space-between; align-items: center; }
-.cms-stat-icon, .cms-item-icon { display: inline-grid; flex: none; place-items: center; width: 35px; height: 35px; border-radius: 8px; background: #f7e8ec; color: #853047; }
+.cms-stat-icon, .cms-item-icon { display: inline-grid; flex: none; place-items: center; width: 35px; height: 35px; border-radius: 8px; background: #f8eae4; color: var(--red-800); }
 .cms-stat-icon[data-state="published"] { color: #28654e; background: #e7f4eb; }
 .cms-stat-icon[data-state="draft"] { color: #7a5417; background: #fff0ce; }
 .cms-stat-icon[data-state="archived"] { color: #66515c; background: #f0e9ed; }
@@ -206,7 +206,7 @@
 .cms-actions summary, .cms-icon-button { display: grid; place-items: center; min-width: 42px; min-height: 42px; border: 1px solid transparent; border-radius: 7px; background: transparent; color: inherit; list-style: none; }
 .cms-actions summary { font-size: 1.3rem; line-height: 1; }
 .cms-actions summary::-webkit-details-marker { display: none; }
-.cms-actions summary:hover, .cms-icon-button:hover { background: #85304710; }
+.cms-actions summary:hover, .cms-icon-button:hover { background: #a5291d10; }
 .cms-action-list { display: grid; min-width: 140px; position: absolute; z-index: 3; top: 100%; right: 0; padding: 4px; background: #fff; border: 1px solid #ebddde; border-radius: 8px; box-shadow: 0 8px 24px #35171e22; }
 .cms-action-list button { min-height: 41px; padding: 7px 11px; background: transparent; border: 0; text-align: left; border-radius: 5px; color: var(--cms-ink); }
 .cms-action-list button:hover { background: #f8edee; }
@@ -251,7 +251,7 @@
 .cms-editor-footer { grid-column: 1 / -1; display: flex; flex-wrap: wrap; justify-content: flex-end; align-items: center; gap: 8px; }
 .cms-editor-footer p { margin: 0 auto 0 0; }
 .cms-dialog { width: min(465px, calc(100% - 30px)); max-height: calc(100dvh - 28px); padding: 0; border: 1px solid var(--cms-border); border-radius: 13px; background: #fffdfc; color: var(--cms-ink); box-shadow: 0 20px 70px #21121966; }
-.cms-dialog::backdrop { background: #2d111a83; }
+.cms-dialog::backdrop { background: #45100a83; }
 .cms-dialog-inner { padding: 20px; }
 .cms-dialog-inner p { margin: 9px 0; }
 .cms-dialog-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px; }
@@ -281,7 +281,7 @@
   align-items: start;
   padding: clamp(24px, 4vw, 42px);
   background-color: var(--cms-wine);
-  background-image: linear-gradient(0deg, #321117 6%, #47161ee8 36%, #5e213358), url("/images/source-site/campus-front.jpg");
+  background-image: linear-gradient(0deg, var(--red-950) 6%, #681711e8 36%, #a5291d58), url("/images/source-site/campus-front.jpg");
   background-size: cover;
   background-position: 50%;
   color: white;
@@ -328,7 +328,7 @@
   .cms-main { padding-inline: 13px; }
   .cms-hero {
     background-size: cover, auto 100%;
-    background-image: linear-gradient(90deg, #551825 14%, #551825e0 57%, #55182577), url("/images/source-site/campus-front.jpg");
+    background-image: linear-gradient(90deg, var(--cms-wine) 14%, #861e15e0 57%, #951e1477), url("/images/source-site/campus-front.jpg");
   }
   .cms-hero-copy { padding: 20px 15px; }
   .cms-hero p { max-width: 310px; }

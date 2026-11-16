@@ -183,7 +183,8 @@ function cancel() {
       <section class="cms-panel cms-form-panel">
         <h2>Publication</h2>
         <span class="cms-status" :data-state="form.status">{{ form.status }}</span>
-        <p v-if="form.status === 'published'">Saving updates this published item in the preview library.</p>
+        <p v-if="form.status === 'published' && form.type !== 'resource' && form.visibility === 'public'">Saving updates the public preview.</p>
+        <p v-else-if="form.status === 'published'">Saving updates this published item in the preview library.</p>
         <p v-else-if="form.status === 'archived'">This item stays in the archive when you save it.</p>
         <p v-else>Drafts stay hidden until you publish them from the library.</p>
         <div v-if="form.type === 'resource'" class="cms-field">

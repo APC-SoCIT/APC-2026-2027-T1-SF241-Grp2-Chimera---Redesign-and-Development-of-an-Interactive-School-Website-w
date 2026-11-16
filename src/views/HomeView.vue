@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { computed } from "vue";
 import { RouterLink } from "vue-router";
 import SectionHeading from "@/components/SectionHeading.vue";
 import AnnouncementCard from "@/components/AnnouncementCard.vue";
@@ -6,14 +7,15 @@ import EventCard from "@/components/EventCard.vue";
 import { partitionEvents } from "@/lib/content/dates";
 import { getPublicSchoolContactInformation } from "@/lib/content/directory";
 import {
-  getPublicAnnouncements,
-  getPublicEvents,
   getPublicFacilities,
   getPublicInstitutionalSections,
 } from "@/lib/content/content";
+import { usePublicWebsite } from "@/lib/cms/public-website";
 
-const announcements = getPublicAnnouncements().slice(0, 2);
-const events = partitionEvents(getPublicEvents()).upcoming.slice(0, 2);
+const website = usePublicWebsite();
+const { pages } = website;
+const announcements = computed(() => website.announcements.value.slice(0, 2));
+const events = computed(() => partitionEvents(website.events.value).upcoming.slice(0, 2));
 const facilities = getPublicFacilities();
 const institutionalSections = getPublicInstitutionalSections();
 const schoolInformation = getPublicSchoolContactInformation();
@@ -90,6 +92,20 @@ const schoolInformation = getPublicSchoolContactInformation();
         <li><a href="https://www.sncstaguig.com/home#h.5fc2f1e34ee0d9e0_192">Highlights Library <span aria-hidden="true">↗</span></a></li>
         <li><a href="https://www.psahelpline.ph/sncs">PSA document ordering <span aria-hidden="true">↗</span></a></li>
         <li><a href="https://www.facebook.com/messages/t/316900518777">Send Feedback <span aria-hidden="true">↗</span></a></li>
+      </ul>
+    </div>
+  </section>
+
+  <section v-if="pages.length" class="section section-soft" aria-labelledby="published-page-links">
+    <div class="container">
+      <div class="section-row">
+        <h2 id="published-page-links">School pages</h2>
+        <RouterLink class="text-link" to="/pages">All school pages →</RouterLink>
+      </div>
+      <ul class="published-page-list">
+        <li v-for="page in pages.slice(0, 4)" :key="page.id">
+          <RouterLink :to="{ name: 'published-pages', params: { slug: page.slug } }">{{ page.title }}</RouterLink>
+        </li>
       </ul>
     </div>
   </section>

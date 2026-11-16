@@ -27,6 +27,7 @@ export interface CmsItem {
   updatedBy: string;
   updatedAt: string;
   deletedAt?: string;
+  publishedAt?: string | null;
 }
 
 export const demoAdmin = "Demo Administrator";
@@ -49,17 +50,17 @@ function fixture(id: string, type: ItemType, title: string, status: PublicationS
 }
 
 export const sampleItems = [
-  fixture("c1", "announcement", "Enrollment advisory for incoming students", "published", 16, {
+  fixture("c1", "announcement", "Enrollment advisory for incoming students", "draft", 16, {
     body: "## Before you apply\nPlease review the requirements and prepare your documents before visiting the Registrar.\n\n- Bring your latest report card.\n- Check the [admissions page](/admissions) for the full list.",
   }),
   fixture("c2", "event", "Advent recollection and school Mass", "draft", 15, {
     eventDate: "2026-12-04", body: "Students and families are invited to join our Advent recollection and school Mass.",
   }),
-  fixture("c3", "page", "Mission, vision and core values", "published", 14, {
+  fixture("c3", "page", "Mission, vision and core values", "draft", 14, {
     body: "## Our mission\nSto. Niño Catholic School fosters academic growth and formation grounded in the Catholic faith.",
   }),
   fixture("c4", "announcement", "Parent–teacher conference reminder", "draft", 12),
-  fixture("c5", "event", "Campus open house", "published", 10, { eventDate: "2026-12-12" }),
+  fixture("c5", "event", "Campus open house", "draft", 10, { eventDate: "2026-12-12" }),
   fixture("c6", "page", "School services and office hours", "archived", 8),
   fixture("r1", "resource", "Grade 7 TLC application form", "published", 14, {
     category: "Admission Forms", fileName: "grade-7-tlc-application.pdf", fileSize: 431276,
@@ -78,6 +79,7 @@ export function slugify(title: string): string {
 }
 
 export function formatCmsDate(value: string): string {
+  if (!value) return "—";
   return new Intl.DateTimeFormat("en-PH", {
     day: "numeric", month: "short", year: "numeric", timeZone: "Asia/Manila",
   }).format(new Date(value));

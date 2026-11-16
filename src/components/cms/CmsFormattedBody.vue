@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed } from "vue";
+import { RouterLink } from "vue-router";
 import { safePreviewLink } from "@/lib/cms/preview";
 
 const props = defineProps<{ body: string }>();
@@ -36,9 +37,12 @@ const blocks = computed(() => {
 <template>
   <component :is="block.tag" v-for="(block, index) in blocks" :key="index">
     <component :is="block.tag === 'ul' ? 'li' : 'span'" v-for="(line, lineIndex) in block.lines" :key="lineIndex">
-      <component :is="part.tag === 'a' && !part.href ? 'span' : part.tag" v-for="(part, tokenIndex) in inline(line)"
-        :key="tokenIndex" :href="part.href" :target="part.href ? '_blank' : undefined"
-        :rel="part.href ? 'noopener noreferrer' : undefined">{{ part.text }}</component>
+      <template v-for="(part, tokenIndex) in inline(line)" :key="tokenIndex">
+        <RouterLink v-if="part.href?.startsWith('/')" :to="part.href">{{ part.text }}</RouterLink>
+        <component v-else :is="part.tag === 'a' && !part.href ? 'span' : part.tag"
+          :href="part.href" :target="part.href ? '_blank' : undefined"
+          :rel="part.href ? 'noopener noreferrer' : undefined">{{ part.text }}</component>
+      </template>
     </component>
   </component>
 </template>

@@ -1,11 +1,13 @@
 <script setup lang="ts">
-import { computed, nextTick, ref, shallowRef, useTemplateRef } from "vue";
+import { computed, nextTick, ref, useTemplateRef } from "vue";
+import { RouterLink } from "vue-router";
 import CmsEditor from "@/components/cms/CmsEditor.vue";
 import CmsIcon from "@/components/cms/CmsIcon.vue";
 import CmsSignIn from "@/components/cms/CmsSignIn.vue";
 import CmsTrash from "@/components/cms/CmsTrash.vue";
-import { readLibrary, recordChange, stepHistory, type CmsLibrary } from "@/lib/cms/history";
-import { blankItem, demoAdmin, formatCmsDate, itemLabels, storageKey, type CmsItem, type ItemType } from "@/lib/cms/preview";
+import { recordChange, stepHistory, type CmsLibrary } from "@/lib/cms/history";
+import { blankItem, demoAdmin, formatCmsDate, itemLabels, type CmsItem, type ItemType } from "@/lib/cms/preview";
+import { useCmsLibrary, writeCmsLibrary } from "@/lib/cms/store";
 import type { PublicationStatus } from "@/lib/content/model";
 import { formatFileSize } from "@/lib/resources/model";
 import "@/assets/cms-preview.css";
@@ -46,7 +48,7 @@ const editor = ref<CmsItem | null>(null);
 const notice = ref("");
 const error = ref("");
 const navOpen = ref(false);
-const library = shallowRef(loadLibrary());
+const library = useCmsLibrary();
 const items = computed(() => library.value.items.filter((item) => !item.deletedAt));
 const deletedItems = computed(() => library.value.items
   .filter((item): item is CmsItem & { deletedAt: string } => Boolean(item.deletedAt))
@@ -77,14 +79,6 @@ function setSession(active: boolean) {
     // The preview login can still be used until the page reloads.
   }
   selectSection("overview");
-}
-
-function loadLibrary() {
-  try {
-    return readLibrary(localStorage.getItem(storageKey));
-  } catch {
-    return readLibrary(null);
-  }
 }
 
 const sectionTitle = computed(() => section.value === "trash" ? "Trash" : navigation.find((entry) => entry.id === section.value)?.title);
@@ -148,17 +142,14 @@ function closeEditor() {
 }
 
 function persist(next: CmsLibrary) {
-  if (!signedIn.value) return false;
-  try {
-    localStorage.setItem(storageKey, JSON.stringify(next));
-  } catch {
-    return false;
-  }
-  library.value = next;
-  return true;
+  return signedIn.value && writeCmsLibrary(next);
 }
 
 function saveChange(next: CmsItem, label: string) {
+  if (next.id) {
+    const current = library.value.items.find((item) => item.id === next.id);
+    if (!current || current.updatedAt !== next.updatedAt) return false;
+  }
   const saved = {
     ...next,
     id: next.id || crypto.randomUUID(),
@@ -198,7 +189,7 @@ function updatePublication() {
   if (!change) return;
   const next = change.status === "trash"
     ? { ...change.item, deletedAt: new Date().toISOString() }
-    : { ...change.item, status: change.status };
+    : { ...change.item, status: change.status, publishedAt: change.status === "published" ? new Date().toISOString() : change.item.publishedAt };
   if (!saveChange(next, statusActions[change.status] + " · " + change.item.title)) {
     error.value = "This browser could not save the change. Please try again.";
     return;
@@ -271,9 +262,9 @@ function dismissMenu() {
           <CmsIcon name="trash" :size="18" /> Trash
           <span v-if="deletedItems.length" class="cms-trash-count">{{ deletedItems.length }}</span>
         </button>
-        <a class="cms-public-link" href="/" target="_blank" rel="noopener">
+        <RouterLink v-if="!editor" class="cms-public-link" to="/">
           <CmsIcon name="external" :size="17" /> Public website
-        </a>
+        </RouterLink>
         <div class="cms-profile">
           <span class="cms-avatar" aria-hidden="true">DA</span>
           <span><strong>{{ demoAdmin }}</strong><small>Design preview</small></span>
@@ -421,10 +412,11 @@ function dismissMenu() {
       <div v-if="pending" class="cms-dialog-inner">
         <h2 id="cms-publication-title">{{ pending.status === 'trash' ? 'Move item to Trash?' : statusActions[pending.status] + ' item?' }}</h2>
         <p><strong>{{ pending.item.title }}</strong></p>
-        <p v-if="pending.status === 'published' && (pending.item.type !== 'resource' || pending.item.visibility === 'public')">
-          In the live CMS, this would make the item visible on the school website.
+        <p v-if="pending.status === 'published' && pending.item.type !== 'resource' && pending.item.visibility === 'public'">
+          This makes the item visible on the connected public preview.
         </p>
-        <p v-else-if="pending.status === 'published'">This PDF will still be private after publishing.</p>
+        <p v-else-if="pending.status === 'published' && pending.item.type === 'resource'">This updates the PDF’s status in the workspace. Downloadable files use the school’s resource service.</p>
+        <p v-else-if="pending.status === 'published'">This item will stay private after publishing.</p>
         <p v-else-if="pending.status === 'draft'">This returns the item to Draft and removes it from public listings.</p>
         <p v-else-if="pending.status === 'trash'">This removes the item from the library and any public listings. You can restore it from Trash.</p>
         <p v-else>This moves the item to the archive and removes it from public listings.</p>

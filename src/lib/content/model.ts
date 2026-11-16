@@ -23,6 +23,7 @@ export interface Announcement extends PublishableContent {
   summary: string;
   category: "School Advisory" | "Campus News" | "Achievement";
   body: string[];
+  formattedBody?: string;
   image?: AnnouncementImage;
 }
 
@@ -32,6 +33,7 @@ export interface SchoolEvent extends PublishableContent {
   startDate: string;
   endDate: string;
   location: string | null;
+  formattedBody?: string;
 }
 
 export interface Facility extends PublishableContent {

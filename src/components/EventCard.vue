@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { SchoolEvent } from "@/lib/content/model";
 import { formatEventDates } from "@/lib/content/dates";
+import CmsFormattedBody from "@/components/cms/CmsFormattedBody.vue";
 defineProps<{ event: SchoolEvent; compact?: boolean }>();
 </script>
 
@@ -13,7 +14,8 @@ defineProps<{ event: SchoolEvent; compact?: boolean }>();
     <div>
       <p class="meta">{{ formatEventDates(event) }}<template v-if="event.location"> · {{ event.location }}</template></p>
       <h3>{{ event.title }}</h3>
-      <p v-if="!compact">{{ event.summary }}</p>
+      <div v-if="!compact && event.formattedBody" class="published-copy"><CmsFormattedBody :body="event.formattedBody" /></div>
+      <p v-else-if="!compact">{{ event.summary }}</p>
     </div>
   </article>
 </template>
