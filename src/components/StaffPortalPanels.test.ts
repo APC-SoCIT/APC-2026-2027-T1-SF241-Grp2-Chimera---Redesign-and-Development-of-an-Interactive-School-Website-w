@@ -45,16 +45,37 @@ it("creates a staff account with the selected role and displays it after reloadi
   }
 });
 
-it("renders only the enrollment summaries returned by the Registrar RPC", async () => {
+it("searches enrollment applications through the Registrar RPC with every filter", async () => {
   client.rpc.mockResolvedValue({
-    data: [{ reference_no: "EN-TEST-01", status: "pending", submitted_at: "2026-11-14T00:00:00Z" }],
+    data: [{ reference_no: "SNCS-TEST01", first_name: "Test", surname: "Example", grade_level: "Grade 7", status: "pending", submitted_at: "2026-11-14T00:00:00Z" }],
     error: null,
   });
   const wrapper = mount(RegistrarApplicationsPanel);
   try {
     await flushPromises();
-    expect(client.rpc).toHaveBeenCalledWith("list_registrar_applications", { p_offset: 0 });
-    expect(wrapper.get("tbody").text()).toContain("EN-TEST-01");
+    expect(client.rpc).toHaveBeenCalledWith("search_registrar_applications", { p_query: null, p_status: null, p_from: null, p_to: null, p_offset: 0 });
+    expect(wrapper.get("tbody").text()).toContain("SNCS-TEST01");
+    await wrapper.get('input[type="search"]').setValue("example");
+    await wrapper.get("form select").setValue("pending");
+    const [from, to] = wrapper.findAll('input[type="date"]');
+    await from.setValue("2026-11-01");
+    await to.setValue("2026-11-30");
+    await wrapper.get("form").trigger("submit");
+    await flushPromises();
+    expect(client.rpc).toHaveBeenLastCalledWith("search_registrar_applications", {
+      p_query: "example", p_status: "pending", p_from: "2026-11-01", p_to: "2026-11-30", p_offset: 0,
+    });
+  } finally {
+    wrapper.unmount();
+  }
+});
+
+it("shows access denied when the session is not a Registrar", async () => {
+  client.rpc.mockResolvedValue({ data: null, error: { code: "42501", message: "Registrar access required" } });
+  const wrapper = mount(RegistrarApplicationsPanel);
+  try {
+    await flushPromises();
+    expect(wrapper.text()).toContain("Access denied");
   } finally {
     wrapper.unmount();
   }
