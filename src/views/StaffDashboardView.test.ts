@@ -64,3 +64,15 @@ it("signs out the current session and returns to login", async () => {
   expect(signOut).toHaveBeenCalledWith({ scope: "local" });
   expect(replace).toHaveBeenCalledWith({ name: "login" });
 });
+
+it("shows the SNCS seal and the signed-in staff member's name", async () => {
+  const listener = onAuthStateChange.mock.calls[0][0] as (event: AuthChangeEvent, session: unknown) => void;
+  listener("INITIAL_SESSION", {
+    expires_at: Date.now() / 1000 + 60,
+    user: { email: "ana@example.com", app_metadata: { chimera_staff_provisioning: { full_name: "Ana Reyes" } } },
+  });
+  await dashboard.vm.$nextTick();
+  expect(dashboard.get("img").attributes("alt")).toContain("Sto. Niño Catholic School");
+  expect(dashboard.text()).toContain("Ana Reyes");
+  expect(dashboard.get(".portal-avatar").text()).toBe("AR");
+});
