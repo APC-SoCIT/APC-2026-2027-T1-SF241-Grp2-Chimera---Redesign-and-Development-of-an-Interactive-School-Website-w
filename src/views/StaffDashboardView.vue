@@ -3,6 +3,8 @@
   Created Date: 20261113
   Modified by: Jan Sultan | Email: jgsultan@student.apc.edu.ph
   Modified Date: 20261114
+  Modified by: Gian Mandac (PB-07 teacher schedule panel)
+  Modified Date: 20261117
 -->
 <script setup lang="ts">
 import { onUnmounted, ref } from "vue";
@@ -11,6 +13,7 @@ import { getStaffSupabaseClient } from "@/lib/supabase";
 import type { StaffRole } from "@/lib/staff-auth";
 import StaffAccountsPanel from "@/components/StaffAccountsPanel.vue";
 import RegistrarApplicationsPanel from "@/components/RegistrarApplicationsPanel.vue";
+import TeacherSchedulePanel from "@/components/TeacherSchedulePanel.vue";
 
 defineProps<{ heading: string; role?: StaffRole }>();
 
@@ -66,5 +69,6 @@ async function signOut() {
     <RouterLink class="text-link" to="/">Back to school website</RouterLink>
     <StaffAccountsPanel v-if="role === 'admin'" />
     <RegistrarApplicationsPanel v-if="role === 'registrar'" />
+    <TeacherSchedulePanel v-if="role === 'teacher'" />
   </section>
 </template>

@@ -26,7 +26,8 @@ Sultan and Terrence Josh Corpuz, advised by Prof. Felino Calderon.
 | PB-05 | Admin: create staff accounts, assign roles, reset passwords, deactivate | Admin | Done |
 | **PB-09** | **Manage Enrollment Application** (search, review, checklist, status, email, print) | Registrar | **Done** |
 | PB-01 | CMS for website content | Admin | Not started |
-| PB-02 / PB-07 | AI-assisted class scheduling and teacher schedule view | Coordinator / Teacher | Not started |
+| PB-07 | **Teacher: view my published class schedule** | Teacher | **Built** (shows data once PB-02 publishes) |
+| PB-02 | AI-assisted class scheduling (upload, generate, publish) | Coordinator | Not started |
 
 ### Manage Enrollment Application (PB-09)
 
@@ -54,7 +55,7 @@ Details: [docs/manage-enrollment-application.md](docs/manage-enrollment-applicat
 | `/login`, `/login/change-password` | Staff sign-in and required password change |
 | `/admin` | Admin dashboard: staff account management |
 | `/registrar` | Registrar dashboard: Manage Enrollment Application |
-| `/teacher` | Teacher dashboard (schedule view is future work) |
+| `/teacher` | Teacher dashboard: my published class schedule (PB-07) |
 
 ---
 
@@ -147,7 +148,7 @@ Base schema: [`supabase/reference/SNCS_Schema_Final.sql`](supabase/reference/SNC
 
 ### Migrations
 
-Applied in filename order. All are applied to the live project.
+Applied in filename order. All are applied to the live project except `202611170001_pb07_teacher_schedule.sql` (pending review).
 
 | Migration | Adds |
 |---|---|
@@ -159,6 +160,7 @@ Applied in filename order. All are applied to the live project.
 | `202611140003_sc21_registrar_application_access.sql` | First Registrar list function |
 | `202611140004_sc19_sc30_staff_access.sql` | Live-session checks, password reset, deactivation, audit |
 | `202611160001_manage_enrollment_application.sql` | PB-09: Registrar functions, checklist table, data lockdown |
+| `202611170001_pb07_teacher_schedule.sql` | PB-07: `get_teacher_schedule()`; records the live `rooms`, `room_id`, `is_fixed` |
 
 Undo for the latest migration: [`supabase/rollback/`](supabase/rollback/). It re-opens
 applicant data to every signed-in account, so use it only in an emergency.
@@ -225,7 +227,9 @@ PR #23 merged into `feat/pb-09-manage-enrollment-application` on 16 Nov 2026.
 
 | Document | Covers |
 |---|---|
-| [manage-enrollment-application.md](docs/manage-enrollment-application.md) | PB-09 Registrar workflow, security, deployment, undo |
+| [backlog-status.md](docs/backlog-status.md) | Status of Gian's backlog items (EN-01, PB-03, PB-07, PB-09) and backlog corrections |
+| [manage-enrollment-application.md](docs/manage-enrollment-application.md) | PB-09 Registrar workflow, acceptance criteria, security, deployment, undo |
+| [pb07-teacher-schedule.md](docs/pb07-teacher-schedule.md) | PB-07 Teacher schedule view, acceptance criteria, deployment, test data |
 | [enrollment-setup.md](docs/enrollment-setup.md) | PB-12 environment variables, Supabase, Turnstile, Vercel |
 | [pb12-enrollment.md](docs/pb12-enrollment.md) | PB-12 implementation and field mapping |
 | [sc13-login-page.md](docs/sc13-login-page.md) | Staff sign-in and role-based dashboards |
@@ -241,5 +245,5 @@ PR #23 merged into `feat/pb-09-manage-enrollment-application` on 16 Nov 2026.
 - Status emails need a Resend-verified sender domain to reach real applicants.
 - The separate `testt` Vercel project uses the same database but older code; its
   Registrar page no longer loads applications. Use the live site above instead.
-- CMS (PB-01) and scheduling (PB-02, PB-07) are not built yet; the alumni section is on
+- CMS (PB-01) and schedule generation (PB-02) are not built yet, so the Teacher schedule (PB-07) stays empty until a run is published; the alumni section is on
   hold pending the client's decision.
