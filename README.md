@@ -132,7 +132,7 @@ Never put secrets in `VITE_` variables, and never commit `.env` or `.env.local`
 ```bash
 pnpm lint
 pnpm typecheck
-pnpm test        # 22 test files, 268 tests
+pnpm test        # 24 test files, 281 tests
 pnpm build
 ```
 
