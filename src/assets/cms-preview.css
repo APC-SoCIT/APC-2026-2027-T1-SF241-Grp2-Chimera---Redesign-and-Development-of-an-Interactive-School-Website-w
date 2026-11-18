@@ -280,6 +280,7 @@
 .cms-trash-list li { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 10px; padding: 10px 19px; border-top: 1px solid var(--cms-border); }
 .cms-trash-list strong, .cms-trash-list small { display: block; overflow-wrap: anywhere; }
 .cms-trash-list small { color: var(--cms-muted); margin-top: 2px; }
+.cms-trash-item-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; }
 
 .cms-shell.cms-signed-out { display: grid; grid-template-columns: minmax(0, 1fr); place-items: center; padding: 24px; }
 .cms-login { display: grid; grid-template-columns: 1fr 1.15fr; width: min(100%, 850px); background: white; border: 1px solid var(--cms-border); border-radius: 20px; overflow: hidden; box-shadow: 0 18px 55px #48142316; }
@@ -334,6 +335,7 @@
   .cms-login-campus img { width: 39px; height: 39px; }
   .cms-history-actions { padding-inline: 11px; gap: 7px; }
   .cms-trash-list li { padding-inline: 11px; }
+  .cms-trash-item-actions { grid-column: 2 / -1; justify-content: flex-start; }
   .cms-main { padding-inline: 13px; }
   .cms-hero {
     background-size: cover, auto 100%;

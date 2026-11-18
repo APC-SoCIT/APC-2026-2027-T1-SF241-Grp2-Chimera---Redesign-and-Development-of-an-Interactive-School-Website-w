@@ -13,13 +13,15 @@ export interface CmsLibrary {
   changes: CmsChange[];
   cursor: number;
   imageAssets: CmsImageAssets;
+  permanentlyDeletedIds?: string[];
 }
 
 const historyLimit = 50;
 
-function withWebsiteItems(items: CmsItem[]) {
+function withWebsiteItems(items: CmsItem[], deletedIds: string[] = []) {
   const existing = new Set(items.map((item) => item.id));
-  return [...items.map(prepareSample), ...websiteItems.filter((item) => !existing.has(item.id))];
+  return [...items.map(prepareSample), ...websiteItems.filter((item) => !existing.has(item.id))]
+    .filter((item) => !deletedIds.includes(item.id));
 }
 
 function prepareSample(item: CmsItem): CmsItem {
@@ -36,11 +38,16 @@ export function readLibrary(raw: string | null): CmsLibrary {
     if (Array.isArray(stored)) return { items: withWebsiteItems(stored), changes: [], cursor: 0, imageAssets: {} };
     if (stored && Array.isArray(stored.items) && Array.isArray(stored.changes)
         && Number.isInteger(stored.cursor) && stored.cursor >= 0 && stored.cursor <= stored.changes.length) {
+      const deletedIds = Array.isArray(stored.permanentlyDeletedIds)
+        ? stored.permanentlyDeletedIds.filter((id: unknown): id is string => typeof id === "string") : [];
+      const keepChange = (change: CmsChange) => !deletedIds.includes(change.after.id);
       return {
         ...stored,
-        items: withWebsiteItems(stored.items),
+        items: withWebsiteItems(stored.items, deletedIds),
+        permanentlyDeletedIds: deletedIds,
+        cursor: stored.changes.slice(0, stored.cursor).filter(keepChange).length,
         imageAssets: stored.imageAssets ?? {},
-        changes: stored.changes.map((change: CmsChange) => ({
+        changes: stored.changes.filter(keepChange).map((change: CmsChange) => ({
           ...change, before: change.before && prepareSample(change.before), after: prepareSample(change.after),
         })),
       };
@@ -67,7 +74,23 @@ export function recordChange(library: CmsLibrary, after: CmsItem, label: string,
   const imageAssets = Object.fromEntries(
     Object.entries({ ...library.imageAssets, ...newAssets }).filter(([id]) => referencedIds.has(id)),
   );
-  return { items, changes, cursor: changes.length, imageAssets };
+  return { ...library, items, changes, cursor: changes.length, imageAssets };
+}
+
+export function permanentlyRemoveItem(library: CmsLibrary, id: string): CmsLibrary {
+  if (!library.items.some((item) => item.id === id && item.deletedAt)) return library;
+  const items = library.items.filter((item) => item.id !== id);
+  const changes = library.changes.filter((change) => change.after.id !== id);
+  const cursor = library.changes.slice(0, library.cursor).filter((change) => change.after.id !== id).length;
+  const referencedIds = new Set(
+    [...items, ...changes.flatMap((change) => [change.before, change.after])]
+      .flatMap((item) => item?.images?.map((image) => image.id) ?? []),
+  );
+  return {
+    ...library, items, changes, cursor,
+    permanentlyDeletedIds: [...new Set([...(library.permanentlyDeletedIds ?? []), id])],
+    imageAssets: Object.fromEntries(Object.entries(library.imageAssets).filter(([assetId]) => referencedIds.has(assetId))),
+  };
 }
 
 export function stepHistory(library: CmsLibrary, action: "undo" | "redo"): CmsLibrary {

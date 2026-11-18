@@ -3,7 +3,7 @@ import CmsIcon from "./CmsIcon.vue";
 import { formatCmsDate, itemLabels, type CmsItem } from "@/lib/cms/preview";
 
 defineProps<{ items: CmsItem[]; nextUndo?: string; nextRedo?: string }>();
-const emit = defineEmits<{ step: ["undo" | "redo"]; restore: [CmsItem] }>();
+const emit = defineEmits<{ step: ["undo" | "redo"]; restore: [CmsItem]; remove: [CmsItem, MouseEvent] }>();
 </script>
 
 <template>
@@ -34,7 +34,7 @@ const emit = defineEmits<{ step: ["undo" | "redo"]; restore: [CmsItem] }>();
     <div class="cms-panel-heading">
       <div>
         <h2 id="cms-trash-title">Deleted items</h2>
-        <p>Restore content and PDF resources as drafts.</p>
+        <p>Restore items as drafts or remove them permanently. Permanent removal cannot be undone.</p>
       </div>
     </div>
     <ul v-if="items.length" class="cms-trash-list">
@@ -44,7 +44,11 @@ const emit = defineEmits<{ step: ["undo" | "redo"]; restore: [CmsItem] }>();
           <strong>{{ item.title }}</strong>
           <small>{{ itemLabels[item.type] }} · Deleted {{ formatCmsDate(item.deletedAt!) }}</small>
         </div>
-        <button type="button" class="cms-button" :aria-label="'Restore ' + item.title" @click="emit('restore', item)">Restore</button>
+        <div class="cms-trash-item-actions">
+          <button type="button" class="cms-button" :aria-label="'Restore ' + item.title" @click="emit('restore', item)">Restore</button>
+          <button type="button" class="cms-button cms-trash-action" :aria-label="'Remove permanently ' + item.title"
+            @click="emit('remove', item, $event)">Remove permanently</button>
+        </div>
       </li>
     </ul>
     <div v-else class="cms-empty">

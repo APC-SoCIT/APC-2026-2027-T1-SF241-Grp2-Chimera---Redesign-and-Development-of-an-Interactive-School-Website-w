@@ -5,7 +5,7 @@ import CmsEditor from "@/components/cms/CmsEditor.vue";
 import CmsIcon from "@/components/cms/CmsIcon.vue";
 import CmsSignIn from "@/components/cms/CmsSignIn.vue";
 import CmsTrash from "@/components/cms/CmsTrash.vue";
-import { recordChange, stepHistory, type CmsLibrary } from "@/lib/cms/history";
+import { permanentlyRemoveItem, recordChange, stepHistory, type CmsLibrary } from "@/lib/cms/history";
 import { blankItem, demoAdmin, formatCmsDate, itemLabels, type CmsItem, type ItemType } from "@/lib/cms/preview";
 import { useCmsLibrary, writeCmsLibrary } from "@/lib/cms/store";
 import type { CmsImageAssets } from "@/lib/cms/images";
@@ -15,7 +15,7 @@ import "@/assets/cms-preview.css";
 
 type Section = "overview" | "content" | "trash" | ItemType;
 type StatusFilter = "all" | PublicationStatus;
-type ItemAction = PublicationStatus | "trash";
+type ItemAction = PublicationStatus | "trash" | "remove";
 const navigation: { id: Section; title: string; icon: string }[] = [
   { id: "overview", title: "Overview", icon: "grid" },
   { id: "content", title: "All content", icon: "files" },
@@ -35,7 +35,7 @@ const statusOptions: { id: StatusFilter; label: string }[] = [
   { id: "draft", label: "Draft" }, { id: "archived", label: "Archived" },
 ];
 const statusActions: Record<ItemAction, string> = {
-  published: "Publish", draft: "Unpublish", archived: "Archive", trash: "Move to Trash",
+  published: "Publish", draft: "Unpublish", archived: "Archive", trash: "Move to Trash", remove: "Remove permanently",
 };
 const sessionKey = "sncs-cms-preview-session";
 
@@ -185,9 +185,29 @@ function closePublication() {
   actionTrigger = null;
 }
 
+function openPermanentRemoval(item: CmsItem, event: MouseEvent) {
+  actionTrigger = event.currentTarget as HTMLElement;
+  pending.value = { item, status: "remove" };
+  error.value = "";
+  void nextTick(() => dialog.value?.showModal());
+}
+
 function updatePublication() {
   const change = pending.value;
   if (!change) return;
+  if (change.status === "remove") {
+    const current = library.value.items.find((item) => item.id === change.item.id);
+    const next = permanentlyRemoveItem(library.value, change.item.id);
+    if (!current?.deletedAt || current.updatedAt !== change.item.updatedAt || !persist(next)) {
+      error.value = "This item could not be removed. It may have changed in another tab. Please close this dialog and try again.";
+      return;
+    }
+    actionTrigger = null;
+    dialog.value?.close();
+    notice.value = `“${change.item.title}” was permanently removed.`;
+    focusTitle();
+    return;
+  }
   const next = change.status === "trash"
     ? { ...change.item, deletedAt: new Date().toISOString() }
     : { ...change.item, status: change.status, publishedAt: change.status === "published" ? new Date().toISOString() : change.item.publishedAt };
@@ -292,7 +312,7 @@ function dismissMenu() {
           <p v-if="notice" class="cms-notice" role="status"><CmsIcon name="check" :size="18" />{{ notice }}</p>
           <p v-if="error" class="cms-error" role="alert">{{ error }}</p>
           <CmsTrash :items="deletedItems" :next-undo="nextUndo?.label" :next-redo="nextRedo?.label"
-            @restore="restoreItem" @step="changeHistory" />
+            @restore="restoreItem" @remove="openPermanentRemoval" @step="changeHistory" />
         </template>
         <template v-else>
           <div v-if="section === 'overview'" class="cms-hero">
@@ -412,9 +432,10 @@ function dismissMenu() {
 
     <dialog ref="publication-dialog" class="cms-dialog" aria-labelledby="cms-publication-title" @close="closePublication">
       <div v-if="pending" class="cms-dialog-inner">
-        <h2 id="cms-publication-title">{{ pending.status === 'trash' ? 'Move item to Trash?' : statusActions[pending.status] + ' item?' }}</h2>
+        <h2 id="cms-publication-title">{{ pending.status === 'remove' ? 'Remove item permanently?' : pending.status === 'trash' ? 'Move item to Trash?' : statusActions[pending.status] + ' item?' }}</h2>
         <p><strong>{{ pending.item.title }}</strong></p>
-        <p v-if="pending.status === 'published' && pending.item.type !== 'resource' && pending.item.visibility === 'public'">
+        <p v-if="pending.status === 'remove'">This permanently deletes the item and its change history from this workspace. It will disappear from Trash and cannot be restored or recovered with Undo or Redo.</p>
+        <p v-else-if="pending.status === 'published' && pending.item.type !== 'resource' && pending.item.visibility === 'public'">
           This makes the item visible on the connected public preview.
         </p>
         <p v-else-if="pending.status === 'published' && pending.item.type === 'resource'">This updates the PDF’s status in the workspace. Downloadable files use the school’s resource service.</p>
