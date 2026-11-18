@@ -4,6 +4,7 @@ import { RouterLink } from "vue-router";
 import SectionHeading from "@/components/SectionHeading.vue";
 import AnnouncementCard from "@/components/AnnouncementCard.vue";
 import EventCard from "@/components/EventCard.vue";
+import CampusModel from "@/components/CampusModel.vue";
 import { partitionEvents } from "@/lib/content/dates";
 import { getPublicSchoolContactInformation } from "@/lib/content/directory";
 import {
@@ -38,11 +39,7 @@ const schoolInformation = getPublicSchoolContactInformation();
           <RouterLink class="welcome-campus-link" to="/campus">Explore campus <span aria-hidden="true">→</span></RouterLink>
         </div>
       </div>
-      <figure class="welcome-photo">
-        <img src="/images/source-site/campus-front.jpg" width="960" height="541"
-          alt="Front entrance and courtyard of Sto. Niño Catholic School" fetchpriority="high" />
-        <figcaption>Sampaloc Street campus</figcaption>
-      </figure>
+      <CampusModel />
     </div>
   </section>
 
