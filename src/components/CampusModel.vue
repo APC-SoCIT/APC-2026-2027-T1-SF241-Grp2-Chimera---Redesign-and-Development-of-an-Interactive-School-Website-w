@@ -40,7 +40,7 @@ function draw() {
   const context = canvas?.getContext("2d");
   if (!canvas || !context || !width || !height) return;
   const yaw = angle.value * Math.PI / 180;
-  const pitch = 25 * Math.PI / 180;
+  const pitch = 34 * Math.PI / 180;
   const transform = ([x, y, z]: Point3) => {
     const side = x * Math.cos(yaw) + z * Math.sin(yaw);
     const depth = -x * Math.sin(yaw) + z * Math.cos(yaw);
@@ -58,25 +58,48 @@ function draw() {
   const centerX = width / 2 - (right + left) / 2 * scale;
   const centerY = height / 2 - (top + bottom) / 2 * scale;
 
-  context.clearRect(0, 0, width, height);
-  projected.sort((a, b) =>
-    (a.layer ?? 0) - (b.layer ?? 0) ||
-    a.points.reduce((sum, point) => sum + point.depth, 0) / a.points.length
-    - b.points.reduce((sum, point) => sum + point.depth, 0) / b.points.length,
-  );
+  // Per-pixel depth keeps small facade details visible over large wall faces
+  // and handles intersecting roofs correctly throughout the rotation range.
+  const ratio = canvas.width / width;
+  const pixels = context.createImageData(canvas.width, canvas.height);
+  const depths = new Float32Array(canvas.width * canvas.height).fill(-Infinity);
   for (const face of projected) {
-    context.beginPath();
-    face.points.forEach((point, index) => {
-      const x = point.x * scale + centerX, y = point.y * scale + centerY;
-      if (index === 0) context.moveTo(x, y);
-      else context.lineTo(x, y);
-    });
-    context.closePath();
-    context.fillStyle = face.color;
-    context.fill();
-    context.lineWidth = .35;
-    context.strokeStyle = face.color;
-    context.stroke();
+    const vertices = face.points.map((point) => ({
+      x: (point.x * scale + centerX) * ratio,
+      y: (point.y * scale + centerY) * ratio,
+      depth: point.depth,
+    }));
+    const channels = face.color.match(/\d+/g)!.map(Number);
+    const a = vertices[0]!;
+    for (let index = 1; index < vertices.length - 1; index++) {
+      const b = vertices[index]!, c = vertices[index + 1]!;
+      const area = (b.y - c.y) * (a.x - c.x) + (c.x - b.x) * (a.y - c.y);
+      if (Math.abs(area) < .001) continue;
+      const minX = Math.max(0, Math.floor(Math.min(a.x, b.x, c.x)));
+      const maxX = Math.min(canvas.width - 1, Math.ceil(Math.max(a.x, b.x, c.x)));
+      const minY = Math.max(0, Math.floor(Math.min(a.y, b.y, c.y)));
+      const maxY = Math.min(canvas.height - 1, Math.ceil(Math.max(a.y, b.y, c.y)));
+      for (let y = minY; y <= maxY; y++) {
+        for (let x = minX; x <= maxX; x++) {
+          const first = ((b.y - c.y) * (x + .5 - c.x) + (c.x - b.x) * (y + .5 - c.y)) / area;
+          const second = ((c.y - a.y) * (x + .5 - c.x) + (a.x - c.x) * (y + .5 - c.y)) / area;
+          const third = 1 - first - second;
+          if (first < -.00001 || second < -.00001 || third < -.00001) continue;
+          const depth = first * a.depth + second * b.depth + third * c.depth;
+          const position = y * canvas.width + x;
+          if (depth < depths[position]!) continue;
+          depths[position] = depth;
+          const pixel = position * 4;
+          pixels.data[pixel] = channels[0]!;
+          pixels.data[pixel + 1] = channels[1]!;
+          pixels.data[pixel + 2] = channels[2]!;
+          pixels.data[pixel + 3] = 255;
+        }
+      }
+    }
+  }
+  context.putImageData(pixels, 0, 0);
+  for (const face of projected) {
     if (face.label && Math.abs(angle.value) < 58) {
       const [a, b, , d] = face.points;
       if (!a || !b || !d) continue;
@@ -142,14 +165,14 @@ onBeforeUnmount(() => {
     </figcaption>
     <div v-if="!failed" class="campus-model-viewport">
     <canvas ref="campus-canvas" role="img"
-      :aria-label="`Three-dimensional illustration of the SNCS entrance, classrooms, palms, and courtyard. Viewing angle ${Math.round(angle)} degrees.`"
+      :aria-label="`Three-dimensional illustration of the white church, bell tower, red-roofed school buildings, and blue covered court. Viewing angle ${Math.round(angle)} degrees.`"
       aria-describedby="campus-model-help" @pointerdown="pointerDown" @pointermove="pointerMove"
       @pointerup="pointerUp" @pointercancel="pointerUp" @lostpointercapture="drag = undefined">
-      Illustrated model of the school entrance and courtyard.
+      Illustrated model of the church and school campus.
     </canvas>
     </div>
-    <img v-else class="campus-model-fallback" src="/images/source-site/campus-front.jpg"
-      alt="Sto. Niño Catholic School entrance and courtyard" width="960" height="541" />
+    <img v-else class="campus-model-fallback" src="/images/source-site/campus-aerial-reference.png"
+      alt="Aerial view of the white church, bell tower, and Sto. Niño Catholic School campus" width="1523" height="862" />
     <div v-if="!failed" class="campus-model-controls">
       <p id="campus-model-help">Drag left or right to explore</p>
       <div class="campus-model-buttons" role="group" aria-label="Campus rotation">
