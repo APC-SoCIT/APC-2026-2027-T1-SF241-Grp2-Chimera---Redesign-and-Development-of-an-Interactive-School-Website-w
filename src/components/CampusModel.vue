@@ -40,7 +40,7 @@ function draw() {
   const context = canvas?.getContext("2d");
   if (!canvas || !context || !width || !height) return;
   const yaw = angle.value * Math.PI / 180;
-  const pitch = 34 * Math.PI / 180;
+  const pitch = 42 * Math.PI / 180;
   const transform = ([x, y, z]: Point3) => {
     const side = x * Math.cos(yaw) + z * Math.sin(yaw);
     const depth = -x * Math.sin(yaw) + z * Math.cos(yaw);

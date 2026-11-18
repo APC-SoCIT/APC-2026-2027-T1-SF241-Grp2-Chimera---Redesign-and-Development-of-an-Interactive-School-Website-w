@@ -161,13 +161,14 @@ export function createCampusModel(): CampusFace[] {
   }
 
   // Approximate arrangement from the supplied aerial photograph.
-  box(0, -.25, -1.5, 29.5, .5, 28, "#d7c5a9");
-  box(0, .035, -1.5, 29.15, .07, 27.6, "#c9ccbf");
+  box(1.25, -.25, -3.5, 33, .5, 32, "#d7c5a9");
+  box(1.25, .035, -3.5, 32.65, .07, 31.6, "#c9ccbf");
   box(-3, .1, 10.1, 18.5, .13, 4.3, "#bb7964");
-  box(11.25, .11, .2, 5.3, .06, 23.7, "#b2b0a7");
-  for (let z = -9; z < 10; z += 2.2) box(12.9, .15, z, 2.1, .018, .04, white);
+  box(13.25, .11, -1.8, 5.3, .06, 27.7, "#b2b0a7");
+  for (let z = -9; z < 10; z += 2.2) box(14.9, .15, z, 2.1, .018, .04, white);
 
   // Rear school wing and perpendicular building on the right.
+  const schoolStart = faces.length;
   classroomBlock(-1.5, -12.4, 24, 3.5, 6.5);
   classroomBlock(10.8, -8.7, 4.4, 9.6, 6.5);
   polygon([[-11, 6.95, -11.55], [7.5, 6.95, -11.55], [7.5, 7.3, -12.15], [-11, 7.3, -12.15]],
@@ -186,6 +187,10 @@ export function createCampusModel(): CampusFace[] {
       [4.5 + Math.cos(b) * 4.3, 3.75 + Math.sin(b) * .9, -8.35],
       [4.5 + Math.cos(a) * 4.3, 3.75 + Math.sin(a) * .9, -8.35],
     ], segment < 6 ? "#9ccbd7" : "#b9e0e6");
+  }
+  // Open up the illustrative courtyard so the school is visible beyond the church.
+  for (const face of faces.slice(schoolStart)) {
+    face.points = face.points.map(([x, y, z]) => [x + 1.75, y, z - 3.5]);
   }
 
   // Church nave, stepped red roof, and broad white front facade.
@@ -250,7 +255,7 @@ export function createCampusModel(): CampusFace[] {
   // Trees screen the sides and connect the church with the school courtyard.
   for (const [x, z, h, r] of [
     [-12, -7, 5.2, 2], [-11, -2, 5.3, 2.1], [-12, 3.4, 4, 1.7],
-    [-6, -8.4, 4.2, 1.8], [-1.6, -8.9, 4, 1.6], [8.1, -1.2, 3.8, 1.7],
+    [-4.25, -11.9, 3.4, 1.5], [.15, -12.4, 3.2, 1.3], [9.85, -4.7, 3.8, 1.7],
     [8.8, 3.4, 3.6, 1.3], [-12, 9.2, 2.2, 1.3],
   ]) tree(x!, z!, h!, r!);
   box(5.3, 1.45, -.1, 3.8, 2.8, 2.4, "#bfc7ba");
@@ -258,8 +263,8 @@ export function createCampusModel(): CampusFace[] {
 
   // Parking row seen along the right edge of the reference.
   for (let z = -1.5; z <= 7; z += 2.3) {
-    box(12, .38, z, 1.6, .65, .88, "#e3e1d7");
-    box(12, .79, z, .88, .3, .78, "#626b6b");
+    box(14, .38, z, 1.6, .65, .88, "#e3e1d7");
+    box(14, .79, z, .88, .3, .78, "#626b6b");
   }
   return faces;
 }
