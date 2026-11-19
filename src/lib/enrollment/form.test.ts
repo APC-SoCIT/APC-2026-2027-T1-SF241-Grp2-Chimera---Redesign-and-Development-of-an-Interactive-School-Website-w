@@ -73,7 +73,10 @@ describe('registration form validation', () => {
   it('requires the schema-required fields and the full name of any supplied guardian', () => {
     const result = validateApplication({ ...validApplication, religion: '', messenger: '', fatherOccupation: 'Teacher' }, '2026-2027');
     expect(Object.keys(result.errors)).toEqual(expect.arrayContaining(['religion', 'messenger', 'fatherFullName']));
-    expect(validateApplication({ ...validApplication, guardianFullName: '', guardianContact: '', previousSchool: '', previousAddress: '' }, '2026-2027').errors).toEqual({});
+    expect(validateApplication({ ...validApplication, guardianFullName: '', guardianContact: '', previousAddress: '' }, '2026-2027').errors).toEqual({});
+    // The former school is optional only when the checklist needs nothing from it (old students, pre-school).
+    expect(validateApplication({ ...validApplication, studentStatus: 'Old', previousSchool: '', previousAddress: '' }, '2026-2027').errors).toEqual({});
+    expect(validateApplication({ ...validApplication, previousSchool: '' }, '2026-2027').errors).toEqual({ previousSchool: 'Former school’s name is required.' });
   });
   it('handles birthdays, leap dates and future dates', () => {
     expect(ageAt('2010-10-02', '2026-10-01')).toBe('15');
