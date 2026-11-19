@@ -2,17 +2,16 @@
   Author: Jan Sultan | Email: jgsultan@student.apc.edu.ph
   Created Date: 20261113
   Modified by: Jan Sultan | Email: jgsultan@student.apc.edu.ph
-  Modified Date: 20261114
-  Modified by: Gian Mandac (PB-07 teacher schedule panel)
-  Modified Date: 20261117
-  Modified by: Gian Mandac (branded staff portal bar with the SNCS seal)
-  Modified Date: 20261118
+  Modified Date: 20261119 (verify staff access on every session change)
+  Modified by: Gian Mandac (PB-07 teacher schedule panel; branded staff portal bar with the SNCS seal)
+  Modified Date: 20261119
 -->
 <script setup lang="ts">
-import { computed, onUnmounted, ref } from "vue";
+import { computed, onUnmounted, ref, watch } from "vue";
+import type { Session } from "@supabase/supabase-js";
 import { RouterLink, useRouter } from "vue-router";
 import { getStaffSupabaseClient } from "@/lib/supabase";
-import type { StaffRole } from "@/lib/staff-auth";
+import { getStaffPortalRole, type StaffRole } from "@/lib/staff-auth";
 import StaffAccountsPanel from "@/components/StaffAccountsPanel.vue";
 import RegistrarApplicationsPanel from "@/components/RegistrarApplicationsPanel.vue";
 import TeacherSchedulePanel from "@/components/TeacherSchedulePanel.vue";
@@ -23,6 +22,8 @@ const router = useRouter();
 const { auth } = getStaffSupabaseClient();
 const signingOut = ref(false);
 const signOutError = ref(false);
+const accessVerified = ref(false);
+const contentVersion = ref(0);
 const staffName = ref("");
 
 const roleLabels: Record<StaffRole, string> = { admin: "Admin", registrar: "Registrar", teacher: "Teacher" };
@@ -33,34 +34,78 @@ const initials = computed(() => {
   return (words[0].charAt(0) + (words.length > 1 ? words[words.length - 1].charAt(0) : "")).toUpperCase();
 });
 
-type StaffSession = { expires_at?: number; user?: { email?: string; app_metadata?: Record<string, unknown> } } | null;
-
 /** Name given when the Admin created the account; falls back to the sign-in email. */
-function nameFrom(session: StaffSession) {
+function nameFrom(session: Session | null) {
   const provisioning = session?.user?.app_metadata?.chimera_staff_provisioning as { full_name?: unknown } | undefined;
   return typeof provisioning?.full_name === "string" && provisioning.full_name.trim()
     ? provisioning.full_name.trim()
     : session?.user?.email ?? "";
 }
 
-// Session Expiry START
-// Token refresh replaces the deadline. An expired session leaves the open dashboard even if refresh fails.
+// Session Access START
 let expiryTimer: ReturnType<typeof setTimeout> | undefined;
-const { data: { subscription } } = auth.onAuthStateChange((_event, session) => {
+let accessTimer: ReturnType<typeof setTimeout> | undefined;
+let currentSession: Session | null = null;
+let authorizedUserId: string | undefined;
+let authorizedRole: StaffRole | undefined;
+let accessVersion = 0;
+
+function clearAccess() {
+  accessVerified.value = false;
+  contentVersion.value += 1;
+  accessVersion += 1;
+  authorizedUserId = undefined;
+  authorizedRole = undefined;
   clearTimeout(expiryTimer);
-  staffName.value = nameFrom(session as StaffSession);
+  clearTimeout(accessTimer);
+}
+
+function checkSession(session: Session | null) {
+  currentSession = session;
+  staffName.value = nameFrom(session);
+  // Keep forms mounted for the verified account while its current role is rechecked.
+  if (session?.user?.id !== authorizedUserId || props.role !== authorizedRole) clearAccess();
+  clearTimeout(expiryTimer);
+  clearTimeout(accessTimer);
+  const version = ++accessVersion;
   const remaining = (session?.expires_at ?? 0) * 1000 - Date.now();
-  if (remaining <= 0) {
+  if (!session?.user?.id || remaining <= 0) {
+    clearAccess();
     void router.replace({ name: "login" });
     return;
   }
-  expiryTimer = setTimeout(() => void router.replace({ name: "login" }), remaining);
-});
+  expiryTimer = setTimeout(() => {
+    clearAccess();
+    void router.replace({ name: "login" });
+  }, remaining);
+  // Run Auth calls after the synchronous listener releases Supabase's session lock.
+  accessTimer = setTimeout(async () => {
+    try {
+      const role = await getStaffPortalRole();
+      if (version !== accessVersion) return;
+      if (role && role === props.role) {
+        authorizedUserId = session.user.id;
+        authorizedRole = role;
+        accessVerified.value = true;
+        return;
+      }
+    } catch {
+      // Clear protected records when renewed access cannot be verified.
+    }
+    if (version === accessVersion) {
+      clearAccess();
+      void router.replace({ name: "login" });
+    }
+  }, 0);
+}
+
+const { data: { subscription } } = auth.onAuthStateChange((_event, session) => checkSession(session));
+watch(() => props.role, () => checkSession(currentSession));
 onUnmounted(() => {
-  clearTimeout(expiryTimer);
+  clearAccess();
   subscription.unsubscribe();
 });
-// Session Expiry END
+// Session Access END
 
 // Staff Sign-out START
 async function signOut() {
@@ -80,7 +125,7 @@ async function signOut() {
 </script>
 
 <template>
-  <div class="portal">
+  <div v-if="accessVerified" :key="contentVersion" class="portal">
     <header class="portal-bar">
       <div class="portal-bar-inner">
         <img class="portal-seal" src="/images/source-site/sncs-seal.png" alt="Sto. Niño Catholic School seal" width="46" height="46" />
@@ -111,6 +156,7 @@ async function signOut() {
       <TeacherSchedulePanel v-if="role === 'teacher'" />
     </section>
   </div>
+  <p v-else class="portal-verifying" role="status">Verifying staff access…</p>
 </template>
 
 <style scoped>
@@ -134,6 +180,7 @@ async function signOut() {
 .portal-signout:disabled { opacity: .6; cursor: progress; }
 .portal-bar :focus-visible { outline: 3px solid var(--gold-300); outline-offset: 2px; }
 .portal-main { width: min(1200px, calc(100% - 32px)); margin-inline: auto; padding: 1.6rem 0 4rem; }
+.portal-verifying { width: min(1200px, calc(100% - 32px)); margin: 3rem auto; color: var(--muted); }
 .portal-alert { margin: 0 0 1rem; padding: .7rem 1rem; border: 1px solid #f3c1bb; border-radius: 8px; background: #fde3df; color: var(--red-800); font-weight: 700; }
 
 @media (max-width: 760px) {
