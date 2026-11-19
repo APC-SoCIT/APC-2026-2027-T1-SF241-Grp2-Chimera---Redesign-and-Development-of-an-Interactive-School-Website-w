@@ -43,8 +43,8 @@ const facilities = getPublicFacilities();
 
   <section id="alumni" class="section section-soft scroll-target">
     <div class="container feature-grid reverse">
-      <div class="feature-art">
-        <img src="/images/source-site/alumni-achievers.jpg" alt="SNCS alumni achievers" />
+      <div class="feature-art alumni-poster">
+        <img src="/images/source-site/alumni-achievers.jpg" alt="SNCS alumni achievers" width="1280" height="719" loading="lazy" />
       </div>
       <div class="feature-copy">
         <p class="eyebrow">Alumni community</p>

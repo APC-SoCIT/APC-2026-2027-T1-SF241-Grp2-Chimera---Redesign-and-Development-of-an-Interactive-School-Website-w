@@ -95,6 +95,8 @@
 .alumni-editorial-layout > div > p:not(.eyebrow) { color: var(--muted); }
 .alumni-editorial figure { margin: 0; }
 .alumni-editorial figcaption { color: var(--muted); font-size: .875rem; margin-top: .8rem; }
+.feature-art.alumni-poster { min-height: 0; }
+.feature-art.alumni-poster img { width: 100%; height: auto; min-height: 0; object-fit: contain; }
 .family-questions { background: #f6f5f2; }
 .faq-layout { display: grid; grid-template-columns: 1fr 1.45fr; gap: 5rem; }
 .faq-layout > div > p:not(.eyebrow) { color: var(--muted); }

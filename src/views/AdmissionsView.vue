@@ -19,7 +19,6 @@ const selected = computed(() => groups.find((group) => group.id === selectedId.v
         <SectionHeading eyebrow="Before you apply" title="Choose your applicant group" description="Contact the Registrar to confirm enrollment availability and the current requirements for your grade level." />
         <div class="registration-actions">
           <RouterLink class="button button-secondary" to="/enrollment">Apply for enrollment</RouterLink>
-          <a class="text-link" href="https://www.sncstaguig.com/registration">Official registration page →</a>
           <RouterLink class="text-link" to="/contact#registrar">Contact the Registrar →</RouterLink>
         </div>
       </div>
@@ -32,7 +31,6 @@ const selected = computed(() => groups.find((group) => group.id === selectedId.v
         <p>{{ selected.introduction }}</p>
         <ul class="document-checklist"><li v-for="requirement in selected.requirements" :key="requirement">{{ requirement }}</li></ul>
         <div class="checklist-notes"><p v-for="note in selected.notes" :key="note">{{ note }}</p></div>
-        <a class="text-link" :href="selected.sourceUrl" target="_blank" rel="noopener noreferrer">View the school’s requirements<span class="sr-only"> (opens a new tab)</span> →</a>
       </article>
       <p v-else class="empty-state">Admission requirements will be posted here when available. Please contact the Registrar for guidance.</p>
     </div>
