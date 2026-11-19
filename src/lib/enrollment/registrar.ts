@@ -120,3 +120,20 @@ export async function sendStatusEmail(reference: string) {
   });
   if (error) throw new RegistrarError("unavailable", "The status email could not be sent.");
 }
+
+export type StatusCount = { count: number; more: boolean; oldest?: string };
+
+/**
+ * Live status counts for the Registrar dashboard. Uses the same role-checked search,
+ * one call per status; a page holds 25 rows, so larger totals are shown as "25+".
+ */
+export async function countApplicationsByStatus(): Promise<Record<ApplicationStatus, StatusCount>> {
+  const statuses = Object.keys(applicationStatuses) as ApplicationStatus[];
+  const results = await Promise.all(statuses.map((status) =>
+    searchApplications({ query: "", status, from: "", to: "" }, 0)));
+  return Object.fromEntries(statuses.map((status, index) => {
+    const { rows, hasMore } = results[index];
+    // Rows are newest first, so the last row is the oldest on this page.
+    return [status, { count: rows.length, more: hasMore, oldest: rows.at(-1)?.submitted_at }];
+  })) as Record<ApplicationStatus, StatusCount>;
+}
