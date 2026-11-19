@@ -7,11 +7,10 @@ const route = useRoute();
 
 const navigation = [
   { to: "/about", label: "About" },
-  { to: "/campus", label: "Campus" },
+  { to: "/#learning-levels", label: "Learning" },
+  { to: "/campus", label: "Campus life" },
   { to: "/news", label: "News" },
-  { to: "/events", label: "Calendar" },
-  { to: "/resources", label: "TLC Forms" },
-  { to: "/contact", label: "Contacts" },
+  { to: "/contact", label: "Contact" },
 ];
 
 function closeMenu() {
@@ -30,6 +29,7 @@ watch(() => route.fullPath, closeMenu);
 
 <template>
   <header class="site-header">
+    <div class="school-utility"><div class="container"><span>Faith · Excellence · Service</span><nav aria-label="Community links"><RouterLink to="/#current-families">Current families</RouterLink><RouterLink to="/events#school-calendar">School calendar</RouterLink><a href="tel:+63288379702">(02) 8837-9702</a></nav></div></div>
     <div class="container header-inner">
       <RouterLink class="brand" to="/" aria-label="Sto. Niño Catholic School home">
         <img
@@ -49,13 +49,13 @@ watch(() => route.fullPath, closeMenu);
         <RouterLink v-for="item in navigation" :key="item.to" :to="item.to">
           {{ item.label }}
         </RouterLink>
-        <RouterLink class="button button-secondary nav-registration" to="/admissions">Registration</RouterLink>
+        <RouterLink class="button button-secondary nav-registration" to="/admissions">Admissions</RouterLink>
       </nav>
 
       <details ref="menu" class="mobile-menu" @keydown.esc="dismissMenu">
         <summary>Menu</summary>
         <nav aria-label="Mobile navigation">
-          <RouterLink class="mobile-registration" to="/admissions" @click="closeMenu">Registration</RouterLink>
+          <RouterLink class="mobile-registration" to="/admissions" @click="closeMenu">Admissions</RouterLink>
           <RouterLink
             v-for="item in navigation"
             :key="item.to"

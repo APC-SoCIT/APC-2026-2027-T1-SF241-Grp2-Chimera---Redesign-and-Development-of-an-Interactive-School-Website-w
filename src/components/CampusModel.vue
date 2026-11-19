@@ -100,7 +100,7 @@ function draw() {
   }
   context.putImageData(pixels, 0, 0);
   for (const face of projected) {
-    if (face.label && Math.abs(angle.value) < 58) {
+    if (face.label && width >= 520 && Math.abs(angle.value) < 40) {
       const [a, b, , d] = face.points;
       if (!a || !b || !d) continue;
       context.save();

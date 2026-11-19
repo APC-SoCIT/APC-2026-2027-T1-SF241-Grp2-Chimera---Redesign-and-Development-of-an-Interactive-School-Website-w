@@ -172,7 +172,7 @@ export function createCampusModel(): CampusFace[] {
   classroomBlock(-1.5, -12.4, 24, 3.5, 6.5);
   classroomBlock(10.8, -8.7, 4.4, 9.6, 6.5);
   polygon([[-11, 6.95, -11.55], [7.5, 6.95, -11.55], [7.5, 7.3, -12.15], [-11, 7.3, -12.15]],
-    roof, "STO. NIÑO CATHOLIC SCHOOL");
+    roof);
 
   // Blue arched roof over the court behind the church.
   for (const x of [.5, 8.5]) {

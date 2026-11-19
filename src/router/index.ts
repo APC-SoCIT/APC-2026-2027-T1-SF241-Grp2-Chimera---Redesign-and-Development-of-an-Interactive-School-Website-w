@@ -1,4 +1,4 @@
-import { createRouter, createWebHistory } from "vue-router";
+import { createRouter, createWebHistory, createMemoryHistory } from "vue-router";
 import AboutView from "@/views/AboutView.vue";
 import AdmissionsView from "@/views/AdmissionsView.vue";
 import AnnouncementView from "@/views/AnnouncementView.vue";
@@ -11,10 +11,10 @@ import NewsView from "@/views/NewsView.vue";
 import { cmsPreviewEnabled } from "@/lib/cms/config";
 
 const router = createRouter({
-  history: createWebHistory(import.meta.env.BASE_URL),
+  history: import.meta.env.SSR ? createMemoryHistory(import.meta.env.BASE_URL) : createWebHistory(import.meta.env.BASE_URL),
   scrollBehavior: (to, _from, savedPosition) => {
     if (savedPosition) return savedPosition;
-    if (to.hash) return { el: to.hash, top: 96 };
+    if (to.hash) return { el: to.hash, top: 148 };
     return { top: 0, behavior: "instant" };
   },
   routes: [
@@ -39,7 +39,7 @@ const router = createRouter({
 
 router.afterEach((to) => {
   const title = typeof to.meta.title === "string" ? `${to.meta.title} | ` : "";
-  document.title = `${title}Sto. Niño Catholic School, Inc.`;
+  if (typeof document !== "undefined") document.title = `${title}Sto. Niño Catholic School, Inc.`;
 });
 
 export default router;

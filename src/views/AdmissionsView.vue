@@ -1,17 +1,19 @@
 <script setup lang="ts">
 import { computed, ref } from "vue";
 import { RouterLink } from "vue-router";
+import { useRoute } from "vue-router";
 import PageHero from "@/components/PageHero.vue";
 import SectionHeading from "@/components/SectionHeading.vue";
 import { getPublicAdmissionGroups } from "@/lib/content/admissions";
 const groups = getPublicAdmissionGroups();
-const selectedId = ref(groups[0]?.id);
+const route = useRoute();
+const selectedId = ref(groups.find((group) => group.id === route.query.group)?.id ?? groups[0]?.id);
 const selected = computed(() => groups.find((group) => group.id === selectedId.value));
 </script>
 
 <template>
   <PageHero eyebrow="Admissions guidance" title="Your next chapter starts here" description="Find the documents to prepare for your child’s admission to SNCS." />
-  <section class="section">
+  <section id="requirements" class="section scroll-target">
     <div class="container">
       <div class="admissions-intro">
         <SectionHeading eyebrow="Before you apply" title="Choose your applicant group" description="Contact the Registrar to confirm enrollment availability and the current requirements for your grade level." />
