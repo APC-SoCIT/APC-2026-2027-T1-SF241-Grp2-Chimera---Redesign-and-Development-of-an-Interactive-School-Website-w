@@ -24,7 +24,10 @@ The project follows the architecture proposed in the SSYSADD1 paper:
 - **Authentication (future backlog):** Express-managed authentication and sessions
 - **Scheduling (future backlog):** a separate Python service using Google OR-Tools
 
-Staff authentication, Registrar screens, CMS, and scheduling remain future work.
+The browser-local CMS design preview is available at `/admin` when enabled.
+See [CMS preview deployment](docs/cms-preview-deployment.md) for GitHub and Vercel
+settings. Production staff authentication, shared CMS persistence, Registrar
+screens, and scheduling remain future work.
 
 ## PB-10 public website
 
@@ -91,8 +94,9 @@ replace this data source while preserving the page components and enforcing the
 same `published` and `public` visibility contract. This frontend filter is not a
 database access policy: a future backend must return only public records and
 enforce authorization before sending data to the browser. Resource reads already
-use RLS and limited column grants. CMS editing screens, other Supabase content
-adapters, and staff authentication remain pending. PB-12 adds enrollment
+use RLS and limited column grants. The CMS design preview stores edits and
+uploaded images in each browser. Shared CMS content adapters and production
+staff authentication remain pending. PB-12 adds enrollment
 submission; live use requires the server configuration described above.
 
 ## Asset note
