@@ -109,3 +109,18 @@ it("lets the Registrar decline the status email", async () => {
     wrapper.unmount();
   }
 });
+
+it("shows requirement progress and closes from the backdrop", async () => {
+  client.rpc.mockResolvedValue({ data: structuredClone(application), error: null });
+  const wrapper = mountDetail();
+  try {
+    await flushPromises();
+    expect(wrapper.get("h2").text()).toBe("Test Example");
+    const bar = wrapper.get('[role="progressbar"]');
+    expect(bar.attributes("aria-valuenow")).toBe("1");
+    await wrapper.get(".detail-scrim").trigger("click");
+    expect(wrapper.emitted("close")).toHaveLength(1);
+  } finally {
+    wrapper.unmount();
+  }
+});

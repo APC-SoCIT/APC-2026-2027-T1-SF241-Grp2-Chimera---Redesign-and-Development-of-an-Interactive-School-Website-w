@@ -80,3 +80,50 @@ it("shows access denied when the session is not a Registrar", async () => {
     wrapper.unmount();
   }
 });
+
+it("shows live status counts and filters the list when a status tile is chosen", async () => {
+  const row = (status: string) => ({ reference_no: `SNCS-${status}`, first_name: "Test", surname: "Example", grade_level: "Grade 7", status, submitted_at: "2026-11-14T00:00:00Z" });
+  client.rpc.mockImplementation(async (_name: string, args: { p_status: string | null }) => ({
+    data: args.p_status === "pending" ? [row("pending"), row("pending"), row("pending")]
+      : args.p_status === "for_review" ? [row("for_review")]
+      : args.p_status ? [] : [row("pending"), row("for_review")],
+    error: null,
+  }));
+  const wrapper = mount(RegistrarApplicationsPanel, { props: { staffName: "Ana Reyes" } });
+  try {
+    await flushPromises();
+    expect(wrapper.get("h2").text()).toBe("3 new applications to review");
+    expect(wrapper.text()).toContain("Ana");
+    const tiles = wrapper.findAll(".tile");
+    expect(tiles.map((tile) => tile.get(".tile-count").text())).toEqual(["3", "1", "0", "0"]);
+    await tiles[1].trigger("click");
+    await flushPromises();
+    expect(client.rpc).toHaveBeenLastCalledWith("search_registrar_applications", {
+      p_query: null, p_status: "for_review", p_from: null, p_to: null, p_offset: 0,
+    });
+    expect(tiles[1].attributes("aria-pressed")).toBe("true");
+    await tiles[1].trigger("click");
+    await flushPromises();
+    expect(client.rpc).toHaveBeenLastCalledWith("search_registrar_applications", {
+      p_query: null, p_status: null, p_from: null, p_to: null, p_offset: 0,
+    });
+  } finally {
+    wrapper.unmount();
+  }
+});
+
+it("shows 25+ when a status has more than one page of applications", async () => {
+  const rows = Array.from({ length: 26 }, (_, index) => ({
+    reference_no: `SNCS-${index}`, first_name: "Test", surname: "Example", grade_level: "Grade 7", status: "pending", submitted_at: "2026-11-14T00:00:00Z",
+  }));
+  client.rpc.mockImplementation(async (_name: string, args: { p_status: string | null }) => ({
+    data: args.p_status === "pending" || !args.p_status ? rows : [], error: null,
+  }));
+  const wrapper = mount(RegistrarApplicationsPanel);
+  try {
+    await flushPromises();
+    expect(wrapper.get("h2").text()).toBe("25+ new applications to review");
+  } finally {
+    wrapper.unmount();
+  }
+});
