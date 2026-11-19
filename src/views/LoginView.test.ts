@@ -2,7 +2,7 @@
  * Author: Jan Sultan | Email: jgsultan@student.apc.edu.ph
  * Created Date: 20261111
  * Modified by: Jan Sultan | Email: jgsultan@student.apc.edu.ph
- * Modified Date: 20261114
+ * Modified Date: 20261119
  */
 // @vitest-environment jsdom
 import { mount, flushPromises, type VueWrapper } from "@vue/test-utils";
@@ -64,7 +64,10 @@ describe("staff login and protected routes", () => {
     expect(wrapper.get("#login-password").attributes("type")).toBe("password");
   });
 
-  it.each(["admin", "registrar", "teacher"] as const)("opens the guarded dashboard after a valid %s login", async (role) => {
+  it.each([
+    ["admin", "/admin"], ["registrar", "/registrar"], ["teacher", "/teacher"],
+    ["academic_coordinator", "/academic-coordinator"],
+  ] as const)("opens the guarded dashboard after a valid %s login", async (role, path) => {
     vi.mocked(signInStaff).mockResolvedValue(role);
     vi.mocked(getStaffPortalRole).mockResolvedValue(role);
     const wrapper = render();
@@ -75,7 +78,7 @@ describe("staff login and protected routes", () => {
     // The dashboard is a lazy route. Wait for its module before asserting navigation.
     await vi.dynamicImportSettled();
     await vi.waitFor(() => {
-      expect(router.currentRoute.value.path).toBe(`/${role}`);
+      expect(router.currentRoute.value.path).toBe(path);
       expect((wrapper.get("#login-password").element as HTMLInputElement).value).toBe("");
     });
     expect(signInStaff).toHaveBeenCalledWith("staff@example.com", " example password ");
@@ -105,6 +108,13 @@ describe("staff login and protected routes", () => {
     ["registrar", "/teacher"],
     ["teacher", "/admin"],
     ["teacher", "/registrar"],
+    [null, "/academic-coordinator"],
+    ["teacher", "/academic-coordinator"],
+    ["registrar", "/academic-coordinator"],
+    ["admin", "/academic-coordinator"],
+    ["academic_coordinator", "/admin"],
+    ["academic_coordinator", "/registrar"],
+    ["academic_coordinator", "/teacher"],
   ] as const)("redirects a %s session trying to open %s", async (role, path) => {
     vi.mocked(getStaffPortalRole).mockResolvedValue(role);
     await router.push(path);

@@ -167,3 +167,15 @@ it("does not restore protected records if access resolves after expiry", async (
   expect(replace).toHaveBeenCalledWith({ name: "login" });
 });
 // Account Switch Regression END
+
+it("opens the Coordinator dashboard with its own role and no Admin account panel", async () => {
+  emit("INITIAL_SESSION", 10);
+  await vi.advanceTimersByTimeAsync(0);
+  await dashboard.setProps({ heading: "Academic Coordinator dashboard", role: "academic_coordinator" });
+  getStaffPortalRole.mockResolvedValue("academic_coordinator");
+  emit("INITIAL_SESSION", 10, "coordinator-id");
+  await vi.advanceTimersByTimeAsync(0);
+  expect(dashboard.get("h1").text()).toBe("Academic Coordinator dashboard");
+  expect(dashboard.find('[data-testid="staff-list"]').exists()).toBe(false);
+  expect(replace).not.toHaveBeenCalled();
+});
