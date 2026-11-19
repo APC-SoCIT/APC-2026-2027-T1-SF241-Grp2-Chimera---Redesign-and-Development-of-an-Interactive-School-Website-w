@@ -3,6 +3,8 @@ import { computed, nextTick, onMounted, reactive, ref, watch } from 'vue';
 import { RouterLink } from 'vue-router';
 import EnrollmentCaptcha from '@/components/EnrollmentCaptcha.vue';
 import { ageAt, schoolLevels, sectionsFor, todayInManila, validateApplication, type Application, type FieldErrors } from '@/lib/enrollment/form';
+import { checklistFor } from '@/lib/enrollment/checklist';
+import type { Requirement } from '@/lib/enrollment/requirements';
 
 type Config = { status: 'open' | 'closed'; schoolYear: string; siteKey: string; periodId: string | null };
 const config = ref<Config>();
@@ -25,6 +27,9 @@ const submissionId = ref(crypto.randomUUID());
 const errorSummary = ref<HTMLElement>();
 const reviewHeading = ref<HTMLElement>();
 const receiptHeading = ref<HTMLElement>();
+// What to bring: the same list the Registrar ticks, built from the applicant's answers.
+const checklist = computed(() => checklistFor(data));
+const receiptChecklist = ref<Requirement[]>([]);
 
 watch(() => data.level, () => { data.gradeLevel = ''; data.strand = ''; delete errors.value.gradeLevel; delete errors.value.strand; });
 watch(() => data.gradeLevel, () => { data.strand = ''; delete errors.value.strand; });
@@ -93,6 +98,7 @@ async function submit() {
       return;
     }
     if (!result.reference || result.status !== 'Pending') throw new Error();
+    receiptChecklist.value = checklist.value;
     receipt.value = result;
     // Keep the receipt, discard personal details after confirmed persistence.
     Object.keys(data).forEach(key => delete data[key]);
@@ -142,6 +148,13 @@ async function submit() {
         <strong class="receipt-reference">{{ receipt.reference }}</strong>
         <p>Save or take a screenshot of this reference number.</p>
         <p>{{ receipt.message }}</p>
+        <div v-if="receiptChecklist.length" class="checklist-preview">
+          <h3>What to bring to the Registrar’s Office</h3>
+          <p>Bring these with your reference number. The Registrar checks each item when you visit.</p>
+          <ul>
+            <li v-for="item in receiptChecklist" :key="item.key">{{ item.label }}<span v-if="item.optional" class="optional"> (if applicable)</span></li>
+          </ul>
+        </div>
         <RouterLink class="button button-secondary" to="/contact">Registrar contact details</RouterLink>
       </div>
       <div v-else-if="config.status === 'closed'" class="enrollment-notice" role="status">
@@ -184,6 +197,13 @@ async function submit() {
           <div v-for="section in sections" :key="section.title" class="review-section">
             <h3>{{ section.title }}</h3>
             <dl><template v-for="field in section.fields" :key="field.key"><div><dt>{{ field.label }}</dt><dd>{{ (field.key === 'level' ? schoolLevels[data[field.key]]?.label : data[field.key]) || 'Not provided' }}</dd></div></template></dl>
+          </div>
+          <div v-if="checklist.length" class="review-section checklist-preview">
+            <h3>What to bring to the Registrar’s Office</h3>
+            <p>Based on your answers above. The Registrar checks each item when you visit.</p>
+            <ul>
+              <li v-for="item in checklist" :key="item.key">{{ item.label }}<span v-if="item.optional" class="optional"> (if applicable)</span></li>
+            </ul>
           </div>
           <label class="confirmation-check"><input id="confirmation" v-model="confirmed" type="checkbox" :disabled="busy" /> I confirm that the details are accurate and understand that I must visit the Registrar’s Office to continue enrollment.</label>
           <label class="confirmation-check"><input id="privacyConsent" v-model="privacyConsent" type="checkbox" :disabled="busy" :aria-invalid="!!errors.privacyConsent" /> I consent to Sto. Niño Catholic School collecting and using the personal information and documents I provide to process this enrollment application.</label>
@@ -250,6 +270,12 @@ async function submit() {
 .captcha-area { min-height: 70px; }
 .receipt-label { font-size: .85rem; color: var(--muted); margin: 2rem 0 .5rem; }
 .receipt-reference { display: block; padding: 1rem; background: var(--cream-100); color: var(--red-800); overflow-wrap: anywhere; font-family: monospace; font-size: 1.15rem; }
+.checklist-preview { margin-top: 1.5rem; padding: 1rem 1.2rem; border: 1px solid var(--line); border-left: 4px solid var(--gold-500); background: var(--cream-50); }
+.checklist-preview h3 { margin: 0 0 .3rem; font-size: 1.05rem; }
+.checklist-preview p { margin: 0 0 .5rem; color: var(--muted); font-size: .88rem; }
+.checklist-preview ul { margin: 0; padding-left: 1.2rem; }
+.checklist-preview li { margin-top: .3rem; font-size: .92rem; }
+.checklist-preview .optional { color: var(--muted); }
 @media (max-width: 1000px) { .enrollment-layout { grid-template-columns: 220px minmax(0, 1fr); gap: 1.5rem; } }
 @media (max-width: 760px) { .enrollment-layout { grid-template-columns: 1fr; } .enrollment-aside { position: static; } .enrollment-note { display: none; } .enrollment-steps { gap: .8rem; } }
 @media (max-width: 480px) { .form-grid, .review-section dl { grid-template-columns: 1fr; } .form-actions { flex-direction: column; align-items: stretch; } .enrollment-hero { padding: 3rem 0; } }

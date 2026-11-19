@@ -3,6 +3,8 @@
  * Created Date: 20261114
  * Modified by: Jan Sultan | Email: jgsultan@student.apc.edu.ph
  * Modified Date: 20261119
+ * Modified by: Gian Mandac (portal bar test)
+ * Modified Date: 20261119
  */
 // @vitest-environment jsdom
 import { flushPromises, mount } from "@vue/test-utils";
@@ -167,3 +169,16 @@ it("does not restore protected records if access resolves after expiry", async (
   expect(replace).toHaveBeenCalledWith({ name: "login" });
 });
 // Account Switch Regression END
+
+it("shows the SNCS seal and the signed-in staff member's name once access is verified", async () => {
+  const listener = onAuthStateChange.mock.calls[0][0] as (event: AuthChangeEvent, session: unknown) => void;
+  listener("INITIAL_SESSION", {
+    expires_at: Date.now() / 1000 + 60,
+    user: { id: "admin-id", email: "ana@example.com", app_metadata: { chimera_staff_provisioning: { full_name: "Ana Reyes" } } },
+  });
+  expect(dashboard.find("img").exists()).toBe(false);
+  await vi.advanceTimersByTimeAsync(0);
+  expect(dashboard.get("img").attributes("alt")).toContain("Sto. Niño Catholic School");
+  expect(dashboard.text()).toContain("Ana Reyes");
+  expect(dashboard.get(".portal-avatar").text()).toBe("AR");
+});
