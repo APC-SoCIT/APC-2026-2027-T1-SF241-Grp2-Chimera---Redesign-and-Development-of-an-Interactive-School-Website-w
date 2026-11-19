@@ -39,7 +39,15 @@ const router = createRouter({
 
 router.afterEach((to) => {
   const title = typeof to.meta.title === "string" ? `${to.meta.title} | ` : "";
-  if (typeof document !== "undefined") document.title = `${title}Sto. Niño Catholic School, Inc.`;
+  if (typeof document !== "undefined") {
+    document.title = `${title}Sto. Niño Catholic School, Inc.`;
+    if (!to.meta.cmsPreview) {
+      const base = import.meta.env.VITE_SITE_URL || "https://sncs-campus-preview.vercel.app";
+      const url = new URL(to.path, base).href;
+      document.querySelector<HTMLLinkElement>('link[rel="canonical"]')?.setAttribute("href", url);
+      document.querySelector<HTMLMetaElement>('meta[property="og:url"]')?.setAttribute("content", url);
+    }
+  }
 });
 
 export default router;

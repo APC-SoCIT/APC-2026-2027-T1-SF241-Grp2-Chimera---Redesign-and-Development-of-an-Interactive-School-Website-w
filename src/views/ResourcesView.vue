@@ -70,7 +70,7 @@ onBeforeUnmount(() => { listingRequest?.abort(); downloadRequest?.abort(); });
 </script>
 
 <template>
-  <PageHero class="resources-hero" eyebrow="Forms & downloads" title="School resources" description="Download the TLC forms you need, ready to print and complete." />
+  <PageHero class="resources-hero" eyebrow="Forms & downloads" title="School resources" description="Download Taguig Learner's Certificate (TLC) scholarship forms, ready to print and complete." />
   <section class="section resources-section" aria-label="Available downloads" :aria-busy="loading">
     <div class="container">
       <div class="resources-guidance">

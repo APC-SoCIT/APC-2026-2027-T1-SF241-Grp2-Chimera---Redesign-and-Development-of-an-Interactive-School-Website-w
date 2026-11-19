@@ -6,11 +6,12 @@ import { pathToFileURL } from "node:url";
 const root = process.cwd();
 const staging = resolve(root, ".prerender");
 await build({ build: { ssr: "src/entry-server.ts", outDir: staging, emptyOutDir: true } });
-const { render } = await import(pathToFileURL(resolve(staging, "entry-server.js")).href);
+const { render, schoolStructuredData } = await import(pathToFileURL(resolve(staging, "entry-server.js")).href);
 const template = await readFile(resolve(root, "dist/index.html"), "utf8");
 const paths = ["/", "/about", "/admissions", "/campus", "/contact", "/news", "/events", "/resources", "/news/office-transactions", "/news/genyo-learning-platform-2026-2027"];
 const site = (process.env.VITE_SITE_URL || "https://sncs-campus-preview.vercel.app").replace(/\/$/, "");
 const escape = (value) => value.replaceAll("&", "&amp;").replaceAll('"', "&quot;").replaceAll("<", "&lt;").replaceAll(">", "&gt;");
+const structuredData = JSON.stringify(schoolStructuredData(site)).replaceAll("<", "\\u003c");
 for (const path of paths) {
   const page = await render(path);
   const title = page.title + " | Sto. Niño Catholic School, Inc.";
@@ -18,7 +19,9 @@ for (const path of paths) {
     .replace('<div id="app"></div>', '<div id="app">' + page.html + '</div>')
     .replace(/<title>.*?<\/title>/, '<title>' + escape(title) + '</title>')
     .replace(/<meta property="og:title"[^>]+>/, '<meta property="og:title" content="' + escape(title) + '">')
-    .replace(/<meta property="og:url"[^>]+>/, '<meta property="og:url" content="' + escape(site + path) + '">');
+    .replace(/<meta property="og:url"[^>]+>/, '<meta property="og:url" content="' + escape(site + path) + '">')
+    .replace(/<link rel="canonical"[^>]+>/, '<link rel="canonical" href="' + escape(site + path) + '">')
+    .replace('</head>', '<script type="application/ld+json">' + structuredData + '</script></head>');
   const directory = path === "/" ? resolve(root, "dist") : resolve(root, "dist", path.slice(1));
   await mkdir(directory, { recursive: true });
   await writeFile(resolve(directory, "index.html"), output);

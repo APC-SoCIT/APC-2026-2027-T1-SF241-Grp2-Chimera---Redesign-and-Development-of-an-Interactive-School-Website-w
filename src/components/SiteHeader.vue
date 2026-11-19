@@ -46,10 +46,10 @@ watch(() => route.fullPath, closeMenu);
       </RouterLink>
 
       <nav class="desktop-nav" aria-label="Primary navigation">
+        <RouterLink class="button button-secondary nav-registration" to="/admissions">Admissions</RouterLink>
         <RouterLink v-for="item in navigation" :key="item.to" :to="item.to">
           {{ item.label }}
         </RouterLink>
-        <RouterLink class="button button-secondary nav-registration" to="/admissions">Admissions</RouterLink>
       </nav>
 
       <details ref="menu" class="mobile-menu" @keydown.esc="dismissMenu">
@@ -64,7 +64,6 @@ watch(() => route.fullPath, closeMenu);
           >
             {{ item.label }}
           </RouterLink>
-          <RouterLink to="/enrollment" @click="closeMenu">Apply for enrollment</RouterLink>
         </nav>
       </details>
     </div>

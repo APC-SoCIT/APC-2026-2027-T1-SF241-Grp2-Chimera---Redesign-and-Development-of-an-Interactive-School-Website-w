@@ -2,6 +2,7 @@ import { createSSRApp } from "vue";
 import { renderToString } from "vue/server-renderer";
 import App from "./App.vue";
 import router from "./router";
+export { schoolStructuredData } from "./lib/content/structured-data";
 
 export async function render(path: string) {
   const app = createSSRApp(App);
