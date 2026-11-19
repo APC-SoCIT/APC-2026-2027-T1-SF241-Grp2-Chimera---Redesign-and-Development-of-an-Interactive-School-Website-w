@@ -8,10 +8,20 @@ import { formatSchoolDate } from "@/lib/content/dates";
 
 const groups = getPublicAdmissionGroups();
 const navigationLabels: Record<string, string> = {
-  preschool: "Nursery & Kindergarten", "grade-1": "Grade 1", "grade-7": "Grade 7",
-  "senior-high": "Grades 11–12", "transferee-returnee": "Grades 2–6, 8–10 & other transfers",
-  "returning-student": "Continuing SNCS students",
+  "returning-student": "Returning student", preschool: "Preschool",
+  "grade-1": "Incoming Grade 1", "grade-7": "Incoming Grade 7",
+  "senior-high": "Senior high school", "transferee-returnee": "Transferee / returnee",
 };
+function scrollToChecklist(event: MouseEvent, id: string) {
+  const checklist = document.getElementById("requirements-" + id);
+  if (!checklist) return;
+  // Preserve the local preview's hash route while retaining real anchors without JavaScript.
+  event.preventDefault();
+  checklist.scrollIntoView({
+    behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth",
+    block: "start",
+  });
+}
 const dates = [
   { label: "Admissions open", value: admissionsDates.opens },
   { label: "Application deadline", value: admissionsDates.closes },
@@ -22,15 +32,34 @@ const dates = [
 <template>
   <PageHero eyebrow="Admissions at SNCS" title="What to prepare, step by step." description="A practical guide for parents: find your child's requirements, understand the next steps, request current fees, and plan a visit." />
 
-  <section class="admissions-start"><div class="container admissions-start-layout"><div><p class="eyebrow">A clear starting point</p><h2>Which grade is your child entering?</h2><p>All six checklists are shown below, starting with nursery and kindergarten. Use the links to jump to your child's group. Admissions covers the application and assessment stage; enrollment follows the school's acceptance and payment instructions.</p></div><div class="admissions-start-actions"><a class="button button-secondary" href="#requirements">See all requirements</a><RouterLink class="button admissions-outline" to="/admissions?topic=fees#inquiry">Request a fee sheet</RouterLink><RouterLink class="text-link" to="/admissions?topic=visit#inquiry">Request a campus visit</RouterLink></div></div></section>
-
-
-
-
+  <section class="admissions-start"><div class="container admissions-start-layout"><div><p class="eyebrow">A clear starting point</p><h2>Which grade is your child entering?</h2><p>All six checklists are shown below. Choose an applicant group to scroll to its requirements. Admissions covers the application and assessment stage; enrollment follows the school's acceptance and payment instructions.</p></div><div class="admissions-start-actions"><a class="button button-secondary" href="#requirements">See all requirements</a><RouterLink class="button admissions-outline" to="/admissions?topic=fees#inquiry">Request a fee sheet</RouterLink><RouterLink class="text-link" to="/admissions?topic=visit#inquiry">Request a campus visit</RouterLink></div></div></section>
 
   <nav class="container admissions-page-links" aria-label="Admissions page sections"><a href="#requirements">Requirements</a><a href="#admissions-process">Process</a><a href="#admissions-dates">Dates</a><a href="#admissions-fees">Fees</a><a href="#scholarships">Scholarships</a><a href="#admissions-faq">FAQ</a><a href="#inquiry">Inquiries &amp; visits</a></nav>
 
-  <section id="requirements" class="section section-soft scroll-target" aria-labelledby="requirements-title"><div class="container"><div class="admissions-section-heading"><div><p class="eyebrow">Documents to prepare</p><h2 id="requirements-title">Requirements for every applicant group.</h2></div><a class="text-link" href="#inquiry">Ask a specific admissions question</a></div><p>These checklists follow the school's published guidance. Optional documents and grade-specific conditions are identified in each list.</p><nav class="requirements-navigation" aria-label="Jump to applicant requirements"><a v-for="group in groups" :key="group.id" :href="'#requirements-' + group.id">{{ navigationLabels[group.id] }}</a></nav><div class="requirements-all"><article v-for="group in groups" :id="'requirements-' + group.id" :key="group.id" class="requirements-group scroll-target" :aria-labelledby="'requirements-title-' + group.id"><div class="requirements-group-heading"><p class="eyebrow">{{ navigationLabels[group.id] }}</p><h3 :id="'requirements-title-' + group.id">{{ group.title }}</h3><p>{{ group.introduction }}</p></div><div class="requirements-group-documents"><ul class="document-checklist"><li v-for="requirement in group.requirements" :key="requirement">{{ requirement }}</li></ul><div class="checklist-notes"><p v-for="note in group.notes" :key="note">{{ note }}</p></div></div></article></div></div></section>
+  <section id="requirements" class="section scroll-target" aria-labelledby="requirements-title">
+    <div class="container">
+      <div class="admissions-section-heading">
+        <div><p class="eyebrow">Documents to prepare</p><h2 id="requirements-title">Find your applicant group.</h2></div>
+      </div>
+      <p>Select a box to scroll to its checklist. All requirements remain visible below.</p>
+      <nav class="requirements-navigation" aria-label="Jump to applicant requirements">
+        <a v-for="group in groups" :key="group.id" :href="'#requirements-' + group.id" @click="scrollToChecklist($event, group.id)">{{ navigationLabels[group.id] }}</a>
+      </nav>
+      <div class="requirements-all">
+        <article v-for="group in groups" :id="'requirements-' + group.id" :key="group.id" class="requirements-group scroll-target" :aria-labelledby="'requirements-title-' + group.id">
+          <div class="requirements-group-heading">
+            <p class="eyebrow">Documents to prepare</p>
+            <h3 :id="'requirements-title-' + group.id">{{ navigationLabels[group.id] }}</h3>
+            <p>{{ group.introduction }}</p>
+          </div>
+          <div class="requirements-group-documents">
+            <ul class="document-checklist"><li v-for="requirement in group.requirements" :key="requirement">{{ requirement }}</li></ul>
+            <div class="checklist-notes"><p v-for="note in group.notes" :key="note">{{ note }}</p></div>
+          </div>
+        </article>
+      </div>
+    </div>
+  </section>
 
   <section id="admissions-process" class="section scroll-target" aria-labelledby="process-title"><div class="container"><div class="admissions-section-heading"><div><p class="eyebrow">The application journey</p><h2 id="process-title">Four manageable steps.</h2></div></div><p class="admissions-process-note">Use this preparation guide alongside the published checklists. The school confirms assessment schedules, acceptance, and payment instructions for each applicant.</p><ol class="admissions-process-grid"><li v-for="(step, index) in admissionsSteps" :key="step.title"><span aria-hidden="true">{{ index + 1 }}</span><h3>{{ step.title }}</h3><p>{{ step.body }}</p></li></ol></div></section>
 

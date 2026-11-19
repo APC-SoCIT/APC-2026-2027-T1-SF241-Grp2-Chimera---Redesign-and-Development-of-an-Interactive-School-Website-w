@@ -164,9 +164,10 @@
 .admissions-process-grid p { color: var(--muted); margin-bottom: 0; }
 .requirements-navigation { display: flex; flex-wrap: wrap; gap: .6rem; margin-block: 1.5rem 2rem; }
 .requirements-navigation a { min-height: 46px; display: inline-flex; align-items: center; padding: .7rem 1rem; color: var(--red-800); border: 1px solid #8d776d; background: white; text-decoration: none; font-size: .9rem; font-weight: 700; }
+.requirements-navigation a:focus-visible { outline: 2px solid #245d96; outline-offset: 2px; }
 .requirements-navigation a:hover { background: var(--red-800); color: white; }
 .requirements-all { display: grid; gap: 1.5rem; }
-.requirements-group { display: grid; grid-template-columns: minmax(0, .85fr) minmax(0, 1.5fr); gap: 2rem; padding: 2rem; border: 1px solid var(--line); border-top: 3px solid var(--gold-500); background: white; }
+.requirements-group { display: grid; gap: 1.25rem; padding: clamp(1.4rem, 4vw, 3rem); border: 1px solid var(--line); border-top: 3px solid var(--gold-500); background: white; }
 .requirements-group-heading h3 { font: 1.9rem/1.2 "DM Serif Text", Georgia, serif; }
 .requirements-group-heading > p:last-child { color: var(--muted); }
 .requirements-group .document-checklist { margin-top: 0; }

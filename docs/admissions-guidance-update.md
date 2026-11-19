@@ -1,6 +1,6 @@
 # Admissions guidance update
 
-The admissions page renders all six applicant checklists in its initial HTML. Nursery and kindergarten come first, followed by Grade 1, Grade 7, senior high school, transferees/returnees, and continuing SNCS students. Plain anchor links jump to each checklist; JavaScript is not required to reveal requirements. Transferee guidance explicitly includes Grades 2–6 and 8–10 and preserves the conditional document requirements.
+The admissions page renders all six applicant checklists in its initial HTML. The restored applicant boxes are Returning student, Preschool, Incoming Grade 1, Incoming Grade 7, Senior high school, and Transferee / returnee, in that order. Plain anchor links jump to each checklist; JavaScript is not required to reveal requirements. Transferee guidance explicitly includes Grades 2–6 and 8–10 and preserves the conditional document requirements.
 
 The page adds four preparation steps, school-year/date cards, fee-sheet guidance, TLC eligibility context, an FAQ, and an inline inquiry form. Fee inquiries are addressed to Finance; admissions and visit inquiries go to the Registrar. The form prepares a draft in the visitor's email application for review and sending. It does not submit an inquiry to a server, book a visit, or process payment.
 
@@ -28,4 +28,4 @@ Each pre-rendered public page includes a canonical URL, route-specific Open Grap
 
 ## Validation
 
-Production type checks and build, all 200 existing/component tests, initial-HTML checks across ten public pages, and connected standalone-preview smoke checks pass. Checks include six visible server-rendered checklists, prospective-student ordering, four process steps, contact links, metadata, and accessible label associations. The HTTP tests require local network permission.
+Production type checks and build, all 200 existing/component tests, initial-HTML checks across ten public pages, and connected standalone-preview smoke checks pass. Checks include six visible server-rendered checklists, applicant-box ordering, four process steps, contact links, metadata, and accessible label associations. The HTTP tests require local network permission.
