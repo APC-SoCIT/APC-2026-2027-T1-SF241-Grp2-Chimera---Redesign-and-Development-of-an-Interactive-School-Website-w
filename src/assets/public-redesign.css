@@ -94,6 +94,7 @@
 .alumni-editorial-layout { display: grid; grid-template-columns: 1fr 1.4fr; gap: 4rem; align-items: center; }
 .alumni-editorial-layout > div > p:not(.eyebrow) { color: var(--muted); }
 .alumni-editorial figure { margin: 0; }
+.alumni-editorial figure > img { display: block; width: 100%; height: auto; object-fit: contain; }
 .alumni-editorial figcaption { color: var(--muted); font-size: .875rem; margin-top: .8rem; }
 .feature-art.alumni-poster { min-height: 0; }
 .feature-art.alumni-poster img { width: 100%; height: auto; min-height: 0; object-fit: contain; }
