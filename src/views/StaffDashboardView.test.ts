@@ -78,6 +78,23 @@ it("signs out the current session and returns to login", async () => {
 });
 
 // Account Switch Regression START
+it.each(["SIGNED_IN", "TOKEN_REFRESHED"] as const)("preserves the same Admin panel across %s while access is rechecked", async (event) => {
+  emit("INITIAL_SESSION", 10);
+  await vi.advanceTimersByTimeAsync(0);
+  const originalPanel = dashboard.get('[data-testid="staff-list"]').element;
+  let complete!: (role: "admin") => void;
+  getStaffPortalRole.mockReturnValueOnce(new Promise((resolve) => { complete = resolve; }));
+  emit(event, 20);
+  await nextTick();
+  expect(dashboard.get('[data-testid="staff-list"]').element).toBe(originalPanel);
+  await vi.advanceTimersByTimeAsync(0);
+  expect(getStaffPortalRole).toHaveBeenCalledTimes(2);
+  complete("admin");
+  await flushPromises();
+  expect(dashboard.get('[data-testid="staff-list"]').element).toBe(originalPanel);
+  expect(replace).not.toHaveBeenCalled();
+});
+
 it("keeps protected records unmounted until initial access is verified", async () => {
   expect(dashboard.find('[data-testid="staff-list"]').exists()).toBe(false);
   emit("INITIAL_SESSION", 10);

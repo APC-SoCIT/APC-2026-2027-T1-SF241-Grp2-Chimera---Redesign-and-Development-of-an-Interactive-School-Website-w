@@ -26,21 +26,30 @@ const contentVersion = ref(0);
 let expiryTimer: ReturnType<typeof setTimeout> | undefined;
 let accessTimer: ReturnType<typeof setTimeout> | undefined;
 let currentSession: Session | null = null;
+let authorizedUserId: string | undefined;
+let authorizedRole: StaffRole | undefined;
+let accessVersion = 0;
 
 function clearAccess() {
   accessVerified.value = false;
   contentVersion.value += 1;
+  accessVersion += 1;
+  authorizedUserId = undefined;
+  authorizedRole = undefined;
   clearTimeout(expiryTimer);
   clearTimeout(accessTimer);
 }
 
 function checkSession(session: Session | null) {
   currentSession = session;
-  // Unmount cached records before checking the new session's current database role.
-  clearAccess();
-  const version = contentVersion.value;
+  // Keep forms mounted for the verified account while its current role is rechecked.
+  if (session?.user?.id !== authorizedUserId || props.role !== authorizedRole) clearAccess();
+  clearTimeout(expiryTimer);
+  clearTimeout(accessTimer);
+  const version = ++accessVersion;
   const remaining = (session?.expires_at ?? 0) * 1000 - Date.now();
   if (!session?.user?.id || remaining <= 0) {
+    clearAccess();
     void router.replace({ name: "login" });
     return;
   }
@@ -52,15 +61,20 @@ function checkSession(session: Session | null) {
   accessTimer = setTimeout(async () => {
     try {
       const role = await getStaffPortalRole();
-      if (version !== contentVersion.value) return;
+      if (version !== accessVersion) return;
       if (role && role === props.role) {
+        authorizedUserId = session.user.id;
+        authorizedRole = role;
         accessVerified.value = true;
         return;
       }
     } catch {
-      // Leave protected content unmounted when access cannot be verified.
+      // Clear protected records when renewed access cannot be verified.
     }
-    if (version === contentVersion.value) void router.replace({ name: "login" });
+    if (version === accessVersion) {
+      clearAccess();
+      void router.replace({ name: "login" });
+    }
   }, 0);
 }
 
