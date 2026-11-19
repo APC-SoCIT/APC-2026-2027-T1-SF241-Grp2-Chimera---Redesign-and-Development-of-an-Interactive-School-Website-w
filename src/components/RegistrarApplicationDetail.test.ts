@@ -33,7 +33,7 @@ it("shows every submitted section and the dynamic checklist", async () => {
   try {
     await flushPromises();
     expect(client.rpc).toHaveBeenCalledWith("get_registrar_application", { p_reference: "SNCS-TEST01" });
-    for (const text of ["Guardian Example", "Taguig", "Example School", "Guardian Messenger", "Good moral", "No documents were uploaded"]) {
+    for (const text of ["Guardian Example", "Taguig", "Example School", "Messenger account", "Good moral", "Baptismal certificate", "Former school’s name", "No documents were uploaded"]) {
       expect(wrapper.text().toLowerCase()).toContain(text.toLowerCase());
     }
     expect(wrapper.find<HTMLInputElement>('.checklist input[type="checkbox"]').element.checked).toBe(false);
