@@ -358,24 +358,36 @@ function dismissMenu() {
               </button>
             </div>
             <div class="cms-filters">
-              <label class="cms-search">
-                <CmsIcon name="search" :size="17" />
-                <input v-model="search" type="search" :placeholder="resources ? 'Search PDFs…' : 'Search content…'"
-                  :aria-label="resources ? 'Search PDFs' : 'Search content'" />
-              </label>
-              <select v-if="section === 'overview' || section === 'content'" v-model="type" aria-label="Content type">
+              <div class="cms-filter-field cms-search-field">
+                <label for="cms-search">{{ resources ? 'Search PDFs' : 'Search content' }}</label>
+                <div class="cms-search">
+                  <CmsIcon name="search" :size="17" />
+                  <input id="cms-search" v-model="search" type="search" name="search" autocomplete="off"
+                    placeholder="Search by title or keyword" />
+                </div>
+              </div>
+              <div v-if="section === 'overview' || section === 'content'" class="cms-filter-field">
+              <label for="cms-filter-type">Content type</label>
+              <select id="cms-filter-type" v-model="type" name="contentType">
                 <option value="all">All types</option>
                 <option value="announcement">Announcements</option>
                 <option value="event">Events</option>
                 <option value="page">Pages</option>
               </select>
-              <select v-if="resources" v-model="category" aria-label="Resource category">
+              </div>
+              <div v-if="resources" class="cms-filter-field">
+              <label for="cms-filter-category">Resource category</label>
+              <select id="cms-filter-category" v-model="category" name="resourceCategory">
                 <option value="">All categories</option>
                 <option v-for="value in categories" :key="value" :value="value">{{ value }}</option>
               </select>
-              <select v-model="status" aria-label="Publication status">
+              </div>
+              <div class="cms-filter-field">
+              <label for="cms-filter-status">Publication status</label>
+              <select id="cms-filter-status" v-model="status" name="publicationStatus">
                 <option v-for="option in statusOptions" :key="option.id" :value="option.id">{{ option.label }}</option>
               </select>
+              </div>
             </div>
 
             <table v-if="list.length" class="cms-table" role="table">

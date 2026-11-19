@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, nextTick, ref, shallowRef, useTemplateRef } from "vue";
+import { computed, nextTick, ref, shallowRef, useTemplateRef, watch } from "vue";
 import CmsIcon from "./CmsIcon.vue";
 import CmsFormattedBody from "./CmsFormattedBody.vue";
 import ContentImageGallery from "@/components/ContentImageGallery.vue";
@@ -7,6 +7,7 @@ import { contentTypes, formatCmsDate, itemLabels, slugify, type CmsItem } from "
 import { imageForDisplay, maxContentImages, prepareImage, type CmsImageAssets } from "@/lib/cms/images";
 import { sourceAnnouncements } from "@/lib/cms/website-items";
 import { formatFileSize, MAX_PDF_BYTES } from "@/lib/resources/model";
+import { useBlurValidation } from "@/lib/cms/blur-validation";
 
 const props = defineProps<{
   item: CmsItem;
@@ -19,7 +20,7 @@ const form = ref({ ...props.item, images: props.item.images?.map((image) => ({ .
 const formEl = useTemplateRef<HTMLFormElement>("cms-form");
 const bodyField = useTemplateRef<HTMLTextAreaElement>("body-field");
 const preview = useTemplateRef<HTMLDialogElement>("content-preview");
-const errors = ref<Record<string, string>>({});
+const { errors, message: fieldError, focusField, blurField, validateAll } = useBlurValidation(validateFields);
 const customSlug = ref(Boolean(props.item.id));
 const readingFile = ref(false);
 const readingImages = ref(false);
@@ -27,6 +28,11 @@ const imageError = ref("");
 const pendingImages = shallowRef<CmsImageAssets>({});
 const saveError = ref("");
 let fileRead = 0;
+
+watch(imageError, (issue) => {
+  if (issue) errors.value.contentImages = issue;
+  else delete errors.value.contentImages;
+});
 
 const existingImage = computed(() => form.value.type === "announcement"
   ? sourceAnnouncements.find((entry) => entry.id === props.item.id)?.image : undefined);
@@ -117,13 +123,21 @@ async function selectPdf(event: Event) {
   form.value.fileSize = file.size;
 }
 
-async function save() {
-  if (readingFile.value || readingImages.value) return;
+function normalizedForm() {
   const next = { ...form.value };
   next.title = next.title.trim();
   next.slug = next.slug.trim();
   next.body = next.body.trim();
   next.category = next.category.trim();
+  if (next.type !== "event") next.eventDate = "";
+  next.images = next.images?.map((image) => ({
+    ...image, alt: image.alt.trim(), caption: image.caption?.trim() || undefined,
+  }));
+  return next;
+}
+
+function validateFields() {
+  const next = normalizedForm();
   const issues: Record<string, string> = {};
   if (!next.title) issues.title = "Enter a title.";
   if (next.type === "resource") {
@@ -135,20 +149,26 @@ async function save() {
       issues.slug = "This page identifier is already in use.";
     }
     if (next.type === "event" && !next.eventDate) issues.eventDate = "Choose the event date.";
-    if (next.type !== "event") next.eventDate = "";
     if (!next.body) issues.body = "Enter the content body.";
-    next.images = next.images?.map((image) => ({
-      ...image, alt: image.alt.trim(), caption: image.caption?.trim() || undefined,
-    }));
+    if (imageError.value) issues.contentImages = imageError.value;
     for (const image of next.images ?? []) {
       if (!image.alt) issues[image.id] = "Describe the image for visitors who use a screen reader.";
     }
   }
-  errors.value = issues;
+  return issues;
+}
+
+async function save() {
+  if (readingFile.value || readingImages.value) return;
+  const next = normalizedForm();
+  const issues = validateAll();
   saveError.value = "";
   if (Object.keys(issues).length) {
+    saveError.value = "Review the required fields before saving. Field errors appear after you leave each field.";
     await nextTick();
-    formEl.value?.querySelector<HTMLElement>("[aria-invalid='true']")?.focus();
+    const first = Object.keys(issues)[0];
+    Array.from(formEl.value?.querySelectorAll<HTMLElement>("input, select, textarea") ?? [])
+      .find((field) => (field.dataset.validationKey ?? field.getAttribute("name")) === first)?.focus();
     return;
   }
   if (!props.attemptSave(next, pendingImages.value)) saveError.value = "This browser could not save the changes. Check available browser storage and try again. Your edits are still in the form.";
@@ -171,56 +191,57 @@ function cancel() {
     </button>
   </div>
 
-  <form id="cms-editor-form" ref="cms-form" class="cms-editor-grid" novalidate @submit.prevent="save">
+  <form id="cms-editor-form" ref="cms-form" class="cms-editor-grid" novalidate autocomplete="off"
+    @submit.prevent="save" @focusin="focusField" @focusout="blurField">
     <div class="cms-panel cms-form-panel">
       <h2>{{ form.type === 'resource' ? 'Resource details' : 'Content details' }}</h2>
       <div v-if="form.type !== 'resource'" class="cms-field">
         <label for="cms-type">Content type</label>
-        <select id="cms-type" v-model="form.type" :disabled="item.status === 'published'">
+        <select id="cms-type" v-model="form.type" name="contentType" :disabled="item.status === 'published'">
           <option v-for="type in contentTypes" :key="type" :value="type">{{ itemLabels[type] }}</option>
         </select>
       </div>
       <div class="cms-field">
         <label for="cms-title">Title</label>
-        <input id="cms-title" :value="form.title" required maxlength="160" :aria-invalid="Boolean(errors.title)"
-          :aria-describedby="errors.title ? 'cms-title-error' : undefined" placeholder="Enter a clear, descriptive title" @input="updateTitle" />
-        <small v-if="errors.title" id="cms-title-error" class="cms-error">{{ errors.title }}</small>
+        <input id="cms-title" :value="form.title" type="text" name="title" required maxlength="160" :aria-invalid="Boolean(fieldError('title'))"
+          :aria-describedby="fieldError('title') ? 'cms-title-error' : undefined" placeholder="Enter a clear, descriptive title" @input="updateTitle" />
+        <small v-if="fieldError('title')" id="cms-title-error" class="cms-error">{{ fieldError('title') }}</small>
       </div>
       <template v-if="form.type === 'resource'">
         <div class="cms-field">
           <label for="cms-category">Category</label>
-          <input id="cms-category" v-model="form.category" list="cms-categories" required maxlength="100"
-            :aria-invalid="Boolean(errors.category)" :aria-describedby="errors.category ? 'cms-category-error' : undefined" placeholder="e.g. Admission Forms" />
+          <input id="cms-category" v-model="form.category" type="text" name="category" list="cms-categories" required maxlength="100"
+            :aria-invalid="Boolean(fieldError('category'))" :aria-describedby="fieldError('category') ? 'cms-category-error' : undefined" placeholder="e.g. Admission Forms" />
           <datalist id="cms-categories">
             <option v-for="category in new Set(items.filter((entry) => entry.category).map((entry) => entry.category))"
               :key="category" :value="category" />
           </datalist>
-          <small v-if="errors.category" id="cms-category-error" class="cms-error">{{ errors.category }}</small>
+          <small v-if="fieldError('category')" id="cms-category-error" class="cms-error">{{ fieldError('category') }}</small>
         </div>
         <div class="cms-field cms-file">
           <label for="cms-pdf">{{ item.id ? 'Replace PDF' : 'PDF file' }}</label>
           <span v-if="form.fileName" class="cms-file-current">
             <CmsIcon name="resource" /> {{ form.fileName }} · {{ formatFileSize(form.fileSize) }}
           </span>
-          <input id="cms-pdf" type="file" accept=".pdf,application/pdf" :aria-invalid="Boolean(errors.fileName)"
-            :aria-describedby="errors.fileName ? 'cms-file-help cms-file-error' : 'cms-file-help'" @change="selectPdf" />
+          <input id="cms-pdf" name="fileName" type="file" accept=".pdf,application/pdf" :aria-invalid="Boolean(fieldError('fileName'))"
+            :aria-describedby="fieldError('fileName') ? 'cms-file-help cms-file-error' : 'cms-file-help'" @change="selectPdf" />
           <small id="cms-file-help">PDF up to 10 MB. This preview stores the file name and size only.</small>
-          <small v-if="errors.fileName" id="cms-file-error" class="cms-error" role="alert">{{ errors.fileName }}</small>
+          <small v-if="fieldError('fileName')" id="cms-file-error" class="cms-error" role="alert">{{ fieldError('fileName') }}</small>
         </div>
       </template>
       <template v-else>
         <div class="cms-field">
           <label for="cms-slug">Page identifier</label>
-          <input id="cms-slug" v-model="form.slug" required maxlength="160" spellcheck="false"
-            :aria-invalid="Boolean(errors.slug)" :aria-describedby="errors.slug ? 'cms-slug-error' : 'cms-slug-help'" @input="customSlug = true" />
-          <small v-if="errors.slug" id="cms-slug-error" class="cms-error">{{ errors.slug }}</small>
+          <input id="cms-slug" v-model="form.slug" type="text" name="slug" required maxlength="160" spellcheck="false" autocapitalize="none"
+            :aria-invalid="Boolean(fieldError('slug'))" :aria-describedby="fieldError('slug') ? 'cms-slug-error' : 'cms-slug-help'" @input="customSlug = true" />
+          <small v-if="fieldError('slug')" id="cms-slug-error" class="cms-error">{{ fieldError('slug') }}</small>
           <small v-else id="cms-slug-help">The part of the public URL that identifies this item.</small>
         </div>
         <div v-if="form.type === 'event'" class="cms-field">
           <label for="cms-event-date">Event date</label>
-          <input id="cms-event-date" v-model="form.eventDate" type="date" required
-            :aria-invalid="Boolean(errors.eventDate)" :aria-describedby="errors.eventDate ? 'cms-date-error' : undefined" />
-          <small v-if="errors.eventDate" id="cms-date-error" class="cms-error">{{ errors.eventDate }}</small>
+          <input id="cms-event-date" v-model="form.eventDate" name="eventDate" type="date" required
+            :aria-invalid="Boolean(fieldError('eventDate'))" :aria-describedby="fieldError('eventDate') ? 'cms-date-error' : undefined" />
+          <small v-if="fieldError('eventDate')" id="cms-date-error" class="cms-error">{{ fieldError('eventDate') }}</small>
         </div>
         <div class="cms-field">
           <label for="cms-body">Body</label>
@@ -232,20 +253,21 @@ function cancel() {
               <button type="button" @click="insertFormat('- ', '', 'List item')">List</button>
               <button type="button" @click="insertFormat('[', '](https://example.com)', 'Link text')">Link</button>
             </div>
-            <textarea id="cms-body" ref="body-field" v-model="form.body" required rows="9" maxlength="24000"
-              :aria-invalid="Boolean(errors.body)" :aria-describedby="errors.body ? 'cms-body-error' : undefined"
+            <textarea id="cms-body" ref="body-field" v-model="form.body" name="body" required rows="9" maxlength="24000"
+              :aria-invalid="Boolean(fieldError('body'))" :aria-describedby="fieldError('body') ? 'cms-body-error' : undefined"
               placeholder="Write your content here…"></textarea>
           </div>
-          <small v-if="errors.body" id="cms-body-error" class="cms-error">{{ errors.body }}</small>
+          <small v-if="fieldError('body')" id="cms-body-error" class="cms-error">{{ fieldError('body') }}</small>
         </div>
         <div class="cms-field cms-file">
           <label for="cms-content-images">Upload images</label>
-          <input id="cms-content-images" type="file" accept="image/jpeg,image/png,image/webp" multiple
+          <input id="cms-content-images" name="contentImages" type="file" accept="image/jpeg,image/png,image/webp" multiple
             :disabled="readingImages || (form.images?.length ?? 0) >= maxContentImages"
-            :aria-describedby="imageError ? 'cms-image-help cms-image-error' : 'cms-image-help'" @change="selectImages" />
+            :aria-invalid="Boolean(fieldError('contentImages'))"
+            :aria-describedby="fieldError('contentImages') ? 'cms-image-help cms-image-error' : 'cms-image-help'" @change="selectImages" />
           <small id="cms-image-help">Up to {{ maxContentImages }} JPEG, PNG, or WebP files, 5 MB each. The first image is used on announcement cards.</small>
           <small v-if="readingImages" role="status">Preparing images…</small>
-          <small v-if="imageError" id="cms-image-error" class="cms-error" role="alert">{{ imageError }}</small>
+          <small v-if="fieldError('contentImages')" id="cms-image-error" class="cms-error" aria-live="polite">{{ fieldError('contentImages') }}</small>
           <small v-if="existingImage && !form.images?.length">This announcement uses its existing image until you add an upload.</small>
         </div>
         <ul v-if="form.images?.length" class="cms-image-list" aria-label="Selected images">
@@ -258,13 +280,13 @@ function cancel() {
               </div>
               <div class="cms-field">
                 <label :for="'alt-' + image.id">Alt text</label>
-                <input :id="'alt-' + image.id" v-model="image.alt" required maxlength="250" :aria-invalid="Boolean(errors[image.id])"
-                  :aria-describedby="errors[image.id] ? 'image-error-' + image.id : undefined" placeholder="Describe what is in the image" />
-                <small v-if="errors[image.id]" :id="'image-error-' + image.id" class="cms-error">{{ errors[image.id] }}</small>
+                <input :id="'alt-' + image.id" v-model="image.alt" type="text" :name="'alt-' + image.id" :data-validation-key="image.id" required maxlength="250" :aria-invalid="Boolean(fieldError(image.id))"
+                  :aria-describedby="fieldError(image.id) ? 'image-error-' + image.id : undefined" placeholder="Describe what is in the image" />
+                <small v-if="fieldError(image.id)" :id="'image-error-' + image.id" class="cms-error">{{ fieldError(image.id) }}</small>
               </div>
               <div class="cms-field">
                 <label :for="'caption-' + image.id">Caption <small>(optional)</small></label>
-                <input :id="'caption-' + image.id" v-model="image.caption" maxlength="250" />
+                <input :id="'caption-' + image.id" v-model="image.caption" type="text" :name="'caption-' + image.id" maxlength="250" />
               </div>
             </div>
           </li>
@@ -282,7 +304,7 @@ function cancel() {
         <p v-else>Drafts stay hidden until you publish them from the library.</p>
         <div v-if="form.type === 'resource'" class="cms-field">
           <label for="cms-visibility">Visibility</label>
-          <select id="cms-visibility" v-model="form.visibility">
+          <select id="cms-visibility" v-model="form.visibility" name="visibility">
             <option value="public">Public</option>
             <option value="private">Private</option>
           </select>
