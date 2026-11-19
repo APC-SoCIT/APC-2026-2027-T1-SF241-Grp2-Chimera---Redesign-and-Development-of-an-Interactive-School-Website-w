@@ -2,12 +2,12 @@
   Author: Jan Sultan | Email: jgsultan@student.apc.edu.ph
   Created Date: 20261111
   Modified by: Jan Sultan | Email: jgsultan@student.apc.edu.ph
-  Modified Date: 20261114
+  Modified Date: 20261119
 -->
 # Staff login and dashboards
 
 The staff link in the public footer opens `/login`. Successful email and
-password sign-in opens `/admin`, `/registrar`, or `/teacher` according to the signed-in
+password sign-in opens `/admin`, `/registrar`, `/teacher`, or `/academic-coordinator` according to the signed-in
 staff member's current role. Direct dashboard visits check for that route's
 role. Invalid credentials and denied access leave the user at sign-in.
 
@@ -110,6 +110,22 @@ that a Teacher session claim must belong to the requesting account.
 
 Record the preview URL, commit, and observed result for each check so the
 reviewer can reproduce it.
+
+## Academic Coordinator access
+
+Apply `supabase/migrations/202611190001_academic_coordinator_access.sql`
+after the five existing staff migrations. An authorized account-management
+Admin can select **Academic Coordinator** when creating an account or
+changing an existing account's role. The stored role is `academic_coordinator`.
+
+Sign in with the Coordinator account and verify that `/academic-coordinator`
+opens its dashboard. Verify that Teachers, Registrars, Admins, and signed-out
+visitors cannot open that route, and that the Coordinator cannot open
+`/admin`, `/registrar`, or `/teacher`. Password resets, required password
+changes, deactivation, and session expiry follow the existing staff flow.
+
+This adds the Coordinator's portal access for the scheduling workstream.
+Scheduling screens and operations are a subsequent implementation.
 
 Run `pnpm lint`, `pnpm build`, and `pnpm test`. Component tests simulate Supabase
 sessions, and the migration tests run the role checks in local PostgreSQL via

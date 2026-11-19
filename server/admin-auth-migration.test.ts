@@ -2,7 +2,7 @@
  * Author: Jan Sultan | Email: jgsultan@student.apc.edu.ph
  * Created Date: 20261113
  * Modified by: Jan Sultan | Email: jgsultan@student.apc.edu.ph
- * Modified Date: 20261114
+ * Modified Date: 20261119
  */
 import { readFileSync } from "node:fs";
 import { PGlite } from "@electric-sql/pglite";
@@ -19,6 +19,7 @@ describe("staff authorization migrations", () => {
   const resetId = "00000000-0000-4000-8000-000000000005";
   const registrarId = "00000000-0000-4000-8000-000000000006";
   const managerId = "00000000-0000-4000-8000-000000000007";
+  const coordinatorId = "00000000-0000-4000-8000-000000000012";
   let reference: string;
 
   function asUser<T>(userId: string, sql: string, values: unknown[] = [], sessionId = userId) {
@@ -56,8 +57,8 @@ describe("staff authorization migrations", () => {
     ]) {
       await db.exec(readFileSync(new URL(`../supabase/migrations/${migration}`, import.meta.url), "utf8"));
     }
-    await db.query("insert into auth.users (id) values ($1), ($2), ($3), ($4), ($5), ($6), ($7)", [
-      adminId, teacherId, inactiveId, unlinkedId, resetId, registrarId, managerId,
+    await db.query("insert into auth.users (id) values ($1), ($2), ($3), ($4), ($5), ($6), ($7), ($8)", [
+      adminId, teacherId, inactiveId, unlinkedId, resetId, registrarId, managerId, coordinatorId,
     ]);
     await db.exec("insert into auth.sessions (id, user_id) select id, id from auth.users");
     await db.query(`
@@ -69,6 +70,10 @@ describe("staff authorization migrations", () => {
         ('registrar@example.com', 'Registrar', 'registrar', 'active', $5, false),
         ('manager@example.com', 'Manager', 'admin', 'active', $6, false)
     `, [adminId, teacherId, inactiveId, resetId, registrarId, managerId]);
+    // Apply the role extension after existing accounts are present to check upgrades.
+    await db.exec(readFileSync(new URL("../supabase/migrations/202611190001_academic_coordinator_access.sql", import.meta.url), "utf8"));
+    await db.query(`insert into public.users (email, full_name, role, auth_user_id)
+      values ('coordinator@example.com', 'Academic Coordinator', 'academic_coordinator', $1)`, [coordinatorId]);
     await db.query("update public.users set manage_staff_accounts = true where auth_user_id = $1", [managerId]);
     await db.exec("insert into public.enrollment_periods (school_year, status) values ('2026-2027', 'open')");
     const receipt = await saveEnrollment({ query: (sql, values) => db.query(sql, values) }, {
@@ -82,6 +87,7 @@ describe("staff authorization migrations", () => {
     ["active admin", adminId, "admin"],
     ["active Registrar", registrarId, "registrar"],
     ["active Teacher", teacherId, "teacher"],
+    ["active Academic Coordinator", coordinatorId, "academic_coordinator"],
     ["inactive admin", inactiveId, null],
     ["unlinked Auth user", unlinkedId, null],
     ["Registrar who must change their password", resetId, "password-change"],
@@ -118,7 +124,7 @@ describe("staff authorization migrations", () => {
     expect(result.rows).toEqual([{ reference_no: reference, status: "pending", submitted_at: expect.any(Date) }]);
   });
 
-  it.each([adminId, teacherId, unlinkedId, resetId, ""])("denies enrollment RPC access to a non-Registrar session", async (userId) => {
+  it.each([adminId, teacherId, coordinatorId, unlinkedId, resetId, ""])("denies enrollment RPC access to a non-Registrar session", async (userId) => {
     await expect(asUser(userId, "select * from public.list_registrar_applications()")).rejects.toMatchObject({ code: "42501" });
   });
 
@@ -153,7 +159,7 @@ describe("staff authorization migrations", () => {
 
   it("lists and assigns roles only for authorized account managers", async () => {
     const { rows: [account] } = await db.query<{ id: string }>("select id::text from public.users where auth_user_id = $1", [teacherId]);
-    for (const userId of [adminId, registrarId, teacherId]) {
+    for (const userId of [adminId, registrarId, teacherId, coordinatorId]) {
       await expect(asUser(userId, "select * from public.list_staff_accounts()")).rejects.toMatchObject({ code: "42501" });
       await expect(asUser(userId, "select public.assign_staff_role($1, 'registrar')", [account.id])).rejects.toMatchObject({ code: "42501" });
     }
@@ -165,6 +171,27 @@ describe("staff authorization migrations", () => {
     await expect(asUser(teacherId, "select * from public.list_registrar_applications()")).rejects.toMatchObject({ code: "42501" });
     expect((await db.query("select action from public.audit_logs where entity_id = $1 order by id", [account.id])).rows)
       .toEqual([{ action: "role.change" }, { action: "role.change" }]);
+  });
+
+  it("provisions and assigns the Coordinator role while keeping account management restricted to Admin", async () => {
+    const newId = "00000000-0000-4000-8000-000000000013";
+    await db.query("insert into auth.users (id, email, raw_app_meta_data) values ($1, 'new-coordinator@example.com', $2)", [
+      newId, { chimera_staff_provisioning: { created_by: managerId, full_name: "New Coordinator", role: "academic_coordinator" } },
+    ]);
+    const { rows: [account] } = await db.query<{ id: string; role: string }>("select id::text, role from public.users where auth_user_id = $1", [newId]);
+    expect(account.role).toBe("academic_coordinator");
+    await db.query("insert into auth.sessions values ($1, $1)", [newId]);
+    expect((await asUser(newId, "select public.get_staff_portal_role() as role")).rows).toEqual([{ role: "academic_coordinator" }]);
+    await asUser(managerId, "select public.assign_staff_role($1, 'admin')", [account.id]);
+    await db.query("update public.users set manage_staff_accounts = true where id = $1", [account.id]);
+    await asUser(managerId, "select public.assign_staff_role($1, 'academic_coordinator')", [account.id]);
+    expect((await db.query("select manage_staff_accounts from public.users where id = $1", [account.id])).rows)
+      .toEqual([{ manage_staff_accounts: false }]);
+    await expect(asUser(newId, "select * from public.list_staff_accounts()")).rejects.toMatchObject({ code: "42501" });
+    await db.query("update public.users set must_change_password = true where id = $1", [account.id]);
+    expect((await asUser(newId, "select public.get_staff_portal_role() as role")).rows).toEqual([{ role: "password-change" }]);
+    await db.query("update public.users set account_status = 'inactive' where id = $1", [account.id]);
+    expect((await asUser(newId, "select public.get_staff_portal_role() as role")).rows).toEqual([{ role: null }]);
   });
 
   // Reset and Deactivation Tests START
