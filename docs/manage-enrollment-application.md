@@ -17,6 +17,34 @@ staff dashboard, shown only to an active Registrar account.
 > Trigger Outbound Status Email behaves as an optional step. Consider drawing it as
 > «extend» rather than «include» in the next diagram revision.
 
+## Checklist and enrollment form in sync (Nov 19, 2026)
+
+The requirement checklist is built by one shared set of rules
+(`supabase/functions/_shared/requirements.ts`) and is now used in **four places that
+always match**: the applicant's form, the Registrar's review panel, the printed A4
+verification form and the status email.
+
+| The applicant answers on the form | The checklist then |
+|---|---|
+| Student status, school level, grade | Chooses the list (old student, preschool, Grade 1/7/11 entry, or transferee/returnee rules) |
+| Religion | Shows **Baptismal certificate** for Catholic applicants, **Certificate of dedication** for others |
+| Former school's name (preschool) | Makes the report card **required** if the child attended a school, otherwise "if applicable" |
+
+Form changes:
+- **"What to bring to the Registrar's Office"** is shown on the review step and on the
+  receipt, so families bring exactly what the Registrar will tick.
+- **Former school's name is required** for new students and returnees above pre-school
+  (the report card, good moral and recommendation come from that school). It stays
+  optional for old students and pre-school.
+- The **Student status** hint explains that transferees choose *New*.
+- The Registrar panel and print form use the **same labels as the form** (Student status,
+  School level, Birthday, Contact number, Parent's email address, Messenger account,
+  Former school's name and address).
+
+No database change: requirement keys are unchanged, so checklist ticks already saved
+still apply. Redeploy the `send-application-status-email` edge function so emails use the
+new wording.
+
 ## Security
 
 - The browser never reads or writes `enrollment_applications`, `application_guardians`,
