@@ -24,7 +24,9 @@ The project follows the architecture proposed in the SSYSADD1 paper:
 - **Authentication (future backlog):** Express-managed authentication and sessions
 - **Scheduling (future backlog):** a separate Python service using Google OR-Tools
 
-Staff authentication, Registrar screens, CMS, and scheduling remain future work.
+The Registrar's Manage Enrollment Application workflow is described in
+[docs/manage-enrollment-application.md](docs/manage-enrollment-application.md).
+CMS and scheduling remain future work.
 
 ## PB-10 public website
 

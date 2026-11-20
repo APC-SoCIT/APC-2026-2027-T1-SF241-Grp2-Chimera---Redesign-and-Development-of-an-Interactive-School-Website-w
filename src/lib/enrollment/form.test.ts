@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { ageAt, attachmentError, maxAttachmentBytes, sectionsFor, validateApplication } from './form';
+import { ageAt, attachmentError, maxAttachmentBytes, needsFormerSchool, sectionsFor, validateApplication } from './form';
+import { checklistFor } from './checklist';
 import { validApplication } from './fixtures';
 
 describe('registration form validation', () => {
@@ -72,7 +73,10 @@ describe('registration form validation', () => {
   it('requires the schema-required fields and the full name of any supplied guardian', () => {
     const result = validateApplication({ ...validApplication, religion: '', messenger: '', fatherOccupation: 'Teacher' }, '2026-2027');
     expect(Object.keys(result.errors)).toEqual(expect.arrayContaining(['religion', 'messenger', 'fatherFullName']));
-    expect(validateApplication({ ...validApplication, guardianFullName: '', guardianContact: '', previousSchool: '', previousAddress: '' }, '2026-2027').errors).toEqual({});
+    expect(validateApplication({ ...validApplication, guardianFullName: '', guardianContact: '', previousAddress: '' }, '2026-2027').errors).toEqual({});
+    // The former school is optional only when the checklist needs nothing from it (old students, pre-school).
+    expect(validateApplication({ ...validApplication, studentStatus: 'Old', previousSchool: '', previousAddress: '' }, '2026-2027').errors).toEqual({});
+    expect(validateApplication({ ...validApplication, previousSchool: '' }, '2026-2027').errors).toEqual({ previousSchool: 'Former school’s name is required.' });
   });
   it('handles birthdays, leap dates and future dates', () => {
     expect(ageAt('2010-10-02', '2026-10-01')).toBe('15');
@@ -93,3 +97,26 @@ describe('registration form validation', () => {
     expect(attachmentError({ size: 0, type: 'application/pdf', name: 'file.pdf' })).toContain('empty');
   });
 });
+
+describe('former school and the applicant checklist', () => {
+  const base = { ...validApplication };
+  it('requires the former school whenever the checklist needs documents from it', () => {
+    expect(needsFormerSchool({ level: 'JHS', studentStatus: 'New' })).toBe(true);
+    expect(needsFormerSchool({ level: 'Elementary', studentStatus: 'Returnee' })).toBe(true);
+    expect(needsFormerSchool({ level: 'JHS', studentStatus: 'Old' })).toBe(false);
+    expect(needsFormerSchool({ level: 'Preschool', studentStatus: 'New' })).toBe(false);
+    expect(validateApplication({ ...base, previousSchool: '' }, '2026-2027', '2026-11-19').errors.previousSchool).toBeTruthy();
+    expect(validateApplication({ ...base, studentStatus: 'Old', previousSchool: '' }, '2026-2027', '2026-11-19').errors.previousSchool).toBeUndefined();
+    expect(validateApplication({ ...base, level: 'Preschool', gradeLevel: 'Nursery', previousSchool: '' }, '2026-2027', '2026-11-19').errors.previousSchool).toBeUndefined();
+  });
+
+  it('builds the same checklist the Registrar sees from the form answers', () => {
+    const items = checklistFor(base);
+    expect(items.map((item) => item.key)).toEqual(['entrance-exam', 'psa-birth-certificate', 'id-photos', 'report-card', 'baptismal-certificate',
+      'marriage-certificate', 'folders-envelope', 'good-moral', 'recommendation-form']);
+    expect(items.find((item) => item.key === 'baptismal-certificate')?.label).toBe('Baptismal certificate');
+    expect(checklistFor({ ...base, studentStatus: 'Old' }).map((item) => item.key)).toEqual(['report-card']);
+    expect(checklistFor({ ...base, gradeLevel: '' })).toEqual([]);
+  });
+});
+
