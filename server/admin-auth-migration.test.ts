@@ -53,7 +53,7 @@ describe("staff authorization migrations", () => {
     for (const migration of [
       "202611130001_sc13_admin_auth.sql", "202611140001_sc20_staff_portal_role.sql",
       "202611140002_sc18_manage_staff_accounts.sql", "202611140003_sc21_registrar_application_access.sql",
-      "202611140004_sc19_sc30_staff_access.sql",
+      "202611140004_sc19_sc30_staff_access.sql", "202611160001_manage_enrollment_application.sql",
     ]) {
       await db.exec(readFileSync(new URL(`../supabase/migrations/${migration}`, import.meta.url), "utf8"));
     }
@@ -229,4 +229,65 @@ describe("staff authorization migrations", () => {
       .toEqual([{ action: "account.password_reset", authorized: true }, { action: "account.deactivate", authorized: true }]);
   });
   // Reset and Deactivation Tests END
+
+  // Manage Enrollment Application Tests START
+  it("searches and filters applications only for an active Registrar", async () => {
+    const search = (args: unknown[]) => asUser(registrarId,
+      "select reference_no from public.search_registrar_applications($1::text, $2::text, $3::date, $4::date)", args);
+    expect((await search(["example, test", null, null, null])).rows).toEqual([{ reference_no: reference }]);
+    expect((await search([reference.slice(5, 15).toLowerCase(), "pending", null, null])).rows).toEqual([{ reference_no: reference }]);
+    expect((await search(["%", null, null, null])).rows).toEqual([]);
+    expect((await search([null, "complete", null, null])).rows).toEqual([]);
+    expect((await search([null, null, "2000-01-01", "2000-01-02"])).rows).toEqual([]);
+    await expect(search([null, "approved", null, null])).rejects.toMatchObject({ code: "22023" });
+    for (const userId of [adminId, teacherId, resetId, ""]) {
+      await expect(asUser(userId, "select * from public.search_registrar_applications()")).rejects.toMatchObject({ code: "42501" });
+    }
+  });
+
+  it("returns full application details without the submitter IP hash", async () => {
+    const { rows: [{ detail }] } = await asUser<{ detail: Record<string, unknown> }>(registrarId,
+      "select public.get_registrar_application($1) as detail", [reference]);
+    expect(detail).toMatchObject({
+      reference_no: reference, surname: "Example", grade_level: "Grade 7", applicant_type: "new", school_year: "2026-2027",
+      guardians: [{ relationship: "guardian", full_name: "Guardian Example" }], documents: [], requirement_checks: {},
+    });
+    expect(detail).not.toHaveProperty("submitter_ip_hash");
+    expect((await asUser(registrarId, "select public.get_registrar_application('SNCS-UNKNOWN') as detail")).rows).toEqual([{ detail: null }]);
+    await expect(asUser(adminId, "select public.get_registrar_application($1)", [reference])).rejects.toMatchObject({ code: "42501" });
+  });
+
+  it("records requirement checks, status changes and confirmed emails in the audit trail", async () => {
+    await asUser(registrarId, "select public.set_application_requirement($1, 'psa-birth-certificate', true)", [reference]);
+    await expect(asUser(registrarId, "select public.set_application_requirement($1, 'Bad Key', true)", [reference])).rejects.toMatchObject({ code: "22023" });
+    await expect(asUser(registrarId, "select public.update_application_status($1, 'pending', null)", [reference])).rejects.toMatchObject({ code: "22023" });
+    await expect(asUser(registrarId, "select public.update_application_status('SNCS-UNKNOWN', 'complete', null)")).rejects.toMatchObject({ code: "P0002" });
+    await expect(asUser(adminId, "select public.update_application_status($1, 'complete', null)", [reference])).rejects.toMatchObject({ code: "42501" });
+
+    const update = (remarks: string) => asUser<{ result: unknown }>(registrarId,
+      "select public.update_application_status($1, 'incomplete', $2) as result", [reference, remarks]);
+    expect((await update("  Missing PSA copy  ")).rows).toEqual([{ result: { status: "incomplete", registrar_remarks: "Missing PSA copy", changed: true } }]);
+    expect((await update("Missing PSA copy")).rows).toEqual([{ result: { status: "incomplete", registrar_remarks: "Missing PSA copy", changed: false } }]);
+    await asUser(registrarId, "select public.record_status_email($1, 'incomplete', true)", [reference]);
+
+    const { rows: [{ detail }] } = await asUser<{ detail: Record<string, unknown> }>(registrarId,
+      "select public.get_registrar_application($1) as detail", [reference]);
+    expect(detail).toMatchObject({ status: "incomplete", registrar_remarks: "Missing PSA copy", requirement_checks: { "psa-birth-certificate": true } });
+    expect((await db.query(`select action, old_value, new_value,
+        actor_user_id = (select id from public.users where auth_user_id = $1) as by_registrar
+      from public.audit_logs where entity_type = 'enrollment_applications' order by id`, [registrarId])).rows).toEqual([
+      { action: "application.requirement_check", old_value: null, new_value: { requirement: "psa-birth-certificate", received: true }, by_registrar: true },
+      { action: "application.status_change", old_value: { status: "pending", registrar_remarks: null },
+        new_value: { status: "incomplete", registrar_remarks: "Missing PSA copy" }, by_registrar: true },
+      { action: "application.status_email", old_value: null, new_value: { status: "incomplete" }, by_registrar: true },
+    ]);
+  });
+
+  it("keeps browser sessions away from the enrollment tables", async () => {
+    for (const table of ["enrollment_applications", "application_guardians", "application_documents", "application_requirement_checks", "audit_logs"]) {
+      await expect(asUser(registrarId, `select * from public.${table}`)).rejects.toMatchObject({ code: "42501" });
+    }
+    await expect(asUser(registrarId, "update public.enrollment_applications set status = 'complete'")).rejects.toMatchObject({ code: "42501" });
+  });
+  // Manage Enrollment Application Tests END
 });
