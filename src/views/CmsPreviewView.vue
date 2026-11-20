@@ -1,13 +1,13 @@
 <script setup lang="ts">
-import { computed, nextTick, ref, useTemplateRef } from "vue";
-import { RouterLink } from "vue-router";
+import { computed, nextTick, onMounted, ref, useTemplateRef } from "vue";
+import { RouterLink, useRouter } from "vue-router";
 import CmsEditor from "@/components/cms/CmsEditor.vue";
 import CmsIcon from "@/components/cms/CmsIcon.vue";
-import CmsSignIn from "@/components/cms/CmsSignIn.vue";
 import CmsTrash from "@/components/cms/CmsTrash.vue";
 import { permanentlyRemoveItem, recordChange, stepHistory, type CmsLibrary } from "@/lib/cms/history";
 import { blankItem, demoAdmin, formatCmsDate, itemLabels, type CmsItem, type ItemType } from "@/lib/cms/preview";
 import { useCmsLibrary, writeCmsLibrary } from "@/lib/cms/store";
+import { getStaffSupabaseClient } from "@/lib/supabase";
 import type { CmsImageAssets } from "@/lib/cms/images";
 import type { PublicationStatus } from "@/lib/content/model";
 import { formatFileSize } from "@/lib/resources/model";
@@ -37,9 +37,10 @@ const statusOptions: { id: StatusFilter; label: string }[] = [
 const statusActions: Record<ItemAction, string> = {
   published: "Publish", draft: "Unpublish", archived: "Archive", trash: "Move to Trash", remove: "Remove permanently",
 };
-const sessionKey = "sncs-cms-preview-session";
-
-const signedIn = ref(readSession());
+// Signed-in Admin: the route only opens for a verified Admin (staffRole "admin" in the router).
+const router = useRouter();
+const staffName = ref(demoAdmin);
+const signingOut = ref(false);
 const section = ref<Section>("overview");
 const search = ref("");
 const status = ref<StatusFilter>("all");
@@ -63,23 +64,26 @@ const menuToggle = useTemplateRef<HTMLButtonElement>("menu-toggle");
 const shell = useTemplateRef<HTMLElement>("cms-shell");
 let actionTrigger: HTMLElement | null = null;
 
-function readSession() {
+// Show the signed-in Admin's name, as the Admin dashboard does.
+onMounted(async () => {
   try {
-    return sessionStorage.getItem(sessionKey) === "signed-in";
+    const { data: { session } } = await getStaffSupabaseClient().auth.getSession();
+    const provisioning = session?.user?.app_metadata?.chimera_staff_provisioning as { full_name?: unknown } | undefined;
+    const name = typeof provisioning?.full_name === "string" ? provisioning.full_name.trim() : "";
+    staffName.value = name || session?.user?.email || demoAdmin;
   } catch {
-    return false;
+    // Keep the generic name; the route guard has already verified Admin access.
   }
-}
+});
 
-function setSession(active: boolean) {
-  signedIn.value = active;
+async function signOut() {
+  signingOut.value = true;
   try {
-    if (active) sessionStorage.setItem(sessionKey, "signed-in");
-    else sessionStorage.removeItem(sessionKey);
+    await getStaffSupabaseClient().auth.signOut();
   } catch {
-    // The preview login can still be used until the page reloads.
+    // Leave the workspace even if the network request fails.
   }
-  selectSection("overview");
+  await router.replace({ name: "login" });
 }
 
 const sectionTitle = computed(() => section.value === "trash" ? "Trash" : navigation.find((entry) => entry.id === section.value)?.title);
@@ -143,7 +147,7 @@ function closeEditor() {
 }
 
 function persist(next: CmsLibrary) {
-  return signedIn.value && writeCmsLibrary(next);
+  return writeCmsLibrary(next);
 }
 
 function saveChange(next: CmsItem, label: string, newAssets?: CmsImageAssets) {
@@ -155,7 +159,7 @@ function saveChange(next: CmsItem, label: string, newAssets?: CmsImageAssets) {
     ...next,
     id: next.id || crypto.randomUUID(),
     updatedAt: new Date().toISOString(),
-    updatedBy: demoAdmin,
+    updatedBy: staffName.value,
   };
   return persist(recordChange(library.value, saved, label, newAssets));
 }
@@ -254,9 +258,7 @@ function dismissMenu() {
 </script>
 
 <template>
-  <div ref="cms-shell" class="cms-shell" :class="{ 'cms-signed-out': !signedIn }" @keydown.esc="navOpen && dismissMenu()">
-    <CmsSignIn v-if="!signedIn" @sign-in="setSession(true)" />
-    <template v-else>
+  <div ref="cms-shell" class="cms-shell" @keydown.esc="navOpen && dismissMenu()">
     <aside class="cms-sidebar">
       <button type="button" class="cms-brand" :disabled="Boolean(editor)" @click="selectSection('overview')">
         <img src="/images/source-site/sncs-seal.png" alt="" width="40" height="40" />
@@ -286,11 +288,16 @@ function dismissMenu() {
         <RouterLink class="cms-public-link" :to="{ name: 'home' }" target="_blank" rel="noopener">
           <CmsIcon name="external" :size="17" /> Public website<span class="sr-only"> (opens in a new tab)</span>
         </RouterLink>
+        <RouterLink class="cms-public-link" :to="{ name: 'admin-dashboard' }">
+          <CmsIcon name="grid" :size="17" /> Admin dashboard
+        </RouterLink>
         <div class="cms-profile">
-          <span class="cms-avatar" aria-hidden="true">DA</span>
-          <span><strong>{{ demoAdmin }}</strong><small>Design preview</small></span>
+          <span class="cms-avatar" aria-hidden="true">{{ staffName.charAt(0).toUpperCase() }}</span>
+          <span><strong>{{ staffName }}</strong><small>Admin · Preview, changes stay in this browser</small></span>
         </div>
-        <button type="button" class="cms-public-link" :disabled="Boolean(editor)" @click="setSession(false)">Sign out</button>
+        <button type="button" class="cms-public-link" :disabled="Boolean(editor) || signingOut" @click="signOut">
+          {{ signingOut ? "Signing out…" : "Sign out" }}
+        </button>
       </div>
     </aside>
 
@@ -462,6 +469,5 @@ function dismissMenu() {
         </div>
       </div>
     </dialog>
-    </template>
   </div>
 </template>

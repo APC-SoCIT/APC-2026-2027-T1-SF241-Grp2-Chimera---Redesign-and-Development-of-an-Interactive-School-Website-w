@@ -6,7 +6,6 @@
 -->
 <script setup lang="ts">
 import { RouterLink } from "vue-router";
-import { cmsPreviewEnabled } from "@/lib/cms/config";
 import { usePublicWebsite } from "@/lib/cms/public-website";
 import { getPublicSchoolContactInformation } from "@/lib/content/directory";
 
@@ -44,7 +43,6 @@ const { pages } = usePublicWebsite();
         <template v-if="schoolInformation"><a href="https://www.google.com/maps/search/?api=1&amp;query=Sto.+Nino+Catholic+School+Sampaloc+Street+Taguig" target="_blank" rel="noopener noreferrer">{{ schoolInformation.address }}<span class="sr-only"> (opens Google Maps in a new tab)</span></a><p>{{ schoolInformation.officeHours }}</p></template>
         <a href="tel:+63288379702">(02) 8837-9702</a>
         <RouterLink to="/contact">Contact the school</RouterLink>
-        <RouterLink v-if="cmsPreviewEnabled" :to="{ name: 'admin' }">Staff workspace</RouterLink>
         <RouterLink to="/login">Staff portal</RouterLink>
       </div>
     </div>

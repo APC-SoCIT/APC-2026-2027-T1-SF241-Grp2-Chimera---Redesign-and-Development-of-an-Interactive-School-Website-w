@@ -32,13 +32,14 @@ const router = createRouter({
   },
   routes: [
     ...(cmsPreviewEnabled ? [
-      { path: "/admin", name: "admin", component: () => import("@/views/CmsPreviewView.vue"), meta: { title: "Content Workspace", cmsPreview: true } },
-      { path: "/cms-preview", redirect: { name: "admin" } },
+      // Content workspace: opened from the Admin dashboard and protected by the staff sign-in (Admins only).
+      { path: "/admin/content", name: "content-workspace", component: () => import("@/views/CmsPreviewView.vue"), meta: { title: "Content Workspace", cmsPreview: true, staffRole: "admin" } },
+      { path: "/cms-preview", redirect: { name: "content-workspace" } },
       { path: "/pages/:slug?", name: "published-pages", component: () => import("@/views/PublishedPagesView.vue"), meta: { title: "School pages" } },
     ] : []),
     { path: "/login", name: "login", component: () => import("@/views/LoginView.vue"), meta: { title: "Staff sign in", authLayout: true } },
     { path: "/login/change-password", name: "password-change", component: () => import("@/views/StaffPasswordChangeView.vue"), meta: { title: "Change your password", authLayout: true, staffRole: "password-change" } },
-    { path: cmsPreviewEnabled ? "/staff/admin" : "/admin", name: "admin-dashboard", component: () => import("@/views/StaffDashboardView.vue"), props: { heading: "Admin dashboard", role: "admin" }, meta: { title: "Admin dashboard", authLayout: true, staffRole: "admin" } },
+    { path: "/admin", name: "admin-dashboard", component: () => import("@/views/StaffDashboardView.vue"), props: { heading: "Admin dashboard", role: "admin" }, meta: { title: "Admin dashboard", authLayout: true, staffRole: "admin" } },
     { path: "/registrar", name: "registrar-dashboard", component: () => import("@/views/StaffDashboardView.vue"), props: { heading: "Registrar dashboard", role: "registrar" }, meta: { title: "Registrar dashboard", authLayout: true, staffRole: "registrar" } },
     { path: "/teacher", name: "teacher-dashboard", component: () => import("@/views/StaffDashboardView.vue"), props: { heading: "Teacher dashboard", role: "teacher" }, meta: { title: "Teacher dashboard", authLayout: true, staffRole: "teacher" } },
     { path: "/academic-coordinator", name: "academic-coordinator-dashboard", component: () => import("@/views/StaffDashboardView.vue"), props: { heading: "Academic Coordinator dashboard", role: "academic_coordinator" }, meta: { title: "Academic Coordinator dashboard", authLayout: true, staffRole: "academic_coordinator" } },

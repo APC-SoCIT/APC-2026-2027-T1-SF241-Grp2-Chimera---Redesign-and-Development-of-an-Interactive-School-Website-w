@@ -293,28 +293,6 @@
 .cms-trash-list small { color: var(--cms-muted); margin-top: 2px; }
 .cms-trash-item-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; }
 
-.cms-shell.cms-signed-out { display: grid; grid-template-columns: minmax(0, 1fr); place-items: center; padding: 24px; }
-.cms-login { display: grid; grid-template-columns: 1fr 1.15fr; width: min(100%, 850px); background: white; border: 1px solid var(--cms-border); border-radius: 20px; overflow: hidden; box-shadow: 0 18px 55px #48142316; }
-.cms-login-campus {
-  display: flex;
-  flex-direction: column;
-  justify-content: end;
-  align-items: start;
-  padding: clamp(24px, 4vw, 42px);
-  background-color: var(--cms-wine);
-  background-image: linear-gradient(0deg, var(--red-950) 6%, #681711e8 36%, #a5291d58), url("/images/source-site/campus-front.jpg");
-  background-size: cover;
-  background-position: 50%;
-  color: white;
-}
-.cms-login-campus img { background: white; border-radius: 50%; padding: 3px; }
-.cms-login-campus p { color: var(--cms-gold); margin: 11px 0 4px; font-size: .82rem; font-weight: 750; }
-.cms-login-campus strong { font: 800 clamp(1.55rem, 3vw, 2.35rem)/1.15 "Libre Franklin", sans-serif; letter-spacing: -.035em; }
-.cms-login-panel { min-width: 0; padding: clamp(24px, 4vw, 42px); }
-.cms-login-panel > p { color: var(--cms-muted); margin: 8px 0 18px; }
-.cms-login-form { display: grid; gap: 14px; }
-.cms-password-field { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 6px; }
-.cms-login-panel > .cms-login-note { font-size: .8rem; margin: 14px 0 0; }
 
 @media (max-width: 1050px) {
   .cms-shell { grid-template-columns: 195px minmax(0, 1fr); }
@@ -340,10 +318,6 @@
   .cms-main { padding-top: 19px; }
 }
 @media (max-width: 620px) {
-  .cms-shell.cms-signed-out { padding: 13px; }
-  .cms-login { grid-template-columns: minmax(0, 1fr); }
-  .cms-login-campus { min-height: 164px; }
-  .cms-login-campus img { width: 39px; height: 39px; }
   .cms-history-actions { padding-inline: 11px; gap: 7px; }
   .cms-trash-list li { padding-inline: 11px; }
   .cms-trash-item-actions { grid-column: 2 / -1; justify-content: flex-start; }

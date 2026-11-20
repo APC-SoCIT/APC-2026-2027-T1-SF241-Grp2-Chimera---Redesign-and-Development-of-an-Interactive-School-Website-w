@@ -16,6 +16,7 @@ import { getStaffSupabaseClient } from "@/lib/supabase";
 import { getStaffPortalRole, type StaffRole } from "@/lib/staff-auth";
 import StaffAccountsPanel from "@/components/StaffAccountsPanel.vue";
 import RegistrarApplicationsPanel from "@/components/RegistrarApplicationsPanel.vue";
+import { cmsPreviewEnabled } from "@/lib/cms/config";
 
 const props = defineProps<{ heading: string; role?: StaffRole }>();
 
@@ -152,6 +153,14 @@ async function signOut() {
 
     <section class="portal-main" aria-labelledby="staff-dashboard-heading">
       <p v-if="signOutError" class="portal-alert" role="alert">Could not sign out. Please try again.</p>
+      <section v-if="role === 'admin' && cmsPreviewEnabled" class="portal-content-card" aria-labelledby="portal-content-title">
+        <div>
+          <h2 id="portal-content-title">Website content</h2>
+          <p>Manage the school website's news, events, pages and PDF resources in the SNCS content workspace.</p>
+          <p class="portal-content-note">Preview: content changes stay in this browser until the content database is connected.</p>
+        </div>
+        <RouterLink class="portal-content-open" :to="{ name: 'content-workspace' }">Open content workspace</RouterLink>
+      </section>
       <StaffAccountsPanel v-if="role === 'admin'" />
       <RegistrarApplicationsPanel v-if="role === 'registrar'" :staff-name="staffName" />
     </section>
@@ -181,6 +190,13 @@ async function signOut() {
 .portal-bar :focus-visible { outline: 3px solid var(--gold-300); outline-offset: 2px; }
 .portal-main { width: min(1200px, calc(100% - 32px)); margin-inline: auto; padding: 1.6rem 0 4rem; }
 .portal-verifying { width: min(1200px, calc(100% - 32px)); margin: 3rem auto; color: var(--muted); }
+.portal-content-card { display: flex; align-items: center; justify-content: space-between; gap: 1rem 2rem; flex-wrap: wrap; margin: 0 0 1.4rem; padding: 1.1rem 1.3rem; border: 1px solid var(--line); border-left: 4px solid var(--gold-500); border-radius: 8px; background: var(--white); }
+.portal-content-card h2 { margin: 0 0 .25rem; font-size: 1.1rem; }
+.portal-content-card p { margin: 0; color: var(--muted); font-size: .92rem; }
+.portal-content-card .portal-content-note { margin-top: .3rem; font-size: .82rem; }
+.portal-content-open { display: inline-flex; align-items: center; min-height: 44px; padding: .6rem 1rem; border-radius: 6px; background: var(--red-800); color: var(--white); font-weight: 700; text-decoration: none; white-space: nowrap; }
+.portal-content-open:hover { background: var(--red-900); }
+.portal-content-open:focus-visible { outline: 3px solid var(--gold-500); outline-offset: 2px; }
 .portal-alert { margin: 0 0 1rem; padding: .7rem 1rem; border: 1px solid #f3c1bb; border-radius: 8px; background: #fde3df; color: var(--red-800); font-weight: 700; }
 
 @media (max-width: 760px) {
