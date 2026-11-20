@@ -19,6 +19,10 @@
 .brand small { font-size: .8rem; }
 .desktop-nav { gap: 1.3rem; }
 .desktop-nav > a:not(.button) { font-size: .875rem; }
+/* Staff login: a quiet outlined button so families still see Admissions first */
+.desktop-nav .nav-staff-login { min-height: 44px; padding: .55rem .95rem; font-size: .875rem; color: var(--red-800); background: #fff; border-color: var(--red-700); }
+.desktop-nav .nav-staff-login:hover { background: var(--red-700); color: #fff; }
+.mobile-menu nav .mobile-staff-login { color: var(--red-800); border-top: 1px solid var(--line); }
 .school-hero { position: relative; isolation: isolate; min-height: 575px; display: flex; align-items: center; color: white; background: #45201d; }
 .school-hero-photo { position: absolute; inset: 0; z-index: -2; height: 100%; width: 100%; object-fit: cover; object-position: center 43%; }
 .school-hero::before { content: ""; position: absolute; inset: 0; z-index: -1; background: linear-gradient(90deg, #260b08ed 0%, #35100bc9 39%, #28171340 76%, #24120e29); }
