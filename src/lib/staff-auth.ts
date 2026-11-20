@@ -2,16 +2,17 @@
  * Author: Jan Sultan | Email: jgsultan@student.apc.edu.ph
  * Created Date: 20261113
  * Modified by: Jan Sultan | Email: jgsultan@student.apc.edu.ph
- * Modified Date: 20261114
+ * Modified Date: 20261119
  */
 import { getStaffSupabaseClient } from "./supabase";
 
-export type StaffRole = "admin" | "registrar" | "teacher";
+export type StaffRole = "admin" | "registrar" | "teacher" | "academic_coordinator";
 export type StaffAccess = StaffRole | "password-change";
 export const staffDashboard = {
   admin: "admin-dashboard",
   registrar: "registrar-dashboard",
   teacher: "teacher-dashboard",
+  academic_coordinator: "academic-coordinator-dashboard",
 } as const satisfies Record<StaffRole, string>;
 
 // The database verifies the caller's token and checks the current staff record.
@@ -22,7 +23,7 @@ export async function getStaffPortalRole(): Promise<StaffAccess | null> {
   if (!session?.expires_at || session.expires_at * 1000 <= Date.now()) return null;
   const { data, error } = await client.rpc("get_staff_portal_role");
   if (error) throw error;
-  return data === "admin" || data === "registrar" || data === "teacher" || data === "password-change" ? data : null;
+  return data === "admin" || data === "registrar" || data === "teacher" || data === "academic_coordinator" || data === "password-change" ? data : null;
 }
 
 // Staff Sign-in START

@@ -2,7 +2,7 @@
  * Author: Jan Sultan | Email: jgsultan@student.apc.edu.ph
  * Created Date: 20261114
  * Modified by: Jan Sultan | Email: jgsultan@student.apc.edu.ph
- * Modified Date: 20261114
+ * Modified Date: 20261119
  */
 import type { createClient } from "@supabase/supabase-js";
 import request from "supertest";
@@ -101,6 +101,15 @@ it("creates a confirmed Auth account with the assigned staff role and verified c
     email_confirm: true,
     app_metadata: { chimera_staff_provisioning: { created_by: user.id, full_name: "Registrar Example", role: "registrar" } },
   });
+});
+
+it("allows an authorized manager to provision an Academic Coordinator", async () => {
+  await submit({ ...input, role: "academic_coordinator" }).expect(201);
+  expect(client.auth.admin.createUser).toHaveBeenCalledWith(expect.objectContaining({
+    app_metadata: { chimera_staff_provisioning: {
+      created_by: user.id, full_name: "Registrar Example", role: "academic_coordinator",
+    } },
+  }));
 });
 
 it("rejects unsupported roles and handles a duplicate email without exposing provider details", async () => {

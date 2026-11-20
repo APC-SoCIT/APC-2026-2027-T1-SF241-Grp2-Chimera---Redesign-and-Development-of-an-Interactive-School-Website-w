@@ -2,7 +2,7 @@
  * Author: Jan Sultan | Email: jgsultan@student.apc.edu.ph
  * Created Date: 20261113
  * Modified by: Jan Sultan | Email: jgsultan@student.apc.edu.ph
- * Modified Date: 20261114
+ * Modified Date: 20261119
  */
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { getStaffPortalRole, signInStaff } from "./staff-auth";
@@ -35,7 +35,7 @@ describe("staff session access", () => {
     expect(client.rpc).not.toHaveBeenCalled();
   });
 
-  it.each(["admin", "registrar", "teacher", "password-change"])("keeps a session with %s access", async (role) => {
+  it.each(["admin", "registrar", "teacher", "academic_coordinator", "password-change"])("keeps a session with %s access", async (role) => {
     client.rpc.mockResolvedValue({ data: role, error: null });
     await expect(signInStaff("staff@example.com", "test-password")).resolves.toBe(role);
     expect(client.rpc).toHaveBeenCalledWith("get_staff_portal_role");

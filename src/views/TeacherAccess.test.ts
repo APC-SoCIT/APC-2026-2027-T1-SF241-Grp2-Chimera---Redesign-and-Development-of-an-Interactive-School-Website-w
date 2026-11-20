@@ -1,6 +1,8 @@
 /*
  * Author: Jan Sultan | Email: jgsultan@student.apc.edu.ph
  * Created Date: 20261114
+ * Modified by: Jan Sultan | Email: jgsultan@student.apc.edu.ph
+ * Modified Date: 20261119
  */
 // @vitest-environment jsdom
 import { flushPromises, mount, type VueWrapper } from "@vue/test-utils";
@@ -26,16 +28,21 @@ let page: VueWrapper;
 function emitAuth(event: AuthChangeEvent, secondsUntilExpiry: number | null) {
   const session = secondsUntilExpiry === null
     ? null
-    : { expires_at: Math.floor(Date.now() / 1000) + secondsUntilExpiry };
+    : { expires_at: Math.floor(Date.now() / 1000) + secondsUntilExpiry, user: { id: "teacher-id" } as Session["user"] };
   auth.getSession.mockResolvedValue({ data: { session }, error: null });
   const listener = auth.onAuthStateChange.mock.lastCall?.[0] as
-    ((event: AuthChangeEvent, session: Pick<Session, "expires_at"> | null) => void) | undefined;
+    ((event: AuthChangeEvent, session: Pick<Session, "expires_at" | "user"> | null) => void) | undefined;
   listener?.(event, session);
 }
 
 async function openPortal() {
   await router.push("/teacher");
   await flushPromises();
+  if (router.currentRoute.value.path === "/teacher") {
+    emitAuth("INITIAL_SESSION", 10);
+    await vi.advanceTimersByTimeAsync(0);
+    await flushPromises();
+  }
 }
 
 function expectSignInPage() {
@@ -63,7 +70,7 @@ afterEach(() => {
 });
 
 // Teacher Route Access Tests START
-it.each(["admin", "registrar", null])("blocks the Teacher dashboard for portal role %s", async (role) => {
+it.each(["admin", "registrar", "academic_coordinator", null])("blocks the Teacher dashboard for portal role %s", async (role) => {
   rpc.mockResolvedValue({ data: role, error: null });
   await openPortal();
   expect(rpc).toHaveBeenCalledWith("get_staff_portal_role");
@@ -114,6 +121,7 @@ it("keeps Teacher access through refresh and removes it at the new expiry", asyn
   emitAuth("INITIAL_SESSION", 10);
   vi.advanceTimersByTime(5000);
   emitAuth("TOKEN_REFRESHED", 10);
+  await vi.advanceTimersByTimeAsync(0);
   vi.advanceTimersByTime(5000);
   await flushPromises();
   expect(page.get("h1").text()).toBe(teacherHeading);
