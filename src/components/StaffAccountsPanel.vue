@@ -2,16 +2,17 @@
   Author: Jan Sultan | Email: jgsultan@student.apc.edu.ph
   Created Date: 20261114
   Modified by: Jan Sultan | Email: jgsultan@student.apc.edu.ph
-  Modified Date: 20261114
+  Modified Date: 20261119
 -->
 <script setup lang="ts">
 import { onMounted, ref } from "vue";
 import { getStaffSupabaseClient } from "@/lib/supabase";
+import type { StaffRole } from "@/lib/staff-auth";
 
-type Role = "admin" | "registrar" | "teacher";
+type Role = StaffRole;
 type StaffAccount = { id: string; full_name: string; email: string; role: Role; account_status: string };
 
-const roles = { admin: "Admin", registrar: "Registrar", teacher: "Teacher" } as const;
+const roles = { admin: "Admin", registrar: "Registrar", teacher: "Teacher", academic_coordinator: "Academic Coordinator" } as const;
 const client = getStaffSupabaseClient();
 const pageSize = 25;
 const accounts = ref<StaffAccount[]>([]);

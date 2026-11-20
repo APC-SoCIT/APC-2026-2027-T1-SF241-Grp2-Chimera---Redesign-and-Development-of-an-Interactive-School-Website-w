@@ -70,7 +70,7 @@ afterEach(() => {
 });
 
 // Teacher Route Access Tests START
-it.each(["admin", "registrar", null])("blocks the Teacher dashboard for portal role %s", async (role) => {
+it.each(["admin", "registrar", "academic_coordinator", null])("blocks the Teacher dashboard for portal role %s", async (role) => {
   rpc.mockResolvedValue({ data: role, error: null });
   await openPortal();
   expect(rpc).toHaveBeenCalledWith("get_staff_portal_role");
