@@ -19,5 +19,5 @@ const mainContent = useTemplateRef<HTMLElement>("main-content");
   <main id="main-content" ref="main-content" :class="{ 'public-site': !route.meta.cmsPreview && !route.meta.authLayout }" tabindex="-1">
     <RouterView />
   </main>
-  <SiteFooter v-if="!route.meta.cmsPreview" />
+  <SiteFooter v-if="!route.meta.cmsPreview && !route.meta.authLayout" />
 </template>

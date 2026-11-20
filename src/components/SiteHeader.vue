@@ -50,6 +50,7 @@ watch(() => route.fullPath, closeMenu);
         <RouterLink v-for="item in navigation" :key="item.to" :to="item.to">
           {{ item.label }}
         </RouterLink>
+        <RouterLink class="button nav-staff-login" to="/login">Staff login</RouterLink>
       </nav>
 
       <details ref="menu" class="mobile-menu" @keydown.esc="dismissMenu">
@@ -64,6 +65,7 @@ watch(() => route.fullPath, closeMenu);
           >
             {{ item.label }}
           </RouterLink>
+          <RouterLink class="mobile-staff-login" to="/login" @click="closeMenu">Staff login</RouterLink>
         </nav>
       </details>
     </div>
