@@ -88,7 +88,7 @@ export function formatCmsDate(value: string): string {
 }
 
 export function safePreviewLink(value: string): string | undefined {
-  if (/^\/(?![\/\\])[^\\\s]*$/.test(value)) return value;
+  if (/^\/(?![/\\])[^\\\s]*$/.test(value)) return value;
   try {
     const url = new URL(value);
     if (url.protocol === "https:" || url.protocol === "http:") return url.href;

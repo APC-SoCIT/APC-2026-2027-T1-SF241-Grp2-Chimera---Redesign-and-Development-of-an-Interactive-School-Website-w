@@ -1,15 +1,17 @@
 # CMS preview deployment
 
-The current redesign and Content Workspace are on `feat/cms-design`.
-Push and deploy this branch without merging into or pushing to `main`.
+The current redesign and Content Workspace are on `20261120-Terrence-Corpuz`.
+Push this branch without merging into or pushing to `main`. Deployment remains on hold until the user explicitly requests it.
 
 ## What is included
 
-- Public school website at `/`, with a responsive rotating campus illustration.
+- Public school website at `/`, with a responsive photo hero and a rotating campus illustration on `/campus`.
 - Content Workspace at `/admin`, with demo sign-in, content editing, images,
   publication controls, Trash, permanent removal, and Undo/Redo.
 - The Public website link opens a separate tab. Direct navigation and refresh
   use the SPA rewrites already defined in `vercel.json`.
+
+The separate Supabase staff portal remains at `/login`. When the CMS preview is enabled, the protected Admin dashboard uses `/staff/admin`; otherwise it uses `/admin`. Registrar and Teacher routes remain protected at `/registrar` and `/teacher`.
 
 This is a design preview. The demo sign-in is implemented in the browser and
 does not provide production access control. Edits and uploaded images are kept
@@ -32,10 +34,10 @@ APC repository connection:
 
 ```sh
 git remote add personal YOUR_GITHUB_REPOSITORY_URL
-git push personal HEAD:refs/heads/feat/cms-design
+git push personal HEAD:refs/heads/20261120-Terrence-Corpuz
 ```
 
-Verify that `HEAD` is `feat/cms-design` first. If the destination has existing
+Verify that `HEAD` is `20261120-Terrence-Corpuz` first. If the destination has existing
 content, inspect its history before pushing. Do not force-push or overwrite
 existing branches. Keep `.git`, `node_modules`, `dist`, `.env` files and Vercel
 account metadata out of manual source uploads. `.env.example` contains only
@@ -44,9 +46,9 @@ configuration names and placeholders and belongs in the source.
 ## Vercel project
 
 Import the chosen GitHub repository in the user's Vercel account. Deploy the
-`feat/cms-design` branch. With an existing project, use a branch preview and
+`20261120-Terrence-Corpuz` branch. With an existing project, use a branch preview and
 preserve its production branch. A separate new demo project can use
-`feat/cms-design` as its production branch if a stable demo URL is wanted.
+`20261120-Terrence-Corpuz` as its production branch if a stable demo URL is wanted.
 
 | Setting | Value |
 | --- | --- |
@@ -56,7 +58,7 @@ preserve its production branch. A separate new demo project can use
 | Output directory | `dist` |
 | Install command | Default package-manager detection |
 | Node.js | 22.x |
-| Branch | `feat/cms-design` |
+| Branch | `20261120-Terrence-Corpuz` |
 | Environment variable | `VITE_CMS_PREVIEW=true` |
 
 Set `VITE_CMS_PREVIEW=true` for the environment being deployed: Preview for a

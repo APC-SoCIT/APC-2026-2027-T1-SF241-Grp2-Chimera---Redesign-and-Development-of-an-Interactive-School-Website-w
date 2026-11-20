@@ -21,13 +21,17 @@ The project follows the architecture proposed in the SSYSADD1 paper:
 - **Backend:** Node.js with Express (PB-12 enrollment API)
 - **Data and files:** Supabase PostgreSQL and public TLC PDFs in Supabase Storage;
   enrollment document uploads are disabled
-- **Authentication (future backlog):** Express-managed authentication and sessions
+- **Staff authentication:** Supabase Auth with role-checked staff routes
 - **Scheduling (future backlog):** a separate Python service using Google OR-Tools
 
 The browser-local CMS design preview is available at `/admin` when enabled.
-See [CMS preview deployment](docs/cms-preview-deployment.md) for GitHub and Vercel
-settings. Production staff authentication, shared CMS persistence, Registrar
-screens, and scheduling remain future work.
+See [CMS preview deployment](docs/cms-preview-deployment.md) for its setup.
+The Supabase staff portal starts at `/login`; its protected Admin dashboard
+uses `/staff/admin` when the CMS preview is enabled, and `/admin` otherwise.
+Registrar and Teacher dashboards retain their existing paths.
+See [staff login setup](docs/sc13-login-page.md) and
+[Registrar workflow](docs/manage-enrollment-application.md) for configuration.
+Shared CMS persistence and scheduling remain future work.
 
 ## PB-10 public website
 

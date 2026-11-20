@@ -1,3 +1,9 @@
+<!--
+  Author: gemillan321 | Email: miles.gemillan77@gmail.com
+  Created Date: 20261001
+  Modified by: Jan Sultan | Email: jgsultan@student.apc.edu.ph
+  Modified Date: 20261112
+-->
 <script setup lang="ts">
 import { RouterLink } from "vue-router";
 import { cmsPreviewEnabled } from "@/lib/cms/config";
@@ -39,6 +45,7 @@ const { pages } = usePublicWebsite();
         <a href="tel:+63288379702">(02) 8837-9702</a>
         <RouterLink to="/contact">Contact the school</RouterLink>
         <RouterLink v-if="cmsPreviewEnabled" :to="{ name: 'admin' }">Staff workspace</RouterLink>
+        <RouterLink to="/login">Staff portal</RouterLink>
       </div>
     </div>
     <div class="container footer-bottom">

@@ -1,5 +1,15 @@
+# Author: gemillan321 | Email: 144914936+gemillan321@users.noreply.github.com
+# Created Date: 20261003
+# Modified by: Jan Sultan | Email: jgsultan@student.apc.edu.ph
+# Modified Date: 20261114
+
 packages:
   - "."
+
+# Expose the Auth declarations to TypeScript callers that resolve the linked
+# Supabase SDK without following its real path.
+publicHoistPattern:
+  - "@supabase/auth-js"
 
 allowBuilds:
   esbuild: true
