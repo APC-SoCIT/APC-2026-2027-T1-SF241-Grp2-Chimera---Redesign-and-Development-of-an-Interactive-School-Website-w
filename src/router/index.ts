@@ -33,7 +33,7 @@ const router = createRouter({
   routes: [
     ...(cmsPreviewEnabled ? [
       // Content workspace: opened from the Admin dashboard and protected by the staff sign-in (Admins only).
-      { path: "/admin/content", name: "content-workspace", component: () => import("@/views/CmsPreviewView.vue"), meta: { title: "Content Workspace", cmsPreview: true, staffRole: "admin" } },
+      { path: "/admin/content", name: "content-workspace", component: () => import("@/views/CmsPreviewView.vue"), meta: { title: "Content Workspace", cmsPreview: true, staffRole: "admin" as const } },
       { path: "/cms-preview", redirect: { name: "content-workspace" } },
       { path: "/pages/:slug?", name: "published-pages", component: () => import("@/views/PublishedPagesView.vue"), meta: { title: "School pages" } },
     ] : []),

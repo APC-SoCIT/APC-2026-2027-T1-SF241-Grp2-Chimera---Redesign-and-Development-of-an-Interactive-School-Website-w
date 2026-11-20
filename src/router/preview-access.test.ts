@@ -23,7 +23,12 @@ afterEach(() => vi.restoreAllMocks());
 it("keeps /admin as the Admin dashboard and puts the content workspace under it", () => {
   expect(router.resolve({ name: "admin-dashboard" }).path).toBe("/admin");
   expect(router.resolve({ name: "content-workspace" }).path).toBe("/admin/content");
-  expect(router.resolve("/cms-preview").name).toBe("content-workspace");
+});
+
+it("sends the old /cms-preview address to the content workspace", async () => {
+  vi.mocked(getStaffPortalRole).mockResolvedValue("admin");
+  await router.push("/cms-preview");
+  expect(router.currentRoute.value.name).toBe("content-workspace");
 });
 
 it.each([null, "registrar", "teacher", "academic_coordinator"])("sends %s to the staff sign-in instead of the content workspace", async (role) => {
