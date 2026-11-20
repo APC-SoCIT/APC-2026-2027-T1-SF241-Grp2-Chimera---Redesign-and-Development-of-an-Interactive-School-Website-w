@@ -2,7 +2,7 @@
  * Author: Jan Sultan | Email: jgsultan@student.apc.edu.ph
  * Created Date: 20261114
  * Modified by: Jan Sultan | Email: jgsultan@student.apc.edu.ph
- * Modified Date: 20261114
+ * Modified Date: 20261119
  */
 import express from "express";
 import { randomBytes, randomUUID } from "node:crypto";
@@ -115,7 +115,7 @@ export function createStaffAccountsApi(env = process.env, makeClient = createCli
     const name = typeof fullName === "string" ? fullName.trim() : "";
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail) || normalizedEmail.length > 254 ||
       !name || name.length > 150 || typeof password !== "string" || password.length < 12 || Buffer.byteLength(password) > 72 ||
-      !["admin", "registrar", "teacher"].includes(role)) {
+      !["admin", "registrar", "teacher", "academic_coordinator"].includes(role)) {
       res.status(422).json({ message: "Enter a valid name, email, role, and a password of at least 12 characters and at most 72 bytes." });
       return;
     }

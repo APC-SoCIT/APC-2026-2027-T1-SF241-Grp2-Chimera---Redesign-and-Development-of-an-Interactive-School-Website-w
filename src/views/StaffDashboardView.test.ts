@@ -5,6 +5,8 @@
  * Modified Date: 20261119
  * Modified by: Gian Mandac (portal bar test)
  * Modified Date: 20261119
+ * Modified by: Jan Sultan | Email: jgsultan@student.apc.edu.ph
+ * Modified Date: 20261120
  */
 // @vitest-environment jsdom
 import { flushPromises, mount } from "@vue/test-utils";
@@ -169,6 +171,19 @@ it("does not restore protected records if access resolves after expiry", async (
   expect(replace).toHaveBeenCalledWith({ name: "login" });
 });
 // Account Switch Regression END
+
+it("opens the Coordinator dashboard with its own role and no Admin account panel", async () => {
+  emit("INITIAL_SESSION", 10);
+  await vi.advanceTimersByTimeAsync(0);
+  await dashboard.setProps({ heading: "Academic Coordinator dashboard", role: "academic_coordinator" });
+  getStaffPortalRole.mockResolvedValue("academic_coordinator");
+  emit("INITIAL_SESSION", 10, "coordinator-id");
+  await vi.advanceTimersByTimeAsync(0);
+  expect(dashboard.get("h1").text()).toBe("Academic Coordinator dashboard");
+  expect(dashboard.find('[data-testid="staff-list"]').exists()).toBe(false);
+  expect(dashboard.get(".portal-user-role").text()).toBe("Academic Coordinator");
+  expect(replace).not.toHaveBeenCalled();
+});
 
 it("shows the SNCS seal and the signed-in staff member's name once access is verified", async () => {
   const listener = onAuthStateChange.mock.calls[0][0] as (event: AuthChangeEvent, session: unknown) => void;

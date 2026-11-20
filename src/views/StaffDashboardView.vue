@@ -5,6 +5,8 @@
   Modified Date: 20261119 (verify staff access on every session change)
   Modified by: Gian Mandac (branded staff portal bar with the SNCS seal)
   Modified Date: 20261119
+  Modified by: Jan Sultan | Email: jgsultan@student.apc.edu.ph
+  Modified Date: 20261120
 -->
 <script setup lang="ts">
 import { computed, onUnmounted, ref, watch } from "vue";
@@ -25,7 +27,7 @@ const accessVerified = ref(false);
 const contentVersion = ref(0);
 const staffName = ref("");
 
-const roleLabels: Record<StaffRole, string> = { admin: "Admin", registrar: "Registrar", teacher: "Teacher" };
+const roleLabels: Record<StaffRole, string> = { admin: "Admin", registrar: "Registrar", teacher: "Teacher", academic_coordinator: "Academic Coordinator" };
 const roleLabel = computed(() => props.role ? roleLabels[props.role] : "Staff");
 const initials = computed(() => {
   const words = staffName.value.replace(/@.*/, "").split(/[\s._-]+/).filter(Boolean);
