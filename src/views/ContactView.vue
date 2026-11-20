@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import PageHero from "@/components/PageHero.vue";
 import StudentServices from "@/components/StudentServices.vue";
+import AdmissionsInquiry from "@/components/AdmissionsInquiry.vue";
 import { getPublicOffices, getPublicSchoolContactInformation } from "@/lib/content/directory";
 const offices = getPublicOffices();
 const schoolInformation = getPublicSchoolContactInformation();
@@ -19,5 +20,6 @@ const schoolInformation = getPublicSchoolContactInformation();
       </div>
     </div>
   </section>
+  <AdmissionsInquiry />
   <StudentServices />
 </template>

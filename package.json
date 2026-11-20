@@ -7,7 +7,7 @@
     "dev": "vite",
     "dev:server": "tsx watch --env-file=.env server/index.ts",
     "start": "tsx --env-file=.env server/index.ts",
-    "build": "vue-tsc --noEmit && tsc --project api/tsconfig.json --noEmit && vite build",
+    "build": "vue-tsc --noEmit && tsc --project api/tsconfig.json --noEmit && vite build && node scripts/prerender.mjs",
     "preview": "vite preview",
     "check:supabase": "node scripts/check-supabase.mjs",
     "lint": "eslint .",

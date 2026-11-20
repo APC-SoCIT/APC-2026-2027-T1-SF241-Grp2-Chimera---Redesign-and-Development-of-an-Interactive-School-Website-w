@@ -2,6 +2,7 @@
 import PageHero from "@/components/PageHero.vue";
 import SectionHeading from "@/components/SectionHeading.vue";
 import StudentServices from "@/components/StudentServices.vue";
+import CampusModel from "@/components/CampusModel.vue";
 import { getPublicFacilities } from "@/lib/content/content";
 
 const facilities = getPublicFacilities();
@@ -38,10 +39,12 @@ const facilities = getPublicFacilities();
 
   <StudentServices />
 
+  <section class="section campus-tour-section" aria-labelledby="campus-tour-title"><div class="container campus-tour-layout"><div><p class="eyebrow">A different perspective</p><h2 id="campus-tour-title">Explore the campus model.</h2><p>Rotate this illustration left or right to see the school buildings, covered court, and church. The building shapes and spacing are approximate.</p></div><CampusModel /></div></section>
+
   <section id="alumni" class="section section-soft scroll-target">
     <div class="container feature-grid reverse">
-      <div class="feature-art">
-        <img src="/images/source-site/alumni-achievers.jpg" alt="SNCS alumni achievers" />
+      <div class="feature-art alumni-poster">
+        <img src="/images/source-site/alumni-achievers.jpg" alt="SNCS alumni achievers" width="1280" height="719" loading="lazy" />
       </div>
       <div class="feature-copy">
         <p class="eyebrow">Alumni community</p>
@@ -52,9 +55,8 @@ const facilities = getPublicFacilities();
           service to others.
         </p>
         <p>
-          This public website foundation keeps a dedicated home for alumni stories
-          and achievements so future CMS-managed profiles can be published without
-          redesigning the page.
+          Explore the school's alumni archive for stories, shared memories, and
+          achievements celebrated by the community.
         </p>
       </div>
     </div>

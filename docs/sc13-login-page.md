@@ -11,6 +11,8 @@ password sign-in opens `/admin`, `/registrar`, `/teacher`, or `/academic-coordin
 staff member's current role. Direct dashboard visits check for that route's
 role. Invalid credentials and denied access leave the user at sign-in.
 
+When the browser-local CMS design preview is enabled, `/admin` belongs to that demo and the real Admin dashboard is `/staff/admin`. Role checks and dashboard route names remain the same. The `/admin` examples below assume the CMS preview is disabled.
+
 ## Configure a test project
 
 1. Use a Supabase test project with the team's existing `public.users` table.

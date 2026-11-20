@@ -21,12 +21,17 @@ The project follows the architecture proposed in the SSYSADD1 paper:
 - **Backend:** Node.js with Express (PB-12 enrollment API)
 - **Data and files:** Supabase PostgreSQL and public TLC PDFs in Supabase Storage;
   enrollment document uploads are disabled
-- **Authentication (future backlog):** Express-managed authentication and sessions
+- **Staff authentication:** Supabase Auth with role-checked staff routes
 - **Scheduling (future backlog):** a separate Python service using Google OR-Tools
 
-The Registrar's Manage Enrollment Application workflow is described in
-[docs/manage-enrollment-application.md](docs/manage-enrollment-application.md).
-CMS and scheduling remain future work.
+The browser-local CMS design preview is available at `/admin` when enabled.
+See [CMS preview deployment](docs/cms-preview-deployment.md) for its setup.
+The Supabase staff portal starts at `/login`; its protected Admin dashboard
+uses `/staff/admin` when the CMS preview is enabled, and `/admin` otherwise.
+Registrar and Teacher dashboards retain their existing paths.
+See [staff login setup](docs/sc13-login-page.md) and
+[Registrar workflow](docs/manage-enrollment-application.md) for configuration.
+Shared CMS persistence and scheduling remain future work.
 
 ## PB-10 public website
 
@@ -93,8 +98,9 @@ replace this data source while preserving the page components and enforcing the
 same `published` and `public` visibility contract. This frontend filter is not a
 database access policy: a future backend must return only public records and
 enforce authorization before sending data to the browser. Resource reads already
-use RLS and limited column grants. CMS editing screens, other Supabase content
-adapters, and staff authentication remain pending. PB-12 adds enrollment
+use RLS and limited column grants. The CMS design preview stores edits and
+uploaded images in each browser. Shared CMS content adapters and production
+staff authentication remain pending. PB-12 adds enrollment
 submission; live use requires the server configuration described above.
 
 ## Asset note

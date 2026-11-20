@@ -1,10 +1,10 @@
+import { createRouter, createWebHistory, createMemoryHistory } from "vue-router";
 /*
  * Author: gemillan321 | Email: miles.gemillan77@gmail.com
  * Created Date: 20261001
  * Modified by: Jan Sultan | Email: jgsultan@student.apc.edu.ph
  * Modified Date: 20261119
  */
-import { createRouter, createWebHistory } from "vue-router";
 import type { StaffAccess } from "@/lib/staff-auth";
 import AboutView from "@/views/AboutView.vue";
 import AdmissionsView from "@/views/AdmissionsView.vue";
@@ -15,6 +15,7 @@ import ContactView from "@/views/ContactView.vue";
 import EventsView from "@/views/EventsView.vue";
 import HomeView from "@/views/HomeView.vue";
 import NewsView from "@/views/NewsView.vue";
+import { cmsPreviewEnabled } from "@/lib/cms/config";
 
 declare module "vue-router" {
   interface RouteMeta {
@@ -23,16 +24,21 @@ declare module "vue-router" {
 }
 
 const router = createRouter({
-  history: createWebHistory(import.meta.env.BASE_URL),
+  history: import.meta.env.SSR ? createMemoryHistory(import.meta.env.BASE_URL) : createWebHistory(import.meta.env.BASE_URL),
   scrollBehavior: (to, _from, savedPosition) => {
     if (savedPosition) return savedPosition;
-    if (to.hash) return { el: to.hash, top: 96 };
-    return { top: 0 };
+    if (to.hash) return { el: to.hash, top: 148 };
+    return { top: 0, behavior: "instant" };
   },
   routes: [
+    ...(cmsPreviewEnabled ? [
+      { path: "/admin", name: "admin", component: () => import("@/views/CmsPreviewView.vue"), meta: { title: "Content Workspace", cmsPreview: true } },
+      { path: "/cms-preview", redirect: { name: "admin" } },
+      { path: "/pages/:slug?", name: "published-pages", component: () => import("@/views/PublishedPagesView.vue"), meta: { title: "School pages" } },
+    ] : []),
     { path: "/login", name: "login", component: () => import("@/views/LoginView.vue"), meta: { title: "Staff sign in", authLayout: true } },
     { path: "/login/change-password", name: "password-change", component: () => import("@/views/StaffPasswordChangeView.vue"), meta: { title: "Change your password", authLayout: true, staffRole: "password-change" } },
-    { path: "/admin", name: "admin-dashboard", component: () => import("@/views/StaffDashboardView.vue"), props: { heading: "Admin dashboard", role: "admin" }, meta: { title: "Admin dashboard", authLayout: true, staffRole: "admin" } },
+    { path: cmsPreviewEnabled ? "/staff/admin" : "/admin", name: "admin-dashboard", component: () => import("@/views/StaffDashboardView.vue"), props: { heading: "Admin dashboard", role: "admin" }, meta: { title: "Admin dashboard", authLayout: true, staffRole: "admin" } },
     { path: "/registrar", name: "registrar-dashboard", component: () => import("@/views/StaffDashboardView.vue"), props: { heading: "Registrar dashboard", role: "registrar" }, meta: { title: "Registrar dashboard", authLayout: true, staffRole: "registrar" } },
     { path: "/teacher", name: "teacher-dashboard", component: () => import("@/views/StaffDashboardView.vue"), props: { heading: "Teacher dashboard", role: "teacher" }, meta: { title: "Teacher dashboard", authLayout: true, staffRole: "teacher" } },
     { path: "/academic-coordinator", name: "academic-coordinator-dashboard", component: () => import("@/views/StaffDashboardView.vue"), props: { heading: "Academic Coordinator dashboard", role: "academic_coordinator" }, meta: { title: "Academic Coordinator dashboard", authLayout: true, staffRole: "academic_coordinator" } },
@@ -67,7 +73,15 @@ router.beforeEach(async (to) => {
 
 router.afterEach((to) => {
   const title = typeof to.meta.title === "string" ? `${to.meta.title} | ` : "";
-  document.title = `${title}Sto. Niño Catholic School, Inc.`;
+  if (typeof document !== "undefined") {
+    document.title = `${title}Sto. Niño Catholic School, Inc.`;
+    if (!to.meta.cmsPreview && !to.meta.authLayout) {
+      const base = import.meta.env.VITE_SITE_URL || "https://sncs-campus-preview.vercel.app";
+      const url = new URL(to.path, base).href;
+      document.querySelector<HTMLLinkElement>('link[rel="canonical"]')?.setAttribute("href", url);
+      document.querySelector<HTMLMetaElement>('meta[property="og:url"]')?.setAttribute("content", url);
+    }
+  }
 });
 
 export default router;
