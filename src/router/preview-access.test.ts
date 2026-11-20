@@ -14,9 +14,11 @@ vi.mock("vue-router", async (importOriginal) => {
   return { ...original, createWebHistory: original.createMemoryHistory };
 });
 
-beforeEach(() => {
+beforeEach(async () => {
   vi.resetAllMocks();
   vi.spyOn(window, "scrollTo").mockImplementation(() => {});
+  // Start each check from a public page so every visit runs the staff guard.
+  await router.push("/");
 });
 afterEach(() => vi.restoreAllMocks());
 
