@@ -73,5 +73,5 @@ jobs:
             exit 1
           fi
 
-          vercel promote "$deployment_url" --yes
+          node scripts/promote-vercel.mjs "$deployment_url"
           printf 'Deployed and promoted %s\n' "$deployment_url" >> "$GITHUB_STEP_SUMMARY"
