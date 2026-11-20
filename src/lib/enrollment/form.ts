@@ -39,12 +39,21 @@ const parentFields = (prefix: string, mother = false): Field[] => [
   { key: `${prefix}Occupation`, label: 'Occupation', maxLength: 150 },
   { ...contactRules, key: `${prefix}Contact`, label: 'Contact number', type: 'tel' },
 ];
+/**
+ * The former school's name is needed whenever the checklist asks for documents from it
+ * (report card, good moral, recommendation, ESC). Old students already study at SNCS,
+ * and preschool applicants may not have attended school yet.
+ */
+export function needsFormerSchool(data: Application): boolean {
+  return Boolean(data.studentStatus) && data.studentStatus !== 'Old' && data.level !== 'Preschool';
+}
 export function sectionsFor(data: Application): Section[] {
   const sections: Section[] = [
     { title: 'Enrollment details', description: 'Choose the level and grade you are applying for.', fields: [
       { key: 'level', label: 'School level', type: 'select', required: true, options: Object.keys(schoolLevels) },
       { key: 'schoolYear', label: 'School year', required: true, readOnly: true, hint: 'Set by the current enrollment period.' },
-      { key: 'studentStatus', label: 'Student status', type: 'select', required: true, options: ['New', 'Old', 'Returnee'] },
+      { key: 'studentStatus', label: 'Student status', type: 'select', required: true, options: ['New', 'Old', 'Returnee'],
+        hint: 'New: first time at SNCS, including transferees from another school. Old: currently studying at SNCS. Returnee: studied at SNCS before and is coming back.' },
       { key: 'gradeLevel', label: 'Grade level', type: 'select', required: true, options: Object.hasOwn(schoolLevels, data.level) ? schoolLevels[data.level].grades : [] },
       ...(data.level === 'SHS' ? [{ key: 'strand', label: 'Strand', type: 'select' as const, required: true, options: Object.hasOwn(strands, data.gradeLevel) ? strands[data.gradeLevel] : [] }] : []),
       { key: 'paymentMode', label: 'Mode of payment', type: 'select', required: true, options: paymentModes, hint: 'Preference only. No payment is collected online.' },
@@ -68,7 +77,11 @@ export function sectionsFor(data: Application): Section[] {
     { title: 'Mother’s information', description: 'Use the mother’s full maiden name, if applicable.', fields: parentFields('mother', true) },
     { title: 'Guardian’s information', description: 'Provide guardian details if applicable.', fields: parentFields('guardian') },
     { title: 'Last school attended', description: 'Enter the details of the student’s previous school.', fields: [
-      { key: 'previousSchool', label: 'Former school’s name' },
+      { key: 'previousSchool', label: 'Former school’s name', required: needsFormerSchool(data),
+        hint: needsFormerSchool(data) ? 'Required: the report card and other requirements come from this school.'
+          : data.studentStatus === 'Old' ? 'Not needed for students already studying at SNCS.'
+            : data.level === 'Preschool' ? 'Leave blank if the child has not attended school yet.'
+              : 'Required for new students and returnees above pre-school.' },
       { key: 'previousAddress', label: 'Former school’s complete address', type: 'textarea' },
     ] },
   ];
@@ -97,7 +110,8 @@ function validEmail(value: string): boolean {
 }
 export function validateApplication(input: unknown, schoolYear: string, today = todayInManila()): { data: Application; errors: FieldErrors } {
   const raw = input && typeof input === 'object' && !Array.isArray(input) ? input as Record<string, unknown> : {};
-  const context: Application = { level: typeof raw.level === 'string' ? raw.level.trim() : '', gradeLevel: typeof raw.gradeLevel === 'string' ? raw.gradeLevel.trim() : '' };
+  const text = (key: string) => typeof raw[key] === 'string' ? (raw[key] as string).trim() : '';
+  const context: Application = { level: text('level'), gradeLevel: text('gradeLevel'), studentStatus: text('studentStatus') };
   const data: Application = {};
   const errors: FieldErrors = {};
   for (const field of sectionsFor(context).flatMap(section => section.fields)) {
