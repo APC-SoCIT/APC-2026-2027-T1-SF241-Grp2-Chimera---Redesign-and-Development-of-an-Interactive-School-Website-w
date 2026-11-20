@@ -24,6 +24,7 @@ vi.mock("@/components/StaffAccountsPanel.vue", () => ({ default: {
 } }));
 vi.mock("@/lib/supabase", () => ({ getStaffSupabaseClient: () => ({ auth: { onAuthStateChange, signOut } }) }));
 vi.mock("vue-router", () => ({ RouterLink: { template: "<a><slot /></a>" }, useRouter: () => ({ replace }) }));
+vi.mock("@/lib/cms/config", () => ({ cmsPreviewEnabled: true }));
 
 let dashboard: ReturnType<typeof mount>;
 
@@ -196,4 +197,16 @@ it("shows the SNCS seal and the signed-in staff member's name once access is ver
   expect(dashboard.get("img").attributes("alt")).toContain("Sto. Niño Catholic School");
   expect(dashboard.text()).toContain("Ana Reyes");
   expect(dashboard.get(".portal-avatar").text()).toBe("AR");
+});
+
+it("gives only Admins the Website content entry to the content workspace", async () => {
+  emit("INITIAL_SESSION", 10);
+  await vi.advanceTimersByTimeAsync(0);
+  expect(dashboard.get(".portal-content-card h2").text()).toBe("Website content");
+  expect(dashboard.get(".portal-content-open").text()).toBe("Open content workspace");
+  await dashboard.setProps({ heading: "Registrar dashboard", role: "registrar" });
+  getStaffPortalRole.mockResolvedValue("registrar");
+  emit("INITIAL_SESSION", 10, "registrar-id");
+  await vi.advanceTimersByTimeAsync(0);
+  expect(dashboard.find(".portal-content-card").exists()).toBe(false);
 });

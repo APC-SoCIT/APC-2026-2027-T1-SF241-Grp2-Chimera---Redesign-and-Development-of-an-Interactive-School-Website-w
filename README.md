@@ -24,10 +24,10 @@ The project follows the architecture proposed in the SSYSADD1 paper:
 - **Staff authentication:** Supabase Auth with role-checked staff routes
 - **Scheduling (future backlog):** a separate Python service using Google OR-Tools
 
-The browser-local CMS design preview is available at `/admin` when enabled.
+The browser-local CMS design preview is available at `/admin/content` when enabled;
+Admins open it from the Admin dashboard after signing in through the staff portal.
 See [CMS preview deployment](docs/cms-preview-deployment.md) for its setup.
-The Supabase staff portal starts at `/login`; its protected Admin dashboard
-uses `/staff/admin` when the CMS preview is enabled, and `/admin` otherwise.
+The Supabase staff portal starts at `/login`; its protected Admin dashboard is `/admin`.
 Registrar and Teacher dashboards retain their existing paths.
 See [staff login setup](docs/sc13-login-page.md) and
 [Registrar workflow](docs/manage-enrollment-application.md) for configuration.

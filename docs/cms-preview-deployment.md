@@ -6,25 +6,25 @@ Push this branch without merging into or pushing to `main`. Deployment remains o
 ## What is included
 
 - Public school website at `/`, with a responsive photo hero and a rotating campus illustration on `/campus`.
-- Content Workspace at `/admin`, with demo sign-in, content editing, images,
-  publication controls, Trash, permanent removal, and Undo/Redo.
+- Content Workspace at `/admin/content`, with content editing, images,
+  publication controls, Trash, permanent removal, and Undo/Redo. Admins open it
+  from the **Website content** card on the Admin dashboard.
 - The Public website link opens a separate tab. Direct navigation and refresh
   use the SPA rewrites already defined in `vercel.json`.
 
-The separate Supabase staff portal remains at `/login`. When the CMS preview is enabled, the protected Admin dashboard uses `/staff/admin`; otherwise it uses `/admin`. Registrar and Teacher routes remain protected at `/registrar` and `/teacher`.
+Sign-in uses the Supabase staff portal (the header's **Staff login** button, `/login`).
+Only a verified Admin can open the Content Workspace; other roles and signed-out
+visitors are sent to the sign-in. The Admin dashboard stays at `/admin`, and
+Registrar, Teacher and Academic Coordinator routes are unchanged.
 
-This is a design preview. The demo sign-in is implemented in the browser and
-does not provide production access control. Edits and uploaded images are kept
+This is a design preview. Edits and uploaded images are kept
 in localStorage on each browser and origin. They update the public preview in
 that same browser, including other tabs, but do not publish content to other
 visitors. Existing edits from the standalone HTML are not automatically
 transferred to the hosted URL. A shared CMS needs server authentication and
 database-backed content and file storage.
 
-Demo account for this preview:
-
-- Email: `admin@sncs.example`
-- Password: `SNCS-Preview-26!`
+There is no separate demo account: sign in with a staff account that has the Admin role.
 
 ## GitHub source
 

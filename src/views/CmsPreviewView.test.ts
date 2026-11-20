@@ -6,9 +6,21 @@ import { blankItem } from "@/lib/cms/preview";
 import { readLibrary, recordChange } from "@/lib/cms/history";
 import { useCmsLibrary, writeCmsLibrary } from "@/lib/cms/store";
 
+// The route guard verifies Admin access before this view opens; here the signed-in Admin is mocked.
+const replace = vi.fn();
+const signOut = vi.fn().mockResolvedValue({ error: null });
+vi.mock("vue-router", async (importOriginal) => ({ ...(await importOriginal<typeof import("vue-router")>()), useRouter: () => ({ replace }) }));
+vi.mock("@/lib/supabase", () => ({
+  getStaffSupabaseClient: () => ({
+    auth: {
+      getSession: async () => ({ data: { session: { user: { email: "ana@example.com", app_metadata: { chimera_staff_provisioning: { full_name: "Ana Reyes" } } } } } }),
+      signOut,
+    },
+  }),
+}));
+
 describe("Trash removal confirmation", () => {
   beforeEach(() => {
-    sessionStorage.setItem("sncs-cms-preview-session", "signed-in");
     vi.spyOn(window, "scrollTo").mockImplementation(() => {});
     HTMLDialogElement.prototype.showModal = function () { this.open = true; };
     HTMLDialogElement.prototype.close = function () {
@@ -48,6 +60,25 @@ describe("Trash removal confirmation", () => {
     expect(wrapper.get("dialog").element.open).toBe(true);
     expect(wrapper.get("dialog [role=alert]").text()).toContain("could not be removed");
     storage.mockRestore();
+    wrapper.unmount();
+  });
+});
+
+describe("signed-in Admin", () => {
+  beforeEach(() => vi.spyOn(window, "scrollTo").mockImplementation(() => {}));
+
+  it("opens the workspace without a separate sign-in, shows the Admin and signs out through the staff portal", async () => {
+    const wrapper = mount(CmsPreviewView, { global: { stubs: { RouterLink: { template: "<a><slot /></a>" } } } });
+    await flushPromises();
+    expect(wrapper.find("#cms-login-email").exists()).toBe(false);
+    expect(wrapper.get("h1").text()).toBe("Content overview");
+    expect(wrapper.get(".cms-profile").text()).toContain("Ana Reyes");
+    expect(wrapper.get(".cms-sidebar-footer").text()).toContain("Admin dashboard");
+    const signOutButton = wrapper.findAll(".cms-sidebar-footer button").find((button) => button.text() === "Sign out");
+    await signOutButton!.trigger("click");
+    await flushPromises();
+    expect(signOut).toHaveBeenCalledOnce();
+    expect(replace).toHaveBeenCalledWith({ name: "login" });
     wrapper.unmount();
   });
 });
