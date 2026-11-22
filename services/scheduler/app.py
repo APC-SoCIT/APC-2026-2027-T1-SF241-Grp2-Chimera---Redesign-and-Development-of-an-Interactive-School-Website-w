@@ -5,6 +5,8 @@ import argparse
 import csv
 import io
 import json
+import os
+import hmac
 import sqlite3
 import sys
 import uuid
@@ -170,7 +172,7 @@ class Store:
         return run if run and not run['policy_errors'] else None
 
 
-def make_server(store, port=8765):
+def make_server(store, port=8765, gateway_secret=None):
     class Handler(BaseHTTPRequestHandler):
         server_version = 'SNCSLocal/1'
 
@@ -178,6 +180,8 @@ def make_server(store, port=8765):
             pass  # Do not log teacher data or query strings.
 
         def trusted(self, mutation=False):
+            if gateway_secret and not hmac.compare_digest(self.headers.get('X-SNCS-Gateway', ''), gateway_secret):
+                raise PermissionError('Open scheduling through the Academic Coordinator staff portal.')
             expected = {f'127.0.0.1:{self.server.server_port}', f'localhost:{self.server.server_port}'}
             host = self.headers.get('Host', '')
             origin = self.headers.get('Origin')
@@ -226,6 +230,8 @@ def make_server(store, port=8765):
                 name = 'index.html' if url.path == '/' else url.path[1:]
                 mime = 'text/html' if name.endswith('.html') else 'text/javascript' if name.endswith('.js') else 'text/css'
                 self.respond((ROOT / 'web' / name).read_bytes(), content_type=mime + '; charset=utf-8')
+            elif url.path == '/api/health':
+                self.respond({'status': 'ready', 'service': 'scheduler'})
             elif url.path == '/api/workspaces':
                 self.respond(store.workspaces())
             elif url.path == '/api/workspace':
@@ -312,6 +318,7 @@ def main():
     serve = sub.add_parser('serve')
     serve.add_argument('--port', type=int, default=8765)
     serve.add_argument('--db', type=Path, default=ROOT / '.local' / 'scheduler.sqlite3')
+    serve.add_argument('--gateway', action='store_true', help='Require the staff API gateway secret on every request.')
     check = sub.add_parser('check')
     check.add_argument('file', type=Path)
     check.add_argument('--school-year', required=True)
@@ -328,9 +335,13 @@ def main():
         print(encoded({'counts': report['counts'], 'errors': len(report['errors']),
                        'warnings': len(report['warnings']), 'first_errors': report['errors'][:12]}))
         return 1 if report['errors'] else 0
-    server = make_server(Store(args.db), args.port)
+    gateway_secret = os.environ.get('SCHEDULER_INTERNAL_SECRET') if args.gateway else None
+    if args.gateway and (not gateway_secret or len(gateway_secret) < 32):
+        parser.error('Gateway mode requires SCHEDULER_INTERNAL_SECRET with at least 32 characters.')
+    server = make_server(Store(args.db), args.port, gateway_secret)
     print(f'Local scheduling workbench: http://127.0.0.1:{server.server_port}', flush=True)
-    print('Local prototype only; staff authentication and production publication are not connected.', flush=True)
+    print('Staff gateway mode: direct access requires the internal secret.' if args.gateway else
+          'Standalone local preview; open the staff portal for coordinator authentication.', flush=True)
     try:
         server.serve_forever()
     except KeyboardInterrupt:

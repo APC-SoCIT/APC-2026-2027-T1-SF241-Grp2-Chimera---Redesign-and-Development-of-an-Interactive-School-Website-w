@@ -5,6 +5,12 @@ assignments or statuses were changed by this work.
 
 ## Current branch handoff
 
+November 22 follow-up: the coordinator dashboard now opens the scheduling
+workbench through a Supabase role-checked Express gateway. The backend loads
+`.env.local` and can start scheduling independently of missing enrollment secrets.
+See [coordinator setup and verification](coordinator-scheduling-setup.md). The
+earlier isolation notes below describe the initial standalone preparation.
+
 Branch `feat/pb-02-scheduling-workbench` follows `feat/<backlog-id>-<description>`,
 using the PB-02 parent scope (Jira SC-9) for the SC-25–SC-28 preparation work. It is
 based on current main `1358e98`, including the team's existing Supabase staff

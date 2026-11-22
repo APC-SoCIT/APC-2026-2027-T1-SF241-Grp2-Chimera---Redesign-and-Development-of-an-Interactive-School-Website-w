@@ -334,6 +334,23 @@ class ImportTests(unittest.TestCase):
 
 
 class HttpTests(unittest.TestCase):
+    def test_gateway_mode_requires_internal_secret_for_reads_and_writes(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            server=make_server(Store(Path(tmp)/'gateway.sqlite3'),0,'test-gateway-secret-at-least-32-characters')
+            worker=threading.Thread(target=server.serve_forever,daemon=True);worker.start()
+            url=f'http://127.0.0.1:{server.server_port}/api/health'
+            try:
+                for headers in [{},{'X-SNCS-Gateway':'wrong'}]:
+                    with self.assertRaises(urllib.error.HTTPError) as caught:urllib.request.urlopen(urllib.request.Request(url,headers=headers))
+                    self.assertEqual(403,caught.exception.code)
+                req=urllib.request.Request(url,headers={'X-SNCS-Gateway':'test-gateway-secret-at-least-32-characters'})
+                with urllib.request.urlopen(req) as response:self.assertEqual('ready',json.load(response)['status'])
+                blocked=urllib.request.Request(url.replace('/health','/save'),data=b'{}',headers={'Content-Type':'application/json','X-SNCS-Local':'1'})
+                with self.assertRaises(urllib.error.HTTPError) as caught:urllib.request.urlopen(blocked)
+                self.assertEqual(403,caught.exception.code)
+            finally:
+                server.shutdown();server.server_close();worker.join()
+
     def setUp(self):
         self.tmp=tempfile.TemporaryDirectory()
         self.server=make_server(Store(Path(self.tmp.name)/'http.sqlite3'),0)

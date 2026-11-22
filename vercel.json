@@ -4,7 +4,8 @@
   "buildCommand": "pnpm build",
   "outputDirectory": "dist",
   "functions": {
-    "api/enrollment/*.ts": { "maxDuration": 60 }
+    "api/enrollment/*.ts": { "maxDuration": 60 },
+    "api/scheduler.ts": { "maxDuration": 300, "includeFiles": "services/scheduler/web/**" }
   },
   "rewrites": [
     { "source": "/about", "destination": "/about/index.html" },

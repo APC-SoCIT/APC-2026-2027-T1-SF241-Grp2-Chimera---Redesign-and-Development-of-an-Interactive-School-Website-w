@@ -1,0 +1,22 @@
+const {test}=require('node:test');
+const assert=require('node:assert/strict');
+const {readFileSync}=require('node:fs');
+const {join}=require('node:path');
+const {runInNewContext}=require('node:vm');
+test('portal requests use the current parent session without putting tokens in URLs',async()=>{
+  let receive;
+  const notices=[],calls=[];
+  const parent={postMessage:(...args)=>notices.push(args)};
+  const window={parent,location:{origin:'https://school.example'},addEventListener:(_name,handler)=>{receive=handler;}};
+  const fetch=async(...args)=>{calls.push(args);return {status:200};};
+  runInNewContext(readFileSync(join(__dirname,'web/portal.js'),'utf8'),{window,fetch,Headers});
+  receive({origin:'https://foreign.example',source:parent,data:{type:'SNCS_SCHEDULER_SESSION',token:'ignored'}});
+  receive({origin:window.location.origin,source:parent,data:{type:'SNCS_SCHEDULER_SESSION',token:'first'}});
+  await window.SNCSPortal.fetch('/api/workspaces');
+  assert.equal(calls[0][0],'/api/scheduler?path=%2Fapi%2Fworkspaces');
+  assert.equal(calls[0][1].headers.get('Authorization'),'Bearer first');
+  receive({origin:window.location.origin,source:parent,data:{type:'SNCS_SCHEDULER_SESSION',token:'refreshed'}});
+  await window.SNCSPortal.fetch('/api/run?id=demo');
+  assert.equal(calls[1][1].headers.get('Authorization'),'Bearer refreshed');
+  assert.equal(notices[0][0].type,'SNCS_SCHEDULER_READY');
+});

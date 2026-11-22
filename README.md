@@ -35,8 +35,10 @@ Shared CMS persistence and scheduling remain future work.
 
 An isolated [local scheduling preparation workbench](services/scheduler/README.md)
 now supports coordinator entry, SNCS Excel import preview, validation, CP-SAT
-generation, and local draft/publication testing. It is not connected to the staff
-portal or production database. See [Sprint 3 scope and remaining school decisions](docs/scheduling-preparation.md).
+generation, and local draft/publication testing. Academic Coordinators now open it
+from their signed-in dashboard through a role-checked API gateway. Scheduling
+storage remains in the Python service's SQLite database. See [coordinator setup](docs/coordinator-scheduling-setup.md)
+and [Sprint 3 scope and remaining school decisions](docs/scheduling-preparation.md).
 
 ## PB-10 public website
 

@@ -5,12 +5,14 @@ A local working slice for Miles's PB-02 (SC-9) and advance preparation for PB-04
 availability. Teachers view published schedules. Teacher availability submissions
 are outside this version, per the confirmed product decision.
 
-This is an isolated Python workbench, not a deployed staff portal. It uses the
-existing Vue/Express project's intended OR-Tools architecture, but does not yet
-connect to the project's staff authentication or Supabase persistence. No production credentials are
-needed, and none are read. The existing public website is unaffected.
+The Python workbench now also opens inside the Academic Coordinator's verified
+staff dashboard. Express checks the current Supabase session and coordinator role
+on every data request, and the Python gateway mode requires an internal secret.
+Storage remains SQLite; Supabase scheduling persistence is not yet implemented.
+The standalone loopback preview still runs independently. See
+[portal setup](../../docs/coordinator-scheduling-setup.md) for both modes.
 
-Current verification: **84 Python checks and 7 timetable rendering checks pass**.
+Current verification includes **85 Python checks and 8 timetable/portal checks**.
 The full daytime trial places all 933 supplied meetings, with lessons ending by
 16:20 and dismissal by 17:00. It remains provisional and non-publishable. Original
 client files, SQLite databases, trial inputs and generated schedules remain local

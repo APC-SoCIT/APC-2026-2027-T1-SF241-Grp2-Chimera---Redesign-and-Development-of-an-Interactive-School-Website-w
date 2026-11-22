@@ -17,13 +17,13 @@ const knownRevisions = new Map();
 const periodKey = () => JSON.stringify([data.school_year.trim(), data.period.trim()]);
 
 async function request(path, payload, raw = false) {
-  const response = await fetch(path, payload === undefined ? {cache:'no-store'} : {
+  const response = await (window.SNCSPortal?.fetch || fetch)(path, payload === undefined ? {cache:'no-store'} : {
     method:'POST', headers:{'X-SNCS-Local':'1', 'Content-Type':raw ? 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' : 'application/json'},
     body:raw ? payload : JSON.stringify(payload),
   });
   const value = await response.json();
   if (!response.ok) {
-    const error = new Error(value.error || 'The request failed.');
+    const error = new Error(value.error || value.message || 'The request failed.');
     error.fields = value.fields;
     throw error;
   }
@@ -317,7 +317,7 @@ function trialNotes(version) {
   return `<aside class="source-card"><h3>Trial assumptions · school confirmation needed</h3>${hours ? `<p><strong>${esc(hours)}</strong></p>` : ''}<details><summary>Review all trial inputs and changes</summary><ul>${notes.map(n => `<li>${esc(n)}</li>`).join('')}</ul></details></aside>`;
 }
 async function downloadSchedules(version,type) {
-  const response = await fetch('/timetable.css',{cache:'no-store'});
+  const response = await fetch(window.SNCSPortal?.assetURL('timetable.css') || '/timetable.css',{cache:'no-store'});
   if (!response.ok) throw new Error('Timetable styles could not be loaded. Try again.');
   const css = await response.text();
   const root = document.createElement('div'); root.className = 'print-root';
@@ -366,6 +366,19 @@ function downloadWorking() {
 }
 
 document.addEventListener('click', (event) => {
+  const download = event.target.closest('a[href^="/api/export"]');
+  if (download && window.SNCSPortal) {
+    event.preventDefault();
+    operation('Downloading the saved schedule…',async () => {
+      const response = await window.SNCSPortal.fetch(download.getAttribute('href'));
+      if (!response.ok) { const value=await response.json(); throw new Error(value.error || 'The schedule could not be downloaded.'); }
+      const url=URL.createObjectURL(await response.blob());
+      const link=document.createElement('a');link.href=url;
+      link.download=download.getAttribute('href').includes('format=csv')?'schedule.csv':'schedule-version.json';
+      link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
+    });
+    return;
+  }
   const button = event.target.closest('button'); if (!button || busy) return;
   if (button.dataset.view) showView(button.dataset.view);
   if (button.dataset.table) {
