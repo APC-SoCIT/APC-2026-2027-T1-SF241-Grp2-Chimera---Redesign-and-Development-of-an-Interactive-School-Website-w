@@ -16,6 +16,7 @@ import { getStaffSupabaseClient } from "@/lib/supabase";
 import { getStaffPortalRole, type StaffRole } from "@/lib/staff-auth";
 import StaffAccountsPanel from "@/components/StaffAccountsPanel.vue";
 import RegistrarApplicationsPanel from "@/components/RegistrarApplicationsPanel.vue";
+import CoordinatorSchedulerPanel from "@/components/CoordinatorSchedulerPanel.vue";
 import { cmsPreviewEnabled } from "@/lib/cms/config";
 
 const props = defineProps<{ heading: string; role?: StaffRole }>();
@@ -27,6 +28,7 @@ const signOutError = ref(false);
 const accessVerified = ref(false);
 const contentVersion = ref(0);
 const staffName = ref("");
+const schedulerToken = ref("");
 
 const roleLabels: Record<StaffRole, string> = { admin: "Admin", registrar: "Registrar", teacher: "Teacher", academic_coordinator: "Academic Coordinator" };
 const roleLabel = computed(() => props.role ? roleLabels[props.role] : "Staff");
@@ -53,6 +55,7 @@ let authorizedRole: StaffRole | undefined;
 let accessVersion = 0;
 
 function clearAccess() {
+  schedulerToken.value = "";
   accessVerified.value = false;
   contentVersion.value += 1;
   accessVersion += 1;
@@ -86,6 +89,7 @@ function checkSession(session: Session | null) {
       const role = await getStaffPortalRole();
       if (version !== accessVersion) return;
       if (role && role === props.role) {
+        schedulerToken.value = session.access_token ?? "";
         authorizedUserId = session.user.id;
         authorizedRole = role;
         accessVerified.value = true;
@@ -163,6 +167,7 @@ async function signOut() {
       </section>
       <StaffAccountsPanel v-if="role === 'admin'" />
       <RegistrarApplicationsPanel v-if="role === 'registrar'" :staff-name="staffName" />
+      <CoordinatorSchedulerPanel v-if="role === 'academic_coordinator'" :access-token="schedulerToken" />
     </section>
   </div>
   <p v-else class="portal-verifying" role="status">Verifying staff access…</p>

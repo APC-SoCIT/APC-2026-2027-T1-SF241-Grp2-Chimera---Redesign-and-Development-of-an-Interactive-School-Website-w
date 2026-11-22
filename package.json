@@ -5,14 +5,16 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "dev:server": "tsx watch --env-file=.env server/index.ts",
-    "start": "tsx --env-file=.env server/index.ts",
+    "dev:server": "node scripts/start-backend.mjs --watch",
+    "start": "node scripts/start-backend.mjs",
     "build": "vue-tsc --noEmit && tsc --project api/tsconfig.json --noEmit && vite build && node scripts/prerender.mjs",
     "preview": "vite preview",
     "check:supabase": "node scripts/check-supabase.mjs",
     "lint": "eslint .",
     "typecheck": "vue-tsc --noEmit && tsc --project api/tsconfig.json --noEmit",
     "test": "vitest run src server",
+    "test:scheduler": "python -m unittest discover -s services/scheduler -q && node --test services/scheduler/test_timetable.cjs services/scheduler/test_portal.cjs",
+    "test:scheduler-gateway": "vitest run services/scheduler/gateway.integration.test.ts",
     "test:runtime": "node scripts/check-enrollment-runtime.mjs",
     "check:resources": "node scripts/verify-resources.mjs"
   },

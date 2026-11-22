@@ -55,6 +55,16 @@ it("leaves the open dashboard when a session expires without refresh", () => {
   expect(replace).toHaveBeenCalledWith({ name: "login" });
 });
 
+it('shows scheduling after verified Academic Coordinator access and removes it at expiry',async()=>{
+  await dashboard.setProps({heading:'Academic Coordinator dashboard',role:'academic_coordinator'});
+  getStaffPortalRole.mockResolvedValue('academic_coordinator');
+  emit('INITIAL_SESSION',10,'coordinator-id');
+  await vi.advanceTimersByTimeAsync(0);await flushPromises();
+  expect(dashboard.find('iframe[title="Academic Coordinator scheduling workspace"]').exists()).toBe(true);
+  vi.advanceTimersByTime(10_000);await flushPromises();
+  expect(dashboard.find('iframe').exists()).toBe(false);
+});
+
 it("keeps the dashboard open after refresh and uses the new expiry", () => {
   emit("INITIAL_SESSION", 2);
   vi.advanceTimersByTime(1000);
