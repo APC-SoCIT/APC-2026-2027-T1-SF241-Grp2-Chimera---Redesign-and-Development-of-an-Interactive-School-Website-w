@@ -33,6 +33,11 @@ See [staff login setup](docs/sc13-login-page.md) and
 [Registrar workflow](docs/manage-enrollment-application.md) for configuration.
 Shared CMS persistence and scheduling remain future work.
 
+An isolated [local scheduling preparation workbench](services/scheduler/README.md)
+now supports coordinator entry, SNCS Excel import preview, validation, CP-SAT
+generation, and local draft/publication testing. It is not connected to the staff
+portal or production database. See [Sprint 3 scope and remaining school decisions](docs/scheduling-preparation.md).
+
 ## PB-10 public website
 
 - Responsive Home, About, Campus, News, Events, Contact, and Admissions routes
