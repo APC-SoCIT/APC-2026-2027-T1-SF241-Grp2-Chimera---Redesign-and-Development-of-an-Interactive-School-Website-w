@@ -1,4 +1,31 @@
-# SNCS Management System
+# Chimera · SNCS School Web App
+### A clearer path from school information to enrollment.
+
+A team project for **Sto. Niño Catholic School Inc.**, combining a responsive
+public website, downloadable learning resources, and online enrollment
+applications.
+
+**[Explore the code](src)** · [Enrollment setup](docs/enrollment-setup.md) · [Implementation evidence](docs/verification/pb10-verification.md)
+
+![SNCS public website redesign](docs/verification/home-without-motto-card.png)
+
+## Project overview
+
+| Area | Implemented scope on this branch |
+| --- | --- |
+| Public website | School information, admissions guidance, news, events, and contact pages. |
+| Resource downloads | Public learning-resource PDFs served through Supabase Storage. |
+| Online enrollment | Applicant forms backed by an Express API, Turnstile, and Supabase persistence. |
+| Content structure | Typed models and selectors ready for future CMS integration. |
+
+**Stack:** Vue 3 · TypeScript · Vite · Node.js / Express · Supabase · Cloudflare Turnstile
+
+**Project context:** Collaborative academic work by Chimera / Group 2 at Asia
+Pacific College. This is Jan Sultan's fork; features and readiness are described
+for each branch. The [login contribution branch](https://github.com/achlys0165/APC-2026-2027-T1-SF241-Grp2-Chimera---Redesign-and-Development-of-an-Interactive-School-Website-w/tree/20261112_Jan_Login)
+contains separate work on staff access.
+
+## Implementation and setup
 
 This repository contains the Sto. Niño Catholic School (SNCS) management-system
 project, including **PB-10: Public Website Content**, **PB-11: Public Resource
