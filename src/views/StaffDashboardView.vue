@@ -167,11 +167,11 @@ const navGroups = computed<NavGroup[]>(() => {
   } else if (props.role === "registrar") {
     groups.push({ label: "Enrollment", items: [
       { id: "applications", label: "Applications", icon: "inbox", target: "registrar-applications-heading" },
-      { id: "enrollment-form", label: "Public enrollment form", icon: "form", to: { name: "enrollment" }, newTab: true },
+      { id: "enrollment-form", label: "Enrollment form", icon: "form", to: { name: "enrollment" }, newTab: true },
     ] });
   } else if (props.role === "academic_coordinator") {
     groups.push({ label: "Scheduling", items: [
-      { id: "scheduling", label: "Scheduling workbench", icon: "event", target: "portal-scheduling" },
+      { id: "scheduling", label: "Workbench", icon: "event", target: "portal-scheduling" },
     ] });
   } else if (props.role === "teacher") {
     groups.push({ label: "My teaching", items: [{ id: "schedule", label: "My schedule", icon: "clock", soon: true }] });
@@ -309,7 +309,7 @@ watch(() => props.role, () => {
               <CmsIcon name="inbox" :size="18" /> Review applications
             </button>
             <button v-else-if="role === 'academic_coordinator'" type="button" class="portal-hero-button"
-              @click="goTo({ id: 'scheduling', label: 'Scheduling workbench', icon: 'event', target: 'portal-scheduling' })">
+              @click="goTo({ id: 'scheduling', label: 'Workbench', icon: 'event', target: 'portal-scheduling' })">
               <CmsIcon name="event" :size="18" /> Open scheduling workbench
             </button>
           </div>

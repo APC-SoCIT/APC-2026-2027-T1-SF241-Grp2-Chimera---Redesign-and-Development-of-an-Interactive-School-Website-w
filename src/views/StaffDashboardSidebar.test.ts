@@ -77,8 +77,8 @@ it("gives a Content Admin the website sections only and hides the staff list", a
 });
 
 it.each([
-  ["registrar", ["Overview", "Applications", "Public enrollment form"]],
-  ["academic_coordinator", ["Overview", "Scheduling workbench"]],
+  ["registrar", ["Overview", "Applications", "Enrollment form"]],
+  ["academic_coordinator", ["Overview", "Workbench"]],
   ["teacher", ["Overview", "My schedule"]],
 ] as const)("shows %s only its own sections", async (role, labels) => {
   await open(role);
@@ -105,7 +105,7 @@ it("shrinks the side panel to icons, keeps every item reachable, and remembers t
   // Icons stay, and each item keeps its name for screen readers and the hover label.
   const items = dashboard!.findAll(".portal-nav .portal-nav-item");
   expect(items.map((item) => item.find("svg").exists())).toEqual([true, true, true]);
-  expect(items.map((item) => item.attributes("data-label"))).toEqual(["Overview", "Applications", "Public enrollment form"]);
+  expect(items.map((item) => item.attributes("data-label"))).toEqual(["Overview", "Applications", "Enrollment form"]);
   expect(localStorage.getItem("sncs-staff-sidebar")).toBe("collapsed");
 
   dashboard!.unmount();
