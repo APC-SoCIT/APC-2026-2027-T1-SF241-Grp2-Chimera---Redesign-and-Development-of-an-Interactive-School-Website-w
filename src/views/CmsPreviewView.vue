@@ -66,6 +66,10 @@ let actionTrigger: HTMLElement | null = null;
 
 // Show the signed-in Admin's name, as the Admin dashboard does.
 onMounted(async () => {
+  // Open the section chosen in the Admin dashboard's side panel (?section=announcement, …).
+  const requested = new URLSearchParams(window.location.search).get("section");
+  const match = navigation.find((entry) => entry.id === requested);
+  if (match) section.value = match.id;
   try {
     const { data: { session } } = await getStaffSupabaseClient().auth.getSession();
     const provisioning = session?.user?.app_metadata?.chimera_staff_provisioning as { full_name?: unknown } | undefined;
