@@ -1,0 +1,274 @@
+.public-site, .site-header, .site-footer { --cream-50: #fff; --cream-100: #f6f5f2; --muted: #554e49; --line: #dedbd5; }
+.public-site { background: #fff; font-size: 1rem; }
+.public-site h2 { line-height: 1.13; }
+.public-site .section-row .section-heading h2 { margin-bottom: 1rem; }
+.public-site .section { padding-block: clamp(3rem, 6vw, 5rem); }
+.public-site .eyebrow { font-size: .875rem; letter-spacing: .1em; }
+.public-site .meta { font-size: .875rem; line-height: 1.65; }
+.public-site .text-link, .learning-level a { display: inline-flex; align-items: center; min-height: 44px; }
+.site-header { border-top: 0; background: #fff; }
+.school-utility { background: var(--red-900); color: #fff; font-size: .875rem; }
+.school-utility > .container { display: flex; align-items: center; justify-content: space-between; min-height: 38px; gap: 1rem; }
+.school-utility nav { display: flex; gap: 1.5rem; }
+.school-utility a { display: inline-flex; align-items: center; min-height: 38px; text-decoration: none; }
+.school-utility a:hover { text-decoration: underline; }
+.school-utility span { letter-spacing: .07em; }
+.header-inner { min-height: 96px; }
+.brand-mark { height: 60px; width: 60px; }
+.brand strong { font-family: "DM Serif Text", Georgia, serif; font-weight: 400; font-size: 1.28rem; }
+.brand small { font-size: .8rem; }
+.desktop-nav { gap: 1.3rem; }
+.desktop-nav > a:not(.button) { font-size: .875rem; }
+/* Staff login: a quiet outlined button so families still see Admissions first */
+.desktop-nav .nav-staff-login { min-height: 44px; padding: .55rem .95rem; font-size: .875rem; color: var(--red-800); background: #fff; border-color: var(--red-700); }
+.desktop-nav .nav-staff-login:hover { background: var(--red-700); color: #fff; }
+.mobile-menu nav .mobile-staff-login { color: var(--red-800); border-top: 1px solid var(--line); }
+.school-hero { position: relative; isolation: isolate; min-height: 575px; display: flex; align-items: center; color: white; background: #45201d; }
+.school-hero-photo { position: absolute; inset: 0; z-index: -2; height: 100%; width: 100%; object-fit: cover; object-position: center 43%; }
+.school-hero::before { content: ""; position: absolute; inset: 0; z-index: -1; background: linear-gradient(90deg, #260b08ed 0%, #35100bc9 39%, #28171340 76%, #24120e29); }
+.school-hero-content { padding-block: 4.4rem 4rem; }
+.school-hero h1 { max-width: 850px; color: #fff; font-size: clamp(3rem, 5.7vw, 5.2rem); line-height: 1.04; }
+.school-hero-content > p:not(.eyebrow) { color: #fff; max-width: 650px; font-size: 1.12rem; margin: 1.5rem 0 1.8rem; }
+.hero-location { display: block; font-size: .875rem; margin-top: 2rem; color: #fff5e5; }
+.button-outline-light { border-color: #ffffffcc; color: white; background: #260b0833; }
+.button-outline-light:hover { background: #ffffff1f; }
+.parent-shortcuts { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); position: relative; background: #fff; border-bottom: 1px solid var(--line); }
+.parent-shortcuts a { display: grid; align-content: center; padding: 1.5rem 1.3rem; text-decoration: none; border-right: 1px solid var(--line); min-height: 105px; gap: .4rem; }
+.parent-shortcuts a:first-child { padding-left: 0; }
+.parent-shortcuts a:last-child { border-right: 0; }
+.parent-shortcuts small { color: var(--muted); font-size: .875rem; }
+.parent-shortcuts strong { color: var(--red-800); font-size: 1rem; }
+.parent-shortcuts a:hover strong { text-decoration: underline; }
+.introduction-layout { display: grid; grid-template-columns: minmax(0, 1.7fr) minmax(0, 1fr); align-items: center; gap: 5rem; }
+.introduction-layout h2 { font-size: clamp(2rem, 3.5vw, 3rem); }
+.introduction-layout .lead-copy { font-size: 1.05rem; color: var(--muted); max-width: 640px; margin-block: 1.3rem .5rem; }
+.heritage-note { padding-left: 2rem; border-left: 2px solid var(--gold-500); }
+.heritage-note > span { font-size: .875rem; }
+.heritage-note strong { display: block; color: var(--red-800); font-family: "DM Serif Text", Georgia, serif; font-size: 5rem; font-weight: 400; line-height: 1.1; }
+.heritage-note p { color: var(--muted); margin-block: .6rem; }
+.heritage-note a { display: inline-block; padding-block: .65rem; color: var(--red-800); text-underline-offset: .25rem; font-size: .875rem; }
+.learning-section { background: #f6f5f2; }
+.editorial-heading { display: grid; grid-template-columns: 1.4fr 1fr; align-items: end; gap: 4rem; margin-bottom: 2.4rem; }
+.editorial-heading p:not(.eyebrow) { color: var(--muted); margin: 0; }
+.editorial-heading h2 { font-size: clamp(2.2rem, 3.8vw, 3.4rem); }
+.learning-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); border-top: 3px solid var(--red-800); background: white; }
+.learning-level { padding: 1.8rem 1.5rem; border-right: 1px solid var(--line); display: flex; flex-direction: column; }
+.learning-level:last-child { border-right: 0; }
+.learning-level .level-grades { font-size: .875rem; color: var(--red-800); font-weight: 700; margin: 0 0 1rem; }
+.learning-level h3 { font-family: "DM Serif Text", Georgia, serif; font-size: 1.7rem; font-weight: 400; line-height: 1.15; }
+.learning-level p:not(.level-grades) { color: var(--muted); }
+.learning-level a { color: var(--red-800); text-underline-offset: .25rem; font-size: .875rem; font-weight: 700; margin-top: auto; }
+.admissions-feature { background: var(--red-900); color: #fff; }
+.admissions-feature h2, .admissions-feature h3 { color: white; }
+.admissions-feature-layout { display: grid; grid-template-columns: 1.1fr 1fr; gap: 6rem; align-items: center; }
+.admissions-feature-layout > div > p:not(.eyebrow) { color: #fff3e8; margin-block: 1.4rem; }
+.admission-steps { display: grid; gap: 1.7rem; padding: 0; margin: 0; list-style: none; }
+.admission-steps li { display: grid; grid-template-columns: 35px minmax(0, 1fr); gap: 1.1rem; }
+.admission-steps li > span { color: var(--gold-300); font: 1.9rem "DM Serif Text", Georgia, serif; border-bottom: 1px solid var(--gold-500); height: 43px; text-align: center; }
+.admission-steps h3 { font-size: 1.1rem; line-height: 1.4; }
+.admission-steps p { margin: .4rem 0; color: #fff3e8; font-size: .95rem; }
+.admission-steps a { color: var(--gold-300); text-underline-offset: .3rem; min-height: 44px; display: inline-flex; align-items: center; font-size: .875rem; font-weight: 700; }
+.campus-editorial-grid { display: grid; grid-template-columns: 1.5fr 1fr; gap: 2rem; }
+.campus-editorial-image { position: relative; display: block; min-height: 450px; background: #59423b; }
+.campus-editorial-image > img { width: 100%; height: 100%; object-fit: cover; position: absolute; }
+.campus-editorial-image > span { position: absolute; bottom: 0; inset-inline: 0; padding: 4rem 2rem 2rem; background: linear-gradient(transparent, #190d09ed); color: #fff; }
+.campus-editorial-image small { display: block; font-size: .875rem; margin-bottom: .7rem; letter-spacing: .1em; }
+.campus-editorial-image strong { font: 2.2rem/1.15 "DM Serif Text", Georgia, serif; }
+.campus-editorial-side > img { height: 250px; width: 100%; object-fit: cover; }
+.campus-editorial-side > div { padding: 1.5rem 0 0; }
+.campus-editorial-side h3 { font: 1.8rem "DM Serif Text", Georgia, serif; }
+.campus-editorial-side p { color: var(--muted); margin-block: .7rem .3rem; }
+.school-updates { background: #f6f5f2; }
+.school-updates-grid { display: grid; grid-template-columns: 1.2fr 1fr; gap: 5rem; }
+.school-updates h2 { font-size: clamp(2rem, 3.5vw, 2.8rem); }
+.editorial-news-item { padding: 1.5rem 0; border-top: 1px solid #c9c0b7; }
+.editorial-news-item .meta { margin-bottom: .6rem; }
+.editorial-news-item .meta span { color: var(--muted); font-weight: 400; text-transform: none; letter-spacing: 0; }
+.editorial-news-item h3 { font: 1.65rem/1.25 "DM Serif Text", Georgia, serif; }
+.editorial-news-item h3 a { text-decoration: none; }
+.editorial-news-item h3 a:hover { text-decoration: underline; }
+.editorial-news-item > p:not(.meta) { color: var(--muted); margin-bottom: .25rem; }
+.calendar-editorial { border-left: 1px solid #c9c0b7; padding-left: 2rem; }
+.calendar-context { font-size: .95rem; color: var(--muted); }
+.calendar-items { margin-block: 1.3rem; }
+.calendar-editorial .update-card { padding: 1rem 0; border: 0; border-top: 1px solid #c9c0b7; background: transparent; gap: 1rem; }
+.calendar-editorial .update-card h3 { font-size: 1rem; line-height: 1.45; }
+.calendar-editorial .update-card .meta { font-size: .8rem; text-transform: none; letter-spacing: 0; }
+.calendar-editorial .date-block { background: #fff; border: 1px solid #d8c9ae; }
+.alumni-editorial-layout { display: grid; grid-template-columns: 1fr 1.4fr; gap: 4rem; align-items: center; }
+.alumni-editorial-layout > div > p:not(.eyebrow) { color: var(--muted); }
+.alumni-editorial figure { margin: 0; }
+.alumni-editorial figure > img { display: block; width: 100%; height: auto; object-fit: contain; }
+.alumni-editorial figcaption { color: var(--muted); font-size: .875rem; margin-top: .8rem; }
+.feature-art.alumni-poster { min-height: 0; }
+.feature-art.alumni-poster img { width: 100%; height: auto; min-height: 0; object-fit: contain; }
+.family-questions { background: #f6f5f2; }
+.faq-layout { display: grid; grid-template-columns: 1fr 1.45fr; gap: 5rem; }
+.faq-layout > div > p:not(.eyebrow) { color: var(--muted); }
+.faq-list details { padding: 1.1rem 0; border-top: 1px solid #c9c0b7; }
+.faq-list details:last-child { border-bottom: 1px solid #c9c0b7; }
+.faq-list summary { cursor: pointer; padding: .3rem 1rem .3rem 0; font-weight: 700; min-height: 44px; line-height: 1.5; }
+.faq-list details p { color: var(--muted); }
+.current-families h2 { font-size: clamp(2rem, 3.5vw, 2.8rem); }
+.family-resources { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1.4rem; margin-top: 2rem; }
+.family-resources a { display: grid; gap: .5rem; text-decoration: none; padding-block: 1.3rem; border-top: 2px solid var(--red-800); }
+.family-resources a:hover strong { text-decoration: underline; }
+.family-resources strong { color: var(--red-800); }
+.family-resources span { color: var(--muted); font-size: .875rem; line-height: 1.5; }
+.more-resources { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem 1.8rem; margin-top: 1.8rem; padding-top: 1rem; border-top: 1px solid var(--line); }
+.more-resources h3 { font-size: 1rem; }
+.more-resources a { color: var(--red-800); font-size: .875rem; padding-block: .8rem; text-underline-offset: .25rem; }
+.visit-school { background: var(--red-900); color: #fff; padding-block: 4rem; }
+.visit-school-layout { display: grid; grid-template-columns: 1.5fr 1fr; gap: 5rem; align-items: center; }
+.visit-school h2, .visit-school h3 { color: white; }
+.visit-hours { font-size: .95rem; }
+.visit-details { padding-left: 2rem; border-left: 1px solid #d3a79580; }
+.visit-details > a { display: block; color: var(--gold-300); text-underline-offset: .25rem; padding-block: .7rem; overflow-wrap: anywhere; }
+.campus-tour-layout { display: grid; grid-template-columns: 1fr 1.3fr; gap: 3rem; align-items: center; }
+.campus-tour-layout > .campus-model { min-height: 470px; }
+.campus-tour-layout > .campus-model .campus-model-viewport { height: 350px; flex: none; }
+.site-footer { background: #35100c; }
+.inquiry-layout { display: grid; grid-template-columns: 1fr 1.2fr; gap: 4rem; }
+.inquiry-layout > * { min-width: 0; }
+.inquiry-layout > div > a { display: block; max-width: 100%; overflow-wrap: anywhere; padding-block: .65rem; }
+.mobile-menu nav { max-height: calc(100dvh - 130px); }
+.inquiry-form { display: grid; grid-template-columns: 1fr 1fr; gap: 1.2rem; padding: 2rem; background: white; border: 1px solid var(--line); }
+.inquiry-field { display: grid; gap: .5rem; min-width: 0; }
+.inquiry-field label { font-size: .875rem; font-weight: 700; }
+.inquiry-field input, .inquiry-field select, .inquiry-field textarea { font: inherit; width: 100%; min-height: 46px; border: 1px solid #817078; background: #fff; color: var(--ink); border-radius: 3px; padding: .7rem; }
+.inquiry-field :is(input, select, textarea):focus { outline: 2px solid #245d96; outline-offset: 2px; }
+.inquiry-field [aria-invalid=true]:not(:focus) { border-color: #b42318; }
+.inquiry-field small { color: #a02030; font-size: .875rem; }
+.inquiry-wide { grid-column: 1 / -1; }
+.inquiry-form > p { margin: 0; font-size: .875rem; color: var(--muted); }
+.map-link { display: inline-flex; align-items: center; min-height: 44px; color: var(--red-800); font-weight: 700; }
+.admissions-start { padding-block: 2.5rem; }
+.public-site .scroll-target { scroll-margin-top: 148px; }
+.admissions-page-links { display: flex; flex-wrap: wrap; gap: .3rem 1.4rem; border-top: 1px solid var(--line); padding-block: .8rem; }
+.admissions-page-links a { min-height: 44px; display: inline-flex; align-items: center; color: var(--red-800); font-weight: 700; text-underline-offset: .25rem; font-size: .9rem; }
+.admissions-start-layout { display: grid; grid-template-columns: 1.5fr 1fr; gap: 3rem; align-items: center; }
+.admissions-start h2 { font-size: clamp(1.8rem, 3vw, 2.5rem); }
+.admissions-start p:not(.eyebrow) { color: var(--muted); margin-bottom: 0; }
+.admissions-start-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; align-items: center; gap: .8rem; }
+.admissions-outline { color: var(--red-800); border-color: var(--red-800); background: white; }
+.admissions-outline:hover { background: #f6f5f2; }
+.admissions-section-heading { display: flex; align-items: end; justify-content: space-between; gap: 1.5rem; margin-bottom: 1.4rem; }
+.admissions-section-heading h2 { font-size: clamp(2rem, 3.5vw, 2.85rem); }
+.admissions-section-heading > a { flex: none; }
+.admissions-dates-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); background: white; border-top: 3px solid var(--red-800); }
+.admissions-date { padding: 1.5rem; border-right: 1px solid var(--line); }
+.admissions-date:last-child { border-right: 0; }
+.admissions-date > span { color: var(--muted); font-size: .875rem; display: block; margin-bottom: .8rem; }
+.admissions-date strong { color: var(--red-800); line-height: 1.4; font-size: 1.15rem; display: block; }
+.admissions-date p { color: var(--muted); font-size: .875rem; margin-bottom: 0; }
+.admissions-process-note { max-width: 830px; color: var(--muted); margin: 0 0 2rem; }
+.admissions-process-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); list-style: none; padding: 0; margin: 0; gap: 1.5rem; }
+.admissions-process-grid li { border-top: 1px solid #b7aaa0; padding-top: 1rem; }
+.admissions-process-grid li > span { font: 2.4rem "DM Serif Text", Georgia, serif; color: var(--red-800); display: block; margin-bottom: .7rem; }
+.admissions-process-grid h3 { line-height: 1.4; font-size: 1.1rem; }
+.admissions-process-grid p { color: var(--muted); margin-bottom: 0; }
+.requirements-navigation { display: flex; flex-wrap: wrap; gap: .6rem; margin-block: 1.5rem 2rem; }
+.requirements-navigation a { min-height: 46px; display: inline-flex; align-items: center; padding: .7rem 1rem; color: var(--red-800); border: 1px solid #8d776d; background: white; text-decoration: none; font-size: .9rem; font-weight: 700; }
+.requirements-navigation a:focus-visible { outline: 2px solid #245d96; outline-offset: 2px; }
+.requirements-navigation a:hover { background: var(--red-800); color: white; }
+.requirements-all { display: grid; gap: 1.5rem; }
+.requirements-group { display: grid; gap: 1.25rem; padding: clamp(1.4rem, 4vw, 3rem); border: 1px solid var(--line); border-top: 3px solid var(--gold-500); background: white; }
+.requirements-group-heading h3 { font: 1.9rem/1.2 "DM Serif Text", Georgia, serif; }
+.requirements-group-heading > p:last-child { color: var(--muted); }
+.requirements-group .document-checklist { margin-top: 0; }
+.requirements-group .checklist-notes { margin-bottom: 0; font-size: .95rem; }
+.admissions-information-grid { display: grid; grid-template-columns: 1.1fr 1fr; gap: 4rem; align-items: start; }
+.admissions-information-grid h2 { font-size: clamp(2rem, 3.5vw, 2.9rem); }
+.admissions-information-grid p { color: var(--muted); }
+.admissions-contact-line a { display: inline-block; padding-block: .25rem; color: var(--red-800); overflow-wrap: anywhere; }
+.fee-request-list, .tlc-guidance { padding: 1.7rem; border-left: 2px solid var(--gold-500); background: #f6f5f2; }
+.tlc-guidance { background: white; }
+.fee-request-list li, .tlc-guidance li { line-height: 1.65; margin-bottom: .7rem; }
+.admissions-application-link { padding: 2.5rem 0; border-top: 1px solid var(--line); }
+.admissions-application-link > .container { display: flex; align-items: center; justify-content: space-between; gap: 2rem; }
+.admissions-application-link h2 { font-size: 1.8rem; }
+.admissions-application-link p { margin-bottom: 0; color: var(--muted); max-width: 700px; }
+.admissions-application-link .button { flex: none; }
+.footer-preview-label { color: #fff1dd; font-size: .875rem; }
+.site-footer a { overflow-wrap: anywhere; }
+@media (max-width: 960px) {
+  .admissions-dates-grid, .admissions-process-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .admissions-date:nth-child(2) { border-right: 0; }
+  .admissions-date:nth-child(n+3) { border-top: 1px solid var(--line); }
+}
+@media (max-width: 760px) {
+  .admissions-start-layout, .requirements-group, .admissions-information-grid { grid-template-columns: 1fr; gap: 1.5rem; }
+  .admissions-start-actions { justify-content: flex-start; }
+  .admissions-section-heading, .admissions-application-link > .container { align-items: start; flex-direction: column; }
+  .requirements-group { padding: 1.4rem; }
+  .requirements-group .eyebrow { margin-bottom: .6rem; }
+  .requirements-group-heading > p:last-child { margin-bottom: 0; }
+}
+@media (max-width: 480px) {
+  .admissions-start-actions { align-items: stretch; flex-direction: column; }
+  .admissions-start-actions .text-link { justify-content: center; }
+  .admissions-dates-grid, .admissions-process-grid { grid-template-columns: 1fr; }
+  .admissions-date { border-right: 0; }
+  .admissions-date + .admissions-date { border-top: 1px solid var(--line); }
+  .requirements-navigation a { flex: 1 1 130px; }
+  .requirements-group { padding: 1.1rem; }
+}
+@media (max-width: 1020px) {
+  .school-utility nav { gap: 1rem; }
+  .school-hero { min-height: 530px; }
+  .school-hero h1 { font-size: clamp(3.2rem, 6vw, 4.7rem); }
+  .learning-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .learning-level:nth-child(2) { border-right: 0; }
+  .learning-level:nth-child(n+3) { border-top: 1px solid var(--line); }
+  .admissions-feature-layout, .school-updates-grid { gap: 2.5rem; }
+  .introduction-layout, .editorial-heading, .faq-layout, .visit-school-layout { gap: 2.5rem; }
+}
+@media (max-width: 760px) {
+  .school-utility nav a:last-child { display: none; }
+  .school-utility > .container > span { font-size: .75rem; letter-spacing: 0; }
+  .school-utility nav { gap: .8rem; font-size: .75rem; }
+  .header-inner { min-height: 82px; }
+  .brand strong { font-size: 1.08rem; }
+  .brand-mark { width: 49px; height: 49px; }
+  .school-hero { min-height: 515px; }
+  .school-hero-photo { object-position: 39% center; }
+  .school-hero::before { background: linear-gradient(90deg, #260b08ed, #35100bb8 70%, #260b0880); }
+  .school-hero h1 { font-size: clamp(2.7rem, 6.5vw, 4rem); }
+  .school-hero-content { padding-block: 3rem; }
+  .school-hero-content > p:not(.eyebrow) { font-size: 1rem; }
+  .parent-shortcuts { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .parent-shortcuts a { padding: 1rem; min-height: 105px; }
+  .parent-shortcuts a:first-child { padding-left: 1rem; }
+  .parent-shortcuts a:nth-child(2) { border-right: 0; }
+  .parent-shortcuts a:nth-child(n+3) { border-top: 1px solid var(--line); }
+  .introduction-layout, .admissions-feature-layout, .editorial-heading, .campus-editorial-grid, .school-updates-grid, .alumni-editorial-layout, .faq-layout, .visit-school-layout, .campus-tour-layout, .inquiry-layout { grid-template-columns: 1fr; gap: 2rem; }
+  .heritage-note { max-width: 520px; }
+  .editorial-heading { margin-bottom: 1.7rem; gap: 1rem; }
+  .calendar-editorial { border-left: 0; padding-left: 0; }
+  .campus-editorial-image { min-height: 360px; }
+  .alumni-editorial-layout { gap: 1.5rem; }
+  .family-resources { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; }
+  .visit-details { padding-left: 0; border-left: 0; border-top: 1px solid #d3a79580; padding-top: 2rem; }
+  .campus-tour-layout > .campus-model { min-height: 0; }
+}
+@media (max-width: 480px) {
+  .school-utility > .container > span { display: none; }
+  .school-utility nav { justify-content: space-between; width: 100%; font-size: .875rem; }
+  .brand strong { font-size: .94rem; line-height: 1.3; }
+  .brand small { display: none; }
+  .brand-mark { width: 45px; height: 45px; }
+  .school-hero h1 { font-size: 2.75rem; }
+  .school-hero-content .eyebrow { font-size: .75rem; }
+  .hero-location { font-size: .8rem; }
+  .school-hero .hero-actions, .visit-school .hero-actions { flex-direction: column; align-items: stretch; }
+  .desktop-break { display: none; }
+  .parent-shortcuts small { font-size: .8rem; line-height: 1.4; }
+  .parent-shortcuts strong { font-size: .94rem; line-height: 1.4; }
+  .learning-grid { grid-template-columns: 1fr; }
+  .learning-level { border-right: 0; padding: 1.5rem; }
+  .learning-level:nth-child(n+2) { border-top: 1px solid var(--line); }
+  .family-resources { grid-template-columns: 1fr; gap: 0; }
+  .campus-editorial-image strong { font-size: 1.8rem; }
+  .campus-editorial-image > span { padding: 3rem 1.3rem 1.3rem; }
+  .inquiry-form { grid-template-columns: 1fr; padding: 1.2rem; }
+}

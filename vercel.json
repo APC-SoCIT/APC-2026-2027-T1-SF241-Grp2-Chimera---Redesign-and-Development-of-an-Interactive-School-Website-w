@@ -4,9 +4,19 @@
   "buildCommand": "pnpm build",
   "outputDirectory": "dist",
   "functions": {
-    "api/enrollment/*.ts": { "maxDuration": 60 }
+    "api/enrollment/*.ts": { "maxDuration": 60 },
+    "api/scheduler.ts": { "maxDuration": 300, "includeFiles": "services/scheduler/web/**" }
   },
   "rewrites": [
+    { "source": "/about", "destination": "/about/index.html" },
+    { "source": "/admissions", "destination": "/admissions/index.html" },
+    { "source": "/campus", "destination": "/campus/index.html" },
+    { "source": "/contact", "destination": "/contact/index.html" },
+    { "source": "/news", "destination": "/news/index.html" },
+    { "source": "/events", "destination": "/events/index.html" },
+    { "source": "/resources", "destination": "/resources/index.html" },
+    { "source": "/news/office-transactions", "destination": "/news/office-transactions/index.html" },
+    { "source": "/news/genyo-learning-platform-2026-2027", "destination": "/news/genyo-learning-platform-2026-2027/index.html" },
     {
       "source": "/((?!api(?:/|$)).*)",
       "destination": "/index.html"

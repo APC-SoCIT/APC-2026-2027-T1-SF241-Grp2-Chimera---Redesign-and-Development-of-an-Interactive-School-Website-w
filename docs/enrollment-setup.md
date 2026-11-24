@@ -220,11 +220,12 @@ For a fresh checkout of just the feature branch:
 git clone --branch enrollment-application --single-branch https://github.com/sncs-management-system/SNCS-PBL-2026.git
 cd SNCS-PBL-2026
 pnpm install
-Copy-Item .env.example .env
+Copy-Item .env.example .env.local
 ```
 
-Edit `.env` with the checklist values. The file is ignored by Git. Local commands
-read this `.env`; configuring Preview in Vercel does not populate it automatically.
+Edit `.env.local` with the checklist values. The file is ignored by Git. The backend
+launcher reads legacy `.env`, then `.env.local`; process/deployment variables take
+priority. Configuring Preview in Vercel does not populate local files automatically.
 Use a separate development Turnstile widget with `localhost` registered and its
 real sitekey/secret pair for this implementation's hostname/action checks.
 [Cloudflare local hostname guidance](https://developers.cloudflare.com/turnstile/troubleshooting/testing/)
@@ -270,7 +271,7 @@ pnpm dev -- --host localhost --port 5173 --strictPort
 
 Open [local enrollment](http://localhost:5173/enrollment). Vite forwards `/api`
 requests to the Express server at `127.0.0.1:3001`. Both terminals must remain
-running. Restart the API after editing `.env`. If you change the frontend port,
+running. Restart the API after editing `.env.local`. If you change the frontend port,
 update `APP_ORIGIN` too; changing the API port also requires updating the Vite
 proxy target.
 

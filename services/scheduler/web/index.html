@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Scheduling workspace | SNCS</title>
+  <link rel="stylesheet" href="/style.css"><link rel="stylesheet" href="/timetable.css"><link rel="stylesheet" href="/workspace.css"><script src="/timetable.js" defer></script><script src="/workspace.js" defer></script><script src="/app.js" defer></script>
+</head>
+<body>
+  <a class="skip" href="#main">Skip to workspace</a>
+  <aside class="sidebar">
+    <div class="brand"><span class="crest">SN</span><div><strong>Sto. Niño</strong><small>CATHOLIC SCHOOL</small></div></div>
+    <p class="nav-label">ACADEMIC COORDINATOR</p>
+    <nav aria-label="Scheduling workflow">
+      <button data-view="home" class="nav active"><span>⌂</span> Dashboard</button><button data-view="load-method" class="nav"><span>01</span> Input teacher load</button><button data-view="school-times" class="nav"><span>02</span> Set school times</button>
+      <button data-view="checks" class="nav"><span>03</span> Generate schedules</button>
+      <button data-view="review" class="nav"><span>04</span> Review schedules</button>
+      <button data-view="teacher" class="nav"><span>05</span> Published preview</button>
+    </nav>
+    <div class="side-note"><span class="local-dot"></span><strong>Local preparation</strong><p>Saved on this computer. Staff sign-in and the school database are not connected.</p></div>
+  </aside>
+  <div class="shell">
+    <header class="topbar"><span>ACADEMICS <b>/</b> SCHEDULING</span><span class="pill">Coordinator workspace</span></header>
+    <main id="main" tabindex="-1">
+      <div class="heading"><div><p class="eyebrow">PLAN WITH CONFIDENCE</p><h1 id="page-title">Scheduling dashboard</h1><p class="intro" id="page-intro">Prepare the school week, one step at a time.</p></div><span id="dataset-badge" class="pill gold">DEMO DATA</span></div>
+      <div id="notice" role="status" aria-live="polite"></div>
+      <details class="card period-card" id="period-settings"><summary><span><small>PLANNING PERIOD</small><strong id="current-period-label">Loading…</strong></span><span>Change period or settings</span></summary><div class="period-body">
+        <div class="period-title"><strong>Your planning period</strong><span id="save-state">Unsaved working copy</span></div>
+        <div class="period-fields">
+          <label>School year<input id="school-year" placeholder="2026-2027" maxlength="60"></label>
+          <label class="grow">Term / semester<input id="period" placeholder="Enter the exact school period" maxlength="160"></label>
+
+          <button class="primary" id="save">Save inputs locally</button>
+        </div>
+        <div class="saved-row"><label>Open a saved period <select id="saved-period"><option value="">Choose a period…</option></select></label><button id="open-period" class="subtle">Open</button><button id="new-period" class="subtle">New empty period</button><button id="download-inputs" class="subtle">Download working copy</button><label class="subtle file-label">Restore JSON<input type="file" id="restore" accept=".json,application/json"></label></div>
+      </div></details>
+      <section id="home" class="view">
+        <div class="welcome-card"><div><p class="eyebrow">YOUR SCHOOL WEEK</p><h2>What would you like to do?</h2><p>Start with teacher loads. Then set the school day and generate a draft for review.</p></div><span class="step-badge">4 simple steps</span></div>
+        <div class="workflow-grid">
+          <button class="workflow-card" data-view="load-method"><span class="step-number">01</span><h3>Input teacher load</h3><p>Enter assignments manually or import your Excel file.</p><strong>Manage teacher loads →</strong></button>
+          <button class="workflow-card" data-view="school-times"><span class="step-number">02</span><h3>Set school times</h3><p>Arrival, routines, class periods, breaks and staggered dismissal.</p><strong>Set school times →</strong></button>
+          <button class="workflow-card" data-view="checks"><span class="step-number">03</span><h3>Generate schedules</h3><p>Check the inputs and find a timetable that respects the school rules.</p><strong>Check & generate →</strong></button>
+          <button class="workflow-card" data-view="review"><span class="step-number">04</span><h3>Review schedules</h3><p>See the weekly schedule for every teacher and section.</p><strong>Open schedules →</strong></button>
+        </div>
+        <div class="metrics" id="metrics"></div>
+        <div class="section-head"><div><h2>School records & rules</h2><p>Keep these up to date before generating a schedule.</p></div></div>
+        <div class="record-grid"><button data-table="teachers">Teachers <span>Names and workload limits →</span></button><button data-table="subjects">Subjects <span>Grades, subjects and strands →</span></button><button data-table="sections">Sections <span>Class names and grades →</span></button><button data-table="requirements">Curriculum <span>Required meetings per section →</span></button><button data-view="advisers">Class advisers <span>Adviser assignments & supervision →</span></button><button data-table="unavailable">Teacher commitments <span>Times already occupied →</span></button></div>
+        <div id="source-detail" class="card source-card" hidden></div>
+        <details class="demo-help"><summary>Try an example first</summary><p>The example uses fictional teachers and times. It stays separate from school data.</p><button id="demo" class="subtle">Load demo</button></details>
+      </section>
+      <section id="load-method" class="view" hidden>
+        <div class="section-head"><div><h2>How would you like to enter teacher loads?</h2><p>Both methods use the same checks. You can edit imported assignments later.</p></div></div>
+        <div class="method-grid"><button class="workflow-card" data-manual><span class="method-icon">Aa</span><h3>Enter manually</h3><p>No Excel file? Select a teacher and subject, then enter the required meetings and number of sections.</p><strong>Input teacher load →</strong></button><button class="workflow-card" data-view="import-loads"><span class="method-icon">▦</span><h3>Import an Excel file</h3><p>Upload the SNCS teaching-load workbook and review its contents before using it.</p><strong>Choose Excel file →</strong></button></div>
+        <button class="subtle" data-manual>View or edit existing teacher loads</button>
+      </section>
+      <section id="import-loads" class="view" hidden>
+        <div class="section-head"><div><h2>Import teacher loads</h2><p>Select the multi-sheet SNCS teaching-load workbook. The original file stays unchanged.</p></div><button class="subtle" data-view="load-method">← Back</button></div>
+        <div class="card import-card"><span class="method-icon">▦</span><h3>Choose your Excel workbook</h3><p>We will show the teachers, sections and assignments for review before applying them.</p><label class="primary file-label">Choose Excel file<input type="file" id="workbook" accept=".xlsx"></label><p class="muted">.xlsx · up to 5 MB · SNCS multi-sheet template</p></div><div id="import-preview" class="card preview" hidden></div>
+      </section>
+      <section id="school-times" class="view" hidden>
+        <div class="information-card"><strong>Firm latest end: 5:00 PM</strong><p>Classes, breaks and dismissal supervision must all finish by 5:00 PM. The system will report a shortage rather than extend the school day.</p></div>
+        <div class="section-head"><div><h2>Set the school day</h2><p>Grades 7–8, Grades 9–10, Grade 11 and Grade 12 have separate settings.</p></div><button class="secondary" id="coordinator-times">Use coordinator’s starting times</button></div>
+        <div class="information-card"><strong>Different breaks. Different dismissal times.</strong><p>Keep recess and lunch separate between groups to avoid canteen crowding. Give each group its own dismissal window. Advisers stay available for their section’s routines, breaks, dismissal and homeroom.</p></div>
+        <div id="school-time-editor"></div>
+      </section>
+      <section id="advisers" class="view" hidden>
+        <div class="section-head"><div><h2>Assign class advisers</h2><p>Choose the adviser for each section. For a combined class, add another adviser when needed.</p></div><button data-view="school-times" class="secondary">Set supervision times →</button></div>
+        <div class="information-card"><strong>Automatic protection during school activities</strong><p>When school-day settings are complete, advisers cannot teach another class during their section’s morning routines, recess, lunch or dismissal. Homeroom is assigned to an adviser. Supervision is shown separately from teaching minutes.</p></div>
+        <form id="adviser-form" class="card adviser-form"><label>Section<select id="adviser-section"></select></label><label>Teacher<select id="adviser-teacher"></select></label><button class="primary" type="submit">Add class adviser</button></form>
+        <div id="adviser-list" class="card"></div><button class="primary" data-save-working>Save adviser assignments</button>
+      </section>
+      <section id="inputs" class="view" hidden>
+
+        <div class="section-head"><div><h2 id="input-heading">Enter teacher loads manually</h2><p id="input-intro">Choose a teacher and subject, then enter the weekly meetings.</p></div><button class="subtle" data-view="load-method">← Choose another input method</button></div><div class="record-shortcuts"><button class="secondary" id="enable-auto">Let scheduler assign unassigned sections</button><button class="subtle" data-table="teachers">Manage teachers</button><button class="subtle" data-table="subjects">Manage subjects</button><button class="subtle" data-table="sections">Manage sections</button><button class="subtle" data-table="requirements">Curriculum requirements</button></div>
+
+
+        <div class="card editor">
+          <div id="table-tabs" class="tabs" aria-label="Input tables" hidden></div>
+          <section id="load-entry" class="load-entry" aria-labelledby="load-form-title">
+            <div class="load-entry-heading"><div><p class="eyebrow">MANUAL ENTRY</p><h3 id="load-form-title">Add a teaching load</h3><p>Enter the meetings required for each section. The scheduler chooses days and times; it can also choose the section.</p></div><span class="pill" id="load-edit-badge">NEW ASSIGNMENT</span></div>
+            <div id="load-prerequisites" class="load-prerequisites" hidden></div>
+            <form id="load-form" novalidate>
+              <div id="load-errors" class="load-errors" role="alert" hidden></div>
+              <div class="load-fields">
+                <label>Teacher<select id="load-teacher" name="teacher" required><option value="">Choose a teacher…</option></select></label>
+                <label>Section<select id="load-section" name="section" required><option value="">Choose a section…</option></select></label>
+                <label>Subject<select id="load-subject" name="subject" required><option value="">Choose a subject…</option></select></label>
+                <label id="load-section-count-label" hidden>Number of sections<input id="load-section-count" type="number" min="1" max="50" step="1" value="1"></label><label id="load-strand-label" hidden>Strand group<input id="load-strand" name="strand" readonly></label>
+              </div>
+              <p id="load-curriculum" class="load-curriculum">Choose a section and subject to see the curriculum requirement.</p>
+              <div class="load-meetings">
+                <label>60-minute meetings / week<input id="load-n60" name="n60" type="number" min="0" max="30" step="1" value="0"></label>
+                <label>45-minute meetings / week<input id="load-n45" name="n45" type="number" min="0" max="30" step="1" value="0"></label>
+                <div class="load-total"><span>Weekly teaching time</span><output id="load-total">0 min · 0 meetings</output></div>
+              </div>
+              <div id="load-budget" class="load-budget">Select a teacher to see their workload.</div>
+              <label id="load-create-label" class="load-create" hidden><input id="load-create" type="checkbox"><span>Create a curriculum requirement for this class using these meeting counts.<small>Use the school's required frequency. This remains subject to curriculum review before publication.</small></span></label>
+              <div class="load-form-actions"><button id="load-submit" type="submit" class="primary">Save teaching load locally</button><button id="load-cancel" type="button" class="subtle">Clear form</button><span>Saves this assignment and the current period inputs.</span></div>
+            </form>
+          </section>
+          <div class="table-toolbar"><div><h3 id="table-title"></h3><p id="table-help"></p></div><div class="actions"><label id="teacher-filter-label">Show assignments for<select id="load-list-teacher"><option value="">All teachers</option></select></label><input type="search" id="search" placeholder="Search assignments…" aria-label="Find an input record"><button id="add-row" class="secondary">+ Add record</button></div></div>
+          <div id="teacher-load-summary" class="teacher-load-summary" hidden></div><div class="table-wrap" tabindex="0" aria-label="Editable scheduling records"><table id="input-table"></table></div>
+        </div>
+        <div class="next-row"><p>Changes need another readiness check before a new timetable can be generated.</p><button class="primary" data-check>Check readiness →</button></div>
+      </section>
+      <section id="checks" class="view" hidden>
+        <div class="card confirmation"><label><input id="spread-lessons" type="checkbox"><span><strong>Spread each subject across the week</strong><small>Prefer fewer repeated meetings of the same class on one day. Required hours, availability and school times stay mandatory.</small></span></label></div>
+        <div class="section-head"><div><h2>Check inputs & generate schedules</h2><p>Run the checks below. We will tell you what needs attention before generating.</p></div><button class="primary" data-check>Run checks</button></div>
+        <div id="report" class="card report"><p>Run readiness checks to inspect the current working copy.</p></div>
+        <div class="card generation-rules"><h3>Daily meeting rule</h3><p>Confirm how often one subject may meet the same section in a day. Subjects needing more than five weekly meetings may need multiple meetings on some days.</p><label>Maximum meetings of one class per day<input id="daily" type="number" min="1" max="6"></label></div><div class="card confirmation"><label><input id="confirmed" type="checkbox"><span><strong>I have reviewed the curriculum, bell times, workload allowances and availability.</strong><small>This records local review readiness. School approval and staff permissions still need integration.</small></span></label><p>Any input edit clears this confirmation. You may generate an unconfirmed draft for testing, but cannot publish it locally.</p></div>
+        <div class="next-row"><p>No lessons are silently dropped to make a timetable fit.</p><div class="actions"><label>Search limit <select id="seconds"><option value="10">10 seconds</option><option value="30">30 seconds</option><option value="120">2 minutes · larger inputs</option><option value="300">5 minutes · full-school trial</option></select></label><button id="generate" class="primary">Save & generate draft →</button></div></div>
+      </section>
+      <section id="review" class="view" hidden>
+        <div class="section-head"><div><h2>Review before publication.</h2><p>Each generation keeps its own inputs and result. Existing published versions remain available.</p></div><button data-check class="secondary">Back to checks</button></div>
+        <div class="version-bar card"><label>Saved versions<select id="versions"><option value="">Choose a version…</option></select></label><button id="open-version" class="subtle">Open version</button></div>
+        <div id="run-detail" class="card report"><p>Generate a draft after checking the inputs.</p></div>
+      </section>
+      <section id="teacher" class="view" hidden>
+        <div class="section-head"><div><h2>Published teaching schedule.</h2><p>This preview reads only the published local version. Drafts are never shown here.</p></div><button id="refresh-teacher" class="secondary">Refresh published version</button></div>
+        <div id="teacher-detail" class="card report"><p>No published version loaded.</p></div>
+      </section>
+      <footer>Scheduling preparation · Grades 7–12 · Teacher and section constraints<span>Local prototype</span></footer>
+    </main>
+  </div>
+</body>
+</html>

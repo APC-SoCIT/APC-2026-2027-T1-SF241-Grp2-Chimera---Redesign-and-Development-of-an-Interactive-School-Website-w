@@ -4,11 +4,9 @@
  */
 import { resolve } from 'node:path';
 import express from 'express';
-import { configuredApp } from './runtime.js';
-import { createStaffAccountsApi } from './staff-accounts.js';
+import { createBackendApp } from './backend.js';
 
-const app = configuredApp();
-app.use(createStaffAccountsApi());
+const app = createBackendApp();
 if (process.env.NODE_ENV === 'production') {
   const dist = resolve('dist');
   app.use(express.static(dist));
@@ -18,5 +16,5 @@ if (process.env.NODE_ENV === 'production') {
   });
 }
 app.listen(Number(process.env.PORT ?? 3001), process.env.HOST ?? '127.0.0.1', () => {
-  console.info('Enrollment server ready');
+  console.info(`School backend ready on port ${process.env.PORT ?? 3001}`);
 });

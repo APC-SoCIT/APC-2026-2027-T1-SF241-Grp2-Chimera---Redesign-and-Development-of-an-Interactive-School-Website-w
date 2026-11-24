@@ -1,27 +1,35 @@
 <script setup lang="ts">
-import { ref } from "vue";
-import { RouterLink } from "vue-router";
+import { ref, watch } from "vue";
+import { RouterLink, useRoute } from "vue-router";
 
 const menu = ref<HTMLDetailsElement | null>(null);
+const route = useRoute();
 
 const navigation = [
-  { to: "/enrollment", label: "Apply" },
   { to: "/about", label: "About" },
-  { to: "/campus", label: "Campus" },
+  { to: "/#learning-levels", label: "Learning" },
+  { to: "/campus", label: "Campus life" },
   { to: "/news", label: "News" },
-  { to: "/events", label: "Events" },
-  { to: "/admissions", label: "Admissions" },
-  { to: "/resources", label: "Resources" },
   { to: "/contact", label: "Contact" },
 ];
 
 function closeMenu() {
   if (menu.value) menu.value.open = false;
 }
+
+function dismissMenu(event: KeyboardEvent) {
+  if (!menu.value?.open) return;
+  event.preventDefault();
+  closeMenu();
+  menu.value.querySelector("summary")?.focus();
+}
+
+watch(() => route.fullPath, closeMenu);
 </script>
 
 <template>
   <header class="site-header">
+    <div class="school-utility"><div class="container"><span>Faith · Excellence · Service</span><nav aria-label="Community links"><RouterLink to="/#current-families">Current families</RouterLink><RouterLink to="/events#school-calendar">School calendar</RouterLink><a href="tel:+63288379702">(02) 8837-9702</a></nav></div></div>
     <div class="container header-inner">
       <RouterLink class="brand" to="/" aria-label="Sto. Niño Catholic School home">
         <img
@@ -38,14 +46,17 @@ function closeMenu() {
       </RouterLink>
 
       <nav class="desktop-nav" aria-label="Primary navigation">
+        <RouterLink class="button button-secondary nav-registration" to="/admissions">Admissions</RouterLink>
         <RouterLink v-for="item in navigation" :key="item.to" :to="item.to">
           {{ item.label }}
         </RouterLink>
+        <RouterLink class="button nav-staff-login" to="/login">Staff login</RouterLink>
       </nav>
 
-      <details ref="menu" class="mobile-menu">
-        <summary aria-label="Open navigation">Menu</summary>
+      <details ref="menu" class="mobile-menu" @keydown.esc="dismissMenu">
+        <summary>Menu</summary>
         <nav aria-label="Mobile navigation">
+          <RouterLink class="mobile-registration" to="/admissions" @click="closeMenu">Admissions</RouterLink>
           <RouterLink
             v-for="item in navigation"
             :key="item.to"
@@ -54,6 +65,7 @@ function closeMenu() {
           >
             {{ item.label }}
           </RouterLink>
+          <RouterLink class="mobile-staff-login" to="/login" @click="closeMenu">Staff login</RouterLink>
         </nav>
       </details>
     </div>

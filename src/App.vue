@@ -5,19 +5,19 @@
   Modified Date: 20261112
 -->
 <script setup lang="ts">
+import { useTemplateRef } from "vue";
 import { RouterView, useRoute } from "vue-router";
 import SiteFooter from "@/components/SiteFooter.vue";
 import SiteHeader from "@/components/SiteHeader.vue";
-
-// The login route renders its own layout, so it uses no public header or footer.
 const route = useRoute();
+const mainContent = useTemplateRef<HTMLElement>("main-content");
 </script>
 
 <template>
-  <a class="skip-link" href="#main-content">Skip to content</a>
-  <SiteHeader v-if="!route.meta.authLayout" />
-  <main id="main-content" tabindex="-1">
+  <a class="skip-link" href="#main-content" @click.prevent="mainContent?.focus()">Skip to content</a>
+  <SiteHeader v-if="!route.meta.cmsPreview && !route.meta.authLayout" />
+  <main id="main-content" ref="main-content" :class="{ 'public-site': !route.meta.cmsPreview && !route.meta.authLayout }" tabindex="-1">
     <RouterView />
   </main>
-  <SiteFooter v-if="!route.meta.authLayout" />
+  <SiteFooter v-if="!route.meta.cmsPreview && !route.meta.authLayout" />
 </template>
