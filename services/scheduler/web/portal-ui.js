@@ -68,16 +68,25 @@
   }
 
   // Overview
+  const ICONS = {
+    users: 'M16 20v-1.5a3.5 3.5 0 0 0-3.5-3.5h-5A3.5 3.5 0 0 0 4 18.5V20 M10 11a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7z',
+    book: 'M4 5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2z M4 19V5 M8 7h7',
+    layers: 'M12 3 2 8l10 5 10-5z M2 13l10 5 10-5',
+    list: 'M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01',
+    star: 'M12 3l2.6 5.6 6.1.7-4.5 4.2 1.2 6L12 16.6 6.6 19.5l1.2-6L3.3 9.3l6.1-.7z',
+    clock: 'M22 12a10 10 0 1 1-20 0 10 10 0 0 1 20 0z M12 7v5l3 2',
+  };
+  const icon = (name) => `<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${ICONS[name]}"/></svg>`;
   const records = [
-    ['teachers', 'Teachers', 'Names and workload limits', '◔', (d) => d.teachers.length],
-    ['subjects', 'Subjects', 'Grades, subjects and strands', '▤', (d) => d.subjects.length],
-    ['sections', 'Sections', 'Class names and grades', '▦', (d) => d.sections.length],
-    ['requirements', 'Curriculum', 'Required meetings per section', '☰', (d) => d.requirements.length],
-    ['@advisers', 'Class advisers', 'Adviser assignments & supervision', '★', (d) => {
+    ['teachers', 'Teachers', 'Names and workload limits', 'users', (d) => d.teachers.length],
+    ['subjects', 'Subjects', 'Grades, subjects and strands', 'book', (d) => d.subjects.length],
+    ['sections', 'Sections', 'Class names and grades', 'layers', (d) => d.sections.length],
+    ['requirements', 'Curriculum', 'Required meetings per section', 'list', (d) => d.requirements.length],
+    ['@advisers', 'Class advisers', 'Adviser assignments & supervision', 'star', (d) => {
       const withAdviser = d.sections.filter((s) => String(s.advisers ?? s.adviser ?? '').trim()).length;
       return `${withAdviser} / ${d.sections.length}`;
     }],
-    ['unavailable', 'Teacher commitments', 'Times already occupied', '◷', (d) => (d.unavailable || []).length],
+    ['unavailable', 'Teacher commitments', 'Times already occupied', 'clock', (d) => (d.unavailable || []).length],
   ];
   let glanceSection = '';
 
@@ -117,7 +126,7 @@
         <div class="pt-empty"><span>No draft is open yet.</span><button type="button" class="secondary" data-view="${r ? 'review' : 'checks'}">${r ? 'Open a saved version →' : 'Check & generate →'}</button></div>`;
     }
     const recordRows = d ? records.map(([table, title, note, ic, count]) => `<button type="button" class="pt-record" ${table === '@advisers' ? 'data-view="advisers"' : `data-table="${table}"`}>
-      <span class="pt-ic" aria-hidden="true">${ic}</span><span><b>${title}</b><small>${note}</small></span><strong>${esc(count(d))}</strong></button>`).join('') : '';
+      <span class="pt-ic">${icon(ic)}</span><span><b>${title}</b><small>${note}</small></span><strong>${esc(count(d))}</strong></button>`).join('') : '';
     return `${route}<div class="pt-grid"><section class="card pt-glance-card">${glance}</section>
       <section class="card pt-records-card"><div class="pt-head"><div><h2>School records</h2><p>Keep these current before generating.</p></div></div><div class="pt-records">${recordRows}</div></section></div>`;
   }
@@ -142,9 +151,21 @@
 
   // Dashboard messages
   let lastSent = '';
+  // Label each step's page the way the side panel numbers it.
+  const kickers = { 'load-method': 'STEP 1 OF 4', 'import-loads': 'STEP 1 OF 4', 'school-times': 'STEP 2 OF 4', advisers: 'STEP 2 OF 4',
+    checks: 'STEP 3 OF 4', review: 'STEP 4 OF 4', teacher: 'WHAT TEACHERS SEE' };
+  function setKicker(view) {
+    const eyebrow = document.querySelector('.heading .eyebrow');
+    if (!eyebrow) return;
+    const title = document.getElementById('page-title')?.textContent || '';
+    const text = view === 'inputs' ? (title === 'School records' ? 'SCHOOL RECORDS' : 'STEP 1 OF 4') : kickers[view] || 'SCHEDULING';
+    if (eyebrow.textContent !== text) eyebrow.textContent = text;
+  }
+
   function report() {
     const view = currentView();
     root.classList.toggle('portal-home', view === 'home');
+    setKicker(view);
     const message = {
       type: 'SNCS_SCHEDULER_STATE',
       view: navId(view),

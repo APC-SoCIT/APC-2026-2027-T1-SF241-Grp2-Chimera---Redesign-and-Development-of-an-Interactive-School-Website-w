@@ -26,7 +26,9 @@ html.in-portal .sidebar,
 html.in-portal .topbar,
 html.in-portal main > footer { display: none; }
 html.in-portal .shell { margin-left: 0; }
-html.in-portal main { max-width: none; padding: 4px 2px 18px; }
+html.in-portal main { display: flex; flex-direction: column; max-width: none; padding: 4px 2px 18px; }
+/* On the Overview the planning period sits below the week route. */
+html.in-portal.portal-home #period-settings { order: 1; }
 
 /* Page heading for each step */
 html.in-portal .heading { margin-bottom: 18px; align-items: end; }
@@ -118,6 +120,7 @@ html.in-portal .pt-head h2 { margin: 0; font-size: 18px; font-weight: 800; }
 .pt-glance-body { padding: 0 18px 18px; overflow-x: auto; }
 .pt-glance-body .timetable-heading, .pt-glance-body .timetable-summary, .pt-glance-body .activity-summary, .pt-glance-body .lesson-details { display: none; }
 .pt-glance-body .timetable-sheet { border: 0; padding: 0; margin: 0; }
+.pt-glance-body .week-board { min-width: 560px; }
 .pt-empty { display: grid; justify-items: start; gap: 10px; padding: 6px 18px 22px; color: var(--muted); font-size: 14px; }
 .pt-records { display: grid; }
 html.in-portal .pt-record { display: grid; grid-template-columns: 34px 1fr auto; align-items: center; gap: 10px; width: 100%; padding: 11px 18px; border: 0; border-top: 1px solid var(--line); border-radius: 0; background: none; color: inherit; text-align: left; box-shadow: none; }
