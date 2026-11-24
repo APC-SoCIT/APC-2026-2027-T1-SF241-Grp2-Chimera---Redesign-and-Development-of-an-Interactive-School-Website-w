@@ -21,6 +21,7 @@ import RegistrarApplicationsPanel from "@/components/RegistrarApplicationsPanel.
 import CoordinatorSchedulerPanel from "@/components/CoordinatorSchedulerPanel.vue";
 import { cmsPreviewEnabled } from "@/lib/cms/config";
 import CmsIcon from "@/components/cms/CmsIcon.vue";
+import { schedulerViews, type SchedulerNavId, type SchedulerState, type SchedulerStep } from "@/lib/schedule/scheduler-bridge";
 
 const props = defineProps<{ heading: string; role?: StaffRole }>();
 
@@ -139,7 +140,11 @@ async function signOut() {
 // Staff Sign-out END
 
 // Side Panel START
-type NavItem = { id: string; label: string; icon: string; target?: string; to?: RouteLocationRaw; newTab?: boolean; soon?: boolean };
+type NavItem = {
+  id: string; label: string; icon: string; target?: string; to?: RouteLocationRaw; newTab?: boolean; soon?: boolean;
+  /** Opens this step of the embedded scheduling workbench. */
+  scheduler?: SchedulerNavId; step?: number;
+};
 type NavGroup = { label: string; items: NavItem[] };
 
 const workspaceItems: NavItem[] = [
@@ -152,6 +157,17 @@ const contentSections: [string, string, string][] = [
 
 /** Only what each role can open today. */
 const navGroups = computed<NavGroup[]>(() => {
+  // The Coordinator's side panel follows the scheduling workbench's steps.
+  if (props.role === "academic_coordinator") return [
+    { label: "Workspace", items: [{ id: "overview", label: "Overview", icon: "grid", scheduler: "overview" }] },
+    { label: "Build the timetable", items: [
+      { id: "loads", label: "Teacher loads", icon: "users", scheduler: "loads", step: 1 },
+      { id: "times", label: "School times", icon: "clock", scheduler: "times", step: 2 },
+      { id: "generate", label: "Check & generate", icon: "check", scheduler: "generate", step: 3 },
+      { id: "review", label: "Review & publish", icon: "eye", scheduler: "review", step: 4 },
+    ] },
+    { label: "Published", items: [{ id: "published", label: "Published timetable", icon: "eye", scheduler: "published" }] },
+  ];
   const groups: NavGroup[] = [{ label: "Workspace", items: workspaceItems }];
   if (props.role === "admin") {
     if (canManageAccounts.value) {
@@ -169,10 +185,6 @@ const navGroups = computed<NavGroup[]>(() => {
       { id: "applications", label: "Applications", icon: "inbox", target: "registrar-applications-heading" },
       { id: "enrollment-form", label: "Enrollment form", icon: "form", to: { name: "enrollment" }, newTab: true },
     ] });
-  } else if (props.role === "academic_coordinator") {
-    groups.push({ label: "Scheduling", items: [
-      { id: "scheduling", label: "Workbench", icon: "event", target: "portal-scheduling" },
-    ] });
   } else if (props.role === "teacher") {
     groups.push({ label: "My teaching", items: [{ id: "schedule", label: "My schedule", icon: "clock", soon: true }] });
   }
@@ -188,14 +200,31 @@ const intro = computed(() => {
       if (canManageAccounts.value === false) return "Manage the announcements, events, pages and PDFs on the school website.";
       return "Create staff accounts, assign roles, reset passwords and deactivate access, and keep the school website up to date.";
     case "registrar": return "Review enrollment applications, tick the requirements families present onsite, and update each status.";
-    case "academic_coordinator": return "Prepare teacher loads, set the school day, then generate, review and publish class schedules.";
     case "teacher": return "Your published weekly class schedule will appear here once the Academic Coordinator publishes it.";
     default: return "";
   }
 });
 
-/** Scrolls to a section of this dashboard and moves keyboard focus there. */
+// Scheduling workbench (Academic Coordinator)
+const schedulerPanel = ref<InstanceType<typeof CoordinatorSchedulerPanel>>();
+const schedulerSteps = ref<Record<string, SchedulerStep>>({});
+function onSchedulerState(state: SchedulerState) {
+  schedulerSteps.value = Object.fromEntries(state.steps.map((step) => [step.id, step]));
+  if (state.view in schedulerViews) activeId.value = state.view;
+}
+function stepState(item: NavItem) {
+  return schedulerSteps.value[item.id]?.state ?? "todo";
+}
+
+/** Scrolls to a section of this dashboard, or opens a workbench step, and moves keyboard focus there. */
 async function goTo(item: NavItem) {
+  if (item.scheduler) {
+    activeId.value = item.id;
+    menuOpen.value = false;
+    schedulerPanel.value?.showView(schedulerViews[item.scheduler]);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+    return;
+  }
   if (!item.target) return;
   activeId.value = item.id;
   menuOpen.value = false;
@@ -222,6 +251,7 @@ function toggleCollapsed() {
 watch(() => props.role, () => {
   activeId.value = "overview";
   canManageAccounts.value = undefined;
+  schedulerSteps.value = {};
 });
 // Side Panel END
 
@@ -262,7 +292,9 @@ watch(() => props.role, () => {
             </span>
             <button v-else type="button" class="portal-nav-item" :class="{ 'portal-nav-active': activeId === item.id }"
               :aria-current="activeId === item.id ? 'true' : undefined" :data-label="item.label" @click="goTo(item)">
-              <CmsIcon :name="item.icon" :size="18" /><span class="portal-nav-text">{{ item.label }}</span>
+              <span v-if="item.step" class="portal-step-dot" :data-state="stepState(item)" aria-hidden="true">{{ stepState(item) === "done" ? "✓" : item.step }}</span>
+              <CmsIcon v-else :name="item.icon" :size="18" />
+              <span class="portal-nav-text">{{ item.label }}<span v-if="item.step" class="sr-only">, step {{ item.step }}{{ stepState(item) === "done" ? ", done" : stepState(item) === "now" ? ", next" : "" }}</span></span>
             </button>
           </template>
         </template>
@@ -295,7 +327,9 @@ watch(() => props.role, () => {
       <section class="portal-main" aria-labelledby="staff-dashboard-heading">
         <p v-if="signOutError" class="portal-alert" role="alert">Could not sign out. Please try again.</p>
 
-        <div class="portal-hero">
+        <!-- The scheduling workbench draws the Coordinator's overview itself. -->
+        <h1 v-if="role === 'academic_coordinator'" id="staff-dashboard-heading" class="sr-only" tabindex="-1">{{ heading }}</h1>
+        <div v-else class="portal-hero">
           <div class="portal-hero-copy">
             <div class="portal-school-label"><span></span> STO. NIÑO CATHOLIC SCHOOL</div>
             <h1 id="staff-dashboard-heading" tabindex="-1">{{ heading }}</h1>
@@ -307,10 +341,6 @@ watch(() => props.role, () => {
             <button v-else-if="role === 'registrar'" type="button" class="portal-hero-button"
               @click="goTo({ id: 'applications', label: 'Applications', icon: 'inbox', target: 'registrar-applications-heading' })">
               <CmsIcon name="inbox" :size="18" /> Review applications
-            </button>
-            <button v-else-if="role === 'academic_coordinator'" type="button" class="portal-hero-button"
-              @click="goTo({ id: 'scheduling', label: 'Workbench', icon: 'event', target: 'portal-scheduling' })">
-              <CmsIcon name="event" :size="18" /> Open scheduling workbench
             </button>
           </div>
         </div>
@@ -329,8 +359,8 @@ watch(() => props.role, () => {
         <div v-if="role === 'registrar'" class="portal-section">
           <RegistrarApplicationsPanel :staff-name="staffName" />
         </div>
-        <div v-if="role === 'academic_coordinator'" id="portal-scheduling" class="portal-section portal-card" tabindex="-1">
-          <CoordinatorSchedulerPanel :access-token="schedulerToken" />
+        <div v-if="role === 'academic_coordinator'" id="portal-scheduling" class="portal-section">
+          <CoordinatorSchedulerPanel ref="schedulerPanel" :access-token="schedulerToken" @state="onSchedulerState" />
         </div>
         <section v-if="role === 'teacher'" class="portal-card portal-empty" aria-labelledby="portal-schedule-title">
           <span class="portal-empty-icon"><CmsIcon name="clock" :size="24" /></span>
@@ -454,8 +484,9 @@ watch(() => props.role, () => {
 
 .portal-card { margin-bottom: 18px; border: 1px solid var(--portal-border); border-radius: 13px; background: #fff; box-shadow: 0 2px 8px #3f191605; }
 .portal-section { scroll-margin-top: 16px; }
-#portal-scheduling { padding: 12px; }
-#portal-scheduling:focus { outline: none; }
+.portal-step-dot { display: grid; flex: none; place-items: center; width: 20px; height: 20px; border: 1.5px solid #f2c8ba; border-radius: 50%; color: #f7e7e8; font-size: .66rem; font-weight: 800; }
+.portal-step-dot[data-state="done"] { border-color: var(--portal-gold); background: var(--portal-gold); color: #4d1c23; }
+.portal-step-dot[data-state="now"] { border-color: var(--portal-gold); color: var(--portal-gold); box-shadow: 0 0 0 3px #f4d88b33; }
 .portal-content-card { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 1rem 2rem; margin: 0 0 18px; padding: 17px 19px; border: 1px solid var(--portal-border); border-left: 4px solid var(--gold-500); border-radius: 13px; background: #fff; box-shadow: 0 2px 8px #3f191605; }
 .portal-content-card h2 { margin: 0 0 .25rem; font-size: 1.1rem; }
 .portal-content-card p { margin: 0; color: var(--portal-muted); font-size: .9rem; }

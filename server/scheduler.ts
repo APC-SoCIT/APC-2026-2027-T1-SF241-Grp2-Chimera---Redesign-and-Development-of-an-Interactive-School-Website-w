@@ -3,7 +3,7 @@ import { readFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { createClient } from '@supabase/supabase-js';
 
-const assets = new Set(['index.html','app.js','portal.js','style.css','timetable.js','timetable.css','workspace.js','workspace.css']);
+const assets = new Set(['index.html','app.js','portal.js','portal-ui.js','portal.css','style.css','timetable.js','timetable.css','workspace.js','workspace.css']);
 const reads = new Set(['/api/workspaces','/api/workspace','/api/demo','/api/empty','/api/coordinator-times','/api/runs','/api/run','/api/published','/api/export','/api/health']);
 const writes = new Set(['/api/import','/api/save','/api/manual-load','/api/validate','/api/generate','/api/publish']);
 export function schedulerConfigured(env: NodeJS.ProcessEnv) {
@@ -27,7 +27,9 @@ export function createSchedulerApi(env = process.env, makeClient = createClient,
         const html = content.replace('Saved on this computer. Staff sign-in and the school database are not connected.','Your coordinator account manages this scheduling workspace.')
           .replace('<strong>Local preparation</strong>','<strong>Coordinator scheduling</strong>')
           .replace(/(href|src)="\/([^"/]+\.(?:css|js))"/g, (_m,attr,file) => `${attr}="/api/scheduler?asset=${file}"`)
-          .replace('<script src="/api/scheduler?asset=timetable.js"','<script src="/api/scheduler?asset=portal.js" defer></script><script src="/api/scheduler?asset=timetable.js"');
+          .replace('<script src="/api/scheduler?asset=timetable.js"','<script src="/api/scheduler?asset=portal.js" defer></script><script src="/api/scheduler?asset=timetable.js"')
+          // Staff dashboard look and side panel bridge (Gian Mandac, 20261124); app.js runs first.
+          .replace('</head>','<link rel="stylesheet" href="/api/scheduler?asset=portal.css"><script src="/api/scheduler?asset=portal-ui.js" defer></script>\n</head>');
         res.type('html').send(html);
       } else res.type(asset.endsWith('.css')?'css':'js').send(content);
       return;

@@ -1,0 +1,137 @@
+/*
+  Author: Gian Mandac
+  Created Date: 20261124
+  SNCS staff dashboard look for the scheduling workbench. Applies only when the workbench runs inside the
+  staff dashboard (portal-ui.js adds html.in-portal); the standalone workbench keeps its own design.
+  The dashboard's red side panel replaces the workbench sidebar and top bar.
+*/
+html.in-portal {
+  --red: #a5291d;
+  --wine: #681711;
+  --wine-2: #861e15;
+  --gold: #f4d88b;
+  --ink: #261d20;
+  --muted: #665b60;
+  --line: #ece3e1;
+  --ground: #f8f5f3;
+  font-family: "DM Sans", "Segoe UI", system-ui, -apple-system, sans-serif;
+  color: var(--ink);
+  background: var(--ground);
+}
+html.in-portal body { background: var(--ground); }
+html.in-portal :is(h1, h2, h3, .pt-title) { font-family: "Libre Franklin", "Segoe UI", Arial, sans-serif; letter-spacing: -.03em; color: var(--ink); }
+
+/* The dashboard provides navigation and the page frame. */
+html.in-portal .sidebar,
+html.in-portal .topbar,
+html.in-portal main > footer { display: none; }
+html.in-portal .shell { margin-left: 0; }
+html.in-portal main { max-width: none; padding: 4px 2px 18px; }
+
+/* Page heading for each step */
+html.in-portal .heading { margin-bottom: 18px; align-items: end; }
+html.in-portal .eyebrow { color: var(--red); font-size: 11px; font-weight: 800; letter-spacing: .12em; }
+html.in-portal h1 { font-size: 34px; font-weight: 800; line-height: 1.15; margin-bottom: 6px; }
+html.in-portal .intro { font-size: 14px; color: var(--muted); }
+html.in-portal.portal-home .heading { display: none; }
+html.in-portal .pill { border-radius: 999px; border-color: #e8d7bb; background: #fff8e8; color: #654b23; font-weight: 700; letter-spacing: .02em; }
+
+/* Buttons, fields */
+html.in-portal button { border-radius: 8px; font-size: 13.5px; font-weight: 700; }
+html.in-portal .primary { background: var(--red); border-color: var(--red); color: #fff; }
+html.in-portal .primary:hover { background: var(--wine-2); filter: none; }
+html.in-portal .secondary { border-color: #dfd2d1; color: #4f323a; background: #fff; }
+html.in-portal .subtle { border-color: #e6dcda; color: #4f323a; }
+html.in-portal :is(input, select) { border-color: #c9bcbf; border-radius: 8px; }
+html.in-portal :is(button, input, select, a):focus-visible { outline: 2px solid #245d96; outline-offset: 2px; }
+html.in-portal label { color: #4f3b40; }
+html.in-portal input[type=checkbox] { accent-color: var(--red); }
+
+/* Cards */
+html.in-portal .card,
+html.in-portal .metric,
+html.in-portal .workflow-card,
+html.in-portal .record-grid button { border-color: var(--line); border-radius: 13px; background: #fff; box-shadow: 0 2px 8px #3f191605; }
+html.in-portal .workflow-card:hover,
+html.in-portal .record-grid button:hover { border-color: #bd9098; }
+html.in-portal .step-number,
+html.in-portal .method-icon { background: #f8eae4; color: var(--wine-2); border-radius: 10px; }
+html.in-portal .information-card { border: 1px solid #e8d7bb; border-radius: 12px; background: #fff8e8; color: #654b23; }
+html.in-portal .information-card strong { color: #4f3a12; }
+html.in-portal .period-card { margin-bottom: 18px; padding: 14px 18px; }
+html.in-portal .period-card summary strong { font-family: "Libre Franklin", "Segoe UI", Arial, sans-serif; }
+html.in-portal #notice:not(:empty) { border-radius: 11px; }
+html.in-portal .issue { border-left-color: #b42318; background: #fdf1ef; border-radius: 0 8px 8px 0; }
+html.in-portal .warning { border-left-color: #c9a227; background: #fff8e8; }
+html.in-portal .status-good { color: #22603f; }
+html.in-portal .status-bad { color: #8f2318; }
+html.in-portal .tabs button.active { border-bottom-color: var(--red); color: var(--red); }
+html.in-portal th { background: #fbf7f6; color: var(--muted); }
+html.in-portal .group-tabs button[aria-pressed=true] { background: var(--red); border-color: var(--red); color: #fff; }
+html.in-portal .load-entry { background: #fffcfa; }
+html.in-portal .load-entry-heading h3 { font-size: 22px; font-weight: 800; }
+html.in-portal .load-total output { color: var(--red); }
+
+/* Timetable colours, matched to the SNCS palette */
+html.in-portal .week-lesson { border-radius: 7px; }
+html.in-portal .color-0 { background: #e5eef8; color: #24507a; }
+html.in-portal .color-1 { background: #e3f1e8; color: #22603f; }
+html.in-portal .color-2 { background: #fff0ce; color: #7a5417; }
+html.in-portal .color-3 { background: #f8e3e1; color: #8f2318; }
+html.in-portal .color-4 { background: #efe8f5; color: #5b3f7d; }
+html.in-portal .color-5 { background: #e8f0ee; color: #2f5d57; }
+html.in-portal .color-6 { background: #fde9dc; color: #8a4515; }
+html.in-portal .color-7 { background: #f3ecd9; color: #6b5420; }
+html.in-portal .week-break { background: repeating-linear-gradient(135deg, #f4efec 0 8px, #fbf8f6 8px 16px); color: var(--muted); }
+
+/* Overview: replaces the welcome card, step cards, metrics and record buttons */
+html.in-portal #home > :is(.welcome-card, .workflow-grid, .metrics, .section-head, .record-grid) { display: none; }
+.pt-route {
+  position: relative; overflow: hidden; margin-bottom: 18px; padding: 24px 26px 22px; border: 1px solid var(--wine-2); border-radius: 15px; color: #fff;
+  background-color: var(--wine);
+  background-image: linear-gradient(90deg, var(--wine) 38%, #861e15e6 62%, #951e14a6 80%, #45100a80), url("/images/source-site/campus-front.jpg");
+  background-size: cover, 52% auto; background-position: left, right 40%; background-repeat: no-repeat;
+}
+.pt-route-top { display: flex; justify-content: space-between; align-items: start; gap: 18px; flex-wrap: wrap; }
+.pt-school { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; color: #f7db9e; font-size: 11px; font-weight: 800; letter-spacing: .13em; }
+.pt-school span { width: 7px; height: 7px; background: var(--gold); transform: rotate(45deg) scale(.75); }
+html.in-portal .pt-title { margin: 0; color: #fff; font-size: 40px; font-weight: 800; line-height: 1.1; }
+.pt-route p { max-width: 470px; margin: 8px 0 0; color: #fae9ec; font-size: 14.5px; line-height: 1.55; }
+html.in-portal .pt-gold { display: inline-flex; align-items: center; gap: 8px; min-height: 42px; border: 1px solid var(--gold); background: var(--gold); color: #3f2024; }
+html.in-portal .pt-gold:hover { background: #fce9aa; filter: none; }
+.pt-stations { position: relative; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; margin-top: 26px; }
+.pt-stations::before { content: ""; position: absolute; left: 18px; right: 18px; top: 17px; height: 2px; background: linear-gradient(90deg, var(--gold) 0 var(--done, 0%), #ffffff40 var(--done, 0%)); }
+html.in-portal .pt-station { position: relative; display: grid; gap: 4px; align-content: start; padding: 0; border: 0; background: none; color: #fff; text-align: left; box-shadow: none; }
+html.in-portal .pt-station:hover { filter: none; }
+.pt-pin { display: grid; place-items: center; width: 36px; height: 36px; margin-bottom: 8px; border: 2px solid #ffffff66; border-radius: 50%; background: var(--wine); font-weight: 800; }
+.pt-station.done .pt-pin { border-color: var(--gold); background: var(--gold); color: #4d1c23; }
+.pt-station.now .pt-pin { border-color: var(--gold); color: var(--gold); box-shadow: 0 0 0 5px #f4d88b2e; }
+.pt-station b { font-size: 16px; }
+.pt-station small { color: #f7dcd3; font-size: 13px; line-height: 1.4; font-weight: 500; }
+.pt-station.now b::after { content: "Next"; margin-left: 8px; padding: 1px 7px; border-radius: 999px; background: var(--gold); color: #4d1c23; font-size: 11px; vertical-align: 2px; }
+.pt-station:hover b { text-decoration: underline; text-underline-offset: 3px; }
+
+.pt-grid { display: grid; grid-template-columns: minmax(0, 1.65fr) minmax(260px, 1fr); gap: 18px; margin-bottom: 18px; align-items: start; }
+.pt-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; padding: 16px 18px 12px; }
+html.in-portal .pt-head h2 { margin: 0; font-size: 18px; font-weight: 800; }
+.pt-head p { margin: 3px 0 0; color: var(--muted); font-size: 13px; }
+.pt-glance-body { padding: 0 18px 18px; overflow-x: auto; }
+.pt-glance-body .timetable-heading, .pt-glance-body .timetable-summary, .pt-glance-body .activity-summary, .pt-glance-body .lesson-details { display: none; }
+.pt-glance-body .timetable-sheet { border: 0; padding: 0; margin: 0; }
+.pt-empty { display: grid; justify-items: start; gap: 10px; padding: 6px 18px 22px; color: var(--muted); font-size: 14px; }
+.pt-records { display: grid; }
+html.in-portal .pt-record { display: grid; grid-template-columns: 34px 1fr auto; align-items: center; gap: 10px; width: 100%; padding: 11px 18px; border: 0; border-top: 1px solid var(--line); border-radius: 0; background: none; color: inherit; text-align: left; box-shadow: none; }
+html.in-portal .pt-record:hover { background: #fbf7f6; filter: none; }
+.pt-record .pt-ic { display: grid; place-items: center; width: 34px; height: 34px; border-radius: 9px; background: #f8eae4; color: var(--wine-2); font-size: 15px; }
+.pt-record b { display: block; font-size: 14px; }
+.pt-record small { color: var(--muted); font-size: 12px; font-weight: 500; }
+.pt-record strong { font-family: "Libre Franklin", "Segoe UI", Arial, sans-serif; font-size: 18px; }
+.pt-records-card { overflow: hidden; }
+
+@media (max-width: 1100px) { .pt-grid { grid-template-columns: 1fr; } }
+@media (max-width: 760px) {
+  html.in-portal .sidebar { display: none; }
+  .pt-stations { grid-template-columns: 1fr 1fr; }
+  .pt-stations::before { display: none; }
+  html.in-portal .pt-title { font-size: 30px; }
+}

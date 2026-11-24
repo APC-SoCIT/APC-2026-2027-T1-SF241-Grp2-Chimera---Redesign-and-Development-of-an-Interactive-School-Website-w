@@ -12,15 +12,28 @@ import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import StaffDashboardView from "./StaffDashboardView.vue";
 import type { StaffRole } from "@/lib/staff-auth";
 
-const { onAuthStateChange, getStaffPortalRole, accountAccess } = vi.hoisted(() => ({
-  onAuthStateChange: vi.fn(), getStaffPortalRole: vi.fn(), accountAccess: { value: true as boolean | undefined },
+const { onAuthStateChange, getStaffPortalRole, accountAccess, showView } = vi.hoisted(() => ({
+  onAuthStateChange: vi.fn(), getStaffPortalRole: vi.fn(), accountAccess: { value: true as boolean | undefined }, showView: vi.fn(),
 }));
 vi.mock("@/lib/staff-auth", () => ({ getStaffPortalRole }));
 vi.mock("@/lib/supabase", () => ({ getStaffSupabaseClient: () => ({ auth: { onAuthStateChange, signOut: vi.fn() } }) }));
 vi.mock("vue-router", () => ({ RouterLink: { props: ["to"], template: "<a><slot /></a>" }, useRouter: () => ({ replace: vi.fn() }) }));
 vi.mock("@/lib/cms/config", () => ({ cmsPreviewEnabled: true }));
 vi.mock("@/components/RegistrarApplicationsPanel.vue", () => ({ default: { template: "<div>applications</div>" } }));
-vi.mock("@/components/CoordinatorSchedulerPanel.vue", () => ({ default: { template: "<div>workbench</div>" } }));
+// The workbench reports its open step and progress; the side panel asks it to open steps.
+vi.mock("@/components/CoordinatorSchedulerPanel.vue", () => ({
+  default: defineComponent({
+    emits: ["state"],
+    setup(_props, { emit, expose }) {
+      expose({ showView });
+      onMounted(() => emit("state", { view: "generate", steps: [
+        { id: "loads", state: "done", note: "38 assignments · 12 teachers" }, { id: "times", state: "done", note: "4 of 4 grade groups set" },
+        { id: "generate", state: "now", note: "No draft generated yet" }, { id: "review", state: "todo", note: "Waiting for a draft" },
+      ] }));
+    },
+    template: "<div>workbench</div>",
+  }),
+}));
 // The real panel reports whether this Admin may manage staff accounts once its list loads.
 vi.mock("@/components/StaffAccountsPanel.vue", () => ({
   default: defineComponent({
@@ -78,7 +91,7 @@ it("gives a Content Admin the website sections only and hides the staff list", a
 
 it.each([
   ["registrar", ["Overview", "Applications", "Enrollment form"]],
-  ["academic_coordinator", ["Overview", "Workbench"]],
+  ["academic_coordinator", ["Overview", "Teacher loads", "School times", "Check & generate", "Review & publish", "Published timetable"]],
   ["teacher", ["Overview", "My schedule"]],
 ] as const)("shows %s only its own sections", async (role, labels) => {
   await open(role);
@@ -111,4 +124,21 @@ it("shrinks the side panel to icons, keeps every item reachable, and remembers t
   dashboard!.unmount();
   await open("registrar");
   expect(dashboard!.get(".portal").classes()).toContain("portal-collapsed");
+});
+
+it("follows the scheduling workbench: step progress, the open step, and opening steps from the side panel", async () => {
+  await open("academic_coordinator", "Academic Coordinator dashboard");
+  const dots = dashboard!.findAll(".portal-step-dot").map((dot) => [dot.attributes("data-state"), dot.text()]);
+  expect(dots).toEqual([["done", "✓"], ["done", "✓"], ["now", "3"], ["todo", "4"]]);
+  expect(dashboard!.get(".portal-nav-active").text()).toContain("Check & generate");
+  expect(dashboard!.get(".portal-breadcrumb strong").text()).toBe("Check & generate");
+  expect(dashboard!.find(".portal-hero").exists()).toBe(false);
+  expect(dashboard!.get("h1").text()).toBe("Academic Coordinator dashboard");
+
+  const items = dashboard!.findAll(".portal-nav button");
+  await items.find((item) => item.text().includes("School times"))!.trigger("click");
+  expect(showView).toHaveBeenLastCalledWith("school-times");
+  await items.find((item) => item.text().includes("Published timetable"))!.trigger("click");
+  expect(showView).toHaveBeenLastCalledWith("teacher");
+  expect(dashboard!.get(".portal-nav-active").text()).toContain("Published timetable");
 });
