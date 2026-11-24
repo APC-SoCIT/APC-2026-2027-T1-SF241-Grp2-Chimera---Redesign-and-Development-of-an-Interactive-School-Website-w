@@ -103,6 +103,20 @@ describe('enrollment applicant workflow', () => {
     const payload = JSON.parse(fetchMock.mock.calls[1][1].body.get('application'));
     expect(payload.privacyConsent).toBe(true); expect(payload.periodId).toBe('1');
   });
+  it('shows the family the same requirement checklist the Registrar uses, on review and on the receipt', async () => {
+    await render(); await fill(); await wrapper.get('form').trigger('submit'); await flushPromises();
+    const preview = wrapper.get('.checklist-preview');
+    expect(preview.text()).toContain('What to bring');
+    expect(preview.text()).toContain('Baptismal certificate');
+    expect(preview.text()).toContain('Certificate of good moral character');
+    expect(preview.text()).toContain('Parents’ marriage certificate (if applicable)');
+    await wrapper.get('#confirmation').setValue(true);
+    await wrapper.get('#privacyConsent').setValue(true);
+    await wrapper.get('#captcha button').trigger('click');
+    fetchMock.mockResolvedValueOnce({ ok: true, json: async () => ({ reference: 'SNCS-LIST', status: 'Pending', message: 'Proceed to the Registrar’s Office.' }) });
+    await wrapper.get('form').trigger('submit'); await flushPromises();
+    expect(wrapper.get('.checklist-preview').text()).toContain('Recommendation form in a sealed envelope');
+  });
   it('keeps the same submission identifier after an uncertain network failure', async () => {
     await render(); await fill(); await wrapper.get('form').trigger('submit'); await flushPromises();
     await wrapper.get('#confirmation').setValue(true); await wrapper.get('#privacyConsent').setValue(true); await wrapper.get('#captcha button').trigger('click');

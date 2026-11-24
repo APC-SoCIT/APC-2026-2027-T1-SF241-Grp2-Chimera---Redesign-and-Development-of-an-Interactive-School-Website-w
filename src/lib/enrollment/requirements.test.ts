@@ -3,7 +3,7 @@
  * Created Date: 20261116
  */
 import { describe, expect, it } from "vitest";
-import { gradeNumber, requirementsFor, splitChecklist, summarizeChecklist } from "./requirements";
+import { gradeNumber, isCatholic, requirementsFor, splitChecklist, summarizeChecklist } from "./requirements";
 
 const keys = (profile: Parameters<typeof requirementsFor>[0]) => requirementsFor(profile).map((item) => item.key);
 
@@ -47,3 +47,31 @@ describe("dynamic requirement checklist", () => {
     expect(split.missing.map((item) => item.key)).not.toContain("marriage-certificate");
   });
 });
+
+describe("checklist follows the enrollment form answers", () => {
+  const label = (profile: Parameters<typeof requirementsFor>[0], key: string) => requirementsFor(profile).find((item) => item.key === key);
+  const grade7 = { department: "jhs", applicant_type: "new", grade_level: "Grade 7" };
+
+  it("asks Catholic applicants for a baptismal certificate and others for a certificate of dedication", () => {
+    expect(label({ ...grade7, religion: "Roman Catholic" }, "baptismal-certificate")?.label).toBe("Baptismal certificate");
+    expect(label({ ...grade7, religion: "Iglesia ni Cristo" }, "baptismal-certificate")?.label).toBe("Certificate of dedication (non-Catholic applicants)");
+    expect(label({ ...grade7, religion: "Non-Catholic" }, "baptismal-certificate")?.label).toContain("dedication");
+    expect(label(grade7, "baptismal-certificate")?.label).toContain("Baptismal certificate, or certificate of dedication");
+    expect([isCatholic("catholic"), isCatholic("Born Again Christian"), isCatholic(" ")]).toEqual([true, false, null]);
+  });
+
+  it("requires a preschooler's report card only when a former school was given", () => {
+    const nursery = { department: "preschool", applicant_type: "new", grade_level: "Nursery" };
+    expect(label(nursery, "report-card")).toMatchObject({ optional: true });
+    expect(label({ ...nursery, last_school_name: "  " }, "report-card")).toMatchObject({ optional: true });
+    const attended = label({ ...nursery, last_school_name: "Little Stars Learning Center" }, "report-card");
+    expect(attended?.optional).toBeFalsy();
+    expect(attended?.label).toContain("former school");
+  });
+
+  it("keeps the same requirement keys so saved checklist ticks still apply", () => {
+    const before = requirementsFor(grade7).map((item) => item.key);
+    expect(requirementsFor({ ...grade7, religion: "Baptist", last_school_name: "X" }).map((item) => item.key)).toEqual(before);
+  });
+});
+

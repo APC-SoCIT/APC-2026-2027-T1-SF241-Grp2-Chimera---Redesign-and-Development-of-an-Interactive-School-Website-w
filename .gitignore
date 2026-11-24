@@ -1,9 +1,16 @@
 node_modules/
 .vercel/
 dist/
+.prerender/
 coverage/
 .env*
 !.env.example
 *.log
 *.tsbuildinfo
 .DS_Store
+
+# Supabase CLI local cache (links to a personal project)
+supabase/.temp/
+
+# This project uses pnpm (pnpm-lock.yaml); npm lockfiles cause mixed installs
+package-lock.json

@@ -37,8 +37,9 @@ const saveNotice = ref("");
 const emailPrompt = ref(false);
 const emailState = ref<"idle" | "sending" | "sent" | "failed">("idle");
 
-const departments = { preschool: "Preschool", grade_school: "Grade School", jhs: "Junior High School", shs: "Senior High School" } as const;
-const applicantTypes = { new: "New", old: "Old (returning)", returnee: "Returnee / transferee" } as const;
+// Labels match the enrollment form so the Registrar sees the same wording as the applicant.
+const departments = { preschool: "Pre-school", grade_school: "Elementary", jhs: "Junior High School", shs: "Senior High School" } as const;
+const applicantTypes = { new: "New", old: "Old", returnee: "Returnee" } as const;
 const payments: Record<string, string> = { full_cash: "Full payment / cash", monthly: "Monthly", quarterly: "Quarterly", semi_annual: "Semi-annual" };
 const relationships = { father: "Father", mother: "Mother", guardian: "Guardian" } as const;
 const dateTime = new Intl.DateTimeFormat("en-PH", { dateStyle: "medium", timeStyle: "short", timeZone: "Asia/Manila" });
@@ -243,10 +244,10 @@ async function openPrintableForm() {
               <h3 id="enrollment-details">Enrollment details</h3>
               <dl class="fields">
                 <div><dt>School year</dt><dd>{{ application.school_year }}</dd></div>
-                <div><dt>Department</dt><dd>{{ departments[application.department] }}</dd></div>
+                <div><dt>School level</dt><dd>{{ departments[application.department] }}</dd></div>
                 <div><dt>Grade level</dt><dd>{{ application.grade_level }}</dd></div>
                 <div v-if="application.strand"><dt>Strand</dt><dd>{{ application.strand }}</dd></div>
-                <div><dt>Applicant type</dt><dd>{{ applicantTypes[application.applicant_type] }}</dd></div>
+                <div><dt>Student status</dt><dd>{{ applicantTypes[application.applicant_type] }}</dd></div>
                 <div><dt>Mode of payment</dt><dd>{{ payments[application.mode_of_payment] ?? application.mode_of_payment }}</dd></div>
               </dl>
             </section>
@@ -255,14 +256,14 @@ async function openPrintableForm() {
               <h3 id="student-details">Student information</h3>
               <dl class="fields">
                 <div><dt>Full name</dt><dd>{{ fullName }}</dd></div>
-                <div><dt>Birth date</dt><dd>{{ birthDate(application.birth_date) }}</dd></div>
+                <div><dt>Birthday</dt><dd>{{ birthDate(application.birth_date) }}</dd></div>
                 <div><dt>Gender</dt><dd class="capitalize">{{ application.gender }}</dd></div>
                 <div><dt>Place of birth</dt><dd>{{ application.place_of_birth }}</dd></div>
                 <div><dt>Religion</dt><dd>{{ application.religion }}</dd></div>
-                <div><dt>Contact numbers</dt><dd>{{ application.contact_numbers }}</dd></div>
+                <div><dt>Contact number</dt><dd>{{ application.contact_numbers }}</dd></div>
                 <div><dt>Email</dt><dd>{{ application.email }}</dd></div>
-                <div><dt>Parent email</dt><dd>{{ application.parent_email || "—" }}</dd></div>
-                <div><dt>Guardian Messenger</dt><dd>{{ application.guardian_messenger }}</dd></div>
+                <div><dt>Parent’s email address</dt><dd>{{ application.parent_email || "—" }}</dd></div>
+                <div><dt>Parent/guardian’s Messenger account</dt><dd>{{ application.guardian_messenger }}</dd></div>
                 <div class="wide"><dt>Complete address</dt><dd>{{ application.complete_address }}</dd></div>
               </dl>
             </section>
@@ -284,8 +285,8 @@ async function openPrintableForm() {
             <section aria-labelledby="school-details">
               <h3 id="school-details">Last school attended</h3>
               <dl class="fields">
-                <div><dt>School</dt><dd>{{ application.last_school_name || "—" }}</dd></div>
-                <div class="wide"><dt>Address</dt><dd>{{ application.last_school_address || "—" }}</dd></div>
+                <div><dt>Former school’s name</dt><dd>{{ application.last_school_name || "—" }}</dd></div>
+                <div class="wide"><dt>Former school’s complete address</dt><dd>{{ application.last_school_address || "—" }}</dd></div>
               </dl>
             </section>
 
@@ -422,18 +423,18 @@ async function openPrintableForm() {
       </header>
       <h2>Enrollment details</h2>
       <table>
-        <tr><th>School year</th><td>{{ application.school_year }}</td><th>Department</th><td>{{ departments[application.department] }}</td></tr>
+        <tr><th>School year</th><td>{{ application.school_year }}</td><th>School level</th><td>{{ departments[application.department] }}</td></tr>
         <tr><th>Grade level</th><td>{{ application.grade_level }}</td><th>Strand</th><td>{{ application.strand || "—" }}</td></tr>
-        <tr><th>Applicant type</th><td>{{ applicantTypes[application.applicant_type] }}</td><th>Mode of payment</th><td>{{ payments[application.mode_of_payment] ?? application.mode_of_payment }}</td></tr>
+        <tr><th>Student status</th><td>{{ applicantTypes[application.applicant_type] }}</td><th>Mode of payment</th><td>{{ payments[application.mode_of_payment] ?? application.mode_of_payment }}</td></tr>
         <tr><th>Submitted</th><td colspan="3">{{ dateTime.format(new Date(application.submitted_at)) }}</td></tr>
       </table>
       <h2>Student information</h2>
       <table>
         <tr><th>Full name</th><td colspan="3">{{ fullName }}</td></tr>
-        <tr><th>Birth date</th><td>{{ birthDate(application.birth_date) }}</td><th>Gender</th><td class="capitalize">{{ application.gender }}</td></tr>
+        <tr><th>Birthday</th><td>{{ birthDate(application.birth_date) }}</td><th>Gender</th><td class="capitalize">{{ application.gender }}</td></tr>
         <tr><th>Place of birth</th><td>{{ application.place_of_birth }}</td><th>Religion</th><td>{{ application.religion }}</td></tr>
-        <tr><th>Contact numbers</th><td>{{ application.contact_numbers }}</td><th>Email</th><td>{{ application.email }}</td></tr>
-        <tr><th>Parent email</th><td>{{ application.parent_email || "—" }}</td><th>Guardian Messenger</th><td>{{ application.guardian_messenger }}</td></tr>
+        <tr><th>Contact number</th><td>{{ application.contact_numbers }}</td><th>Email</th><td>{{ application.email }}</td></tr>
+        <tr><th>Parent’s email address</th><td>{{ application.parent_email || "—" }}</td><th>Messenger account</th><td>{{ application.guardian_messenger }}</td></tr>
         <tr><th>Address</th><td colspan="3">{{ application.complete_address }}</td></tr>
       </table>
       <h2>Parents and guardian</h2>
@@ -446,7 +447,7 @@ async function openPrintableForm() {
       </table>
       <h2>Last school attended</h2>
       <table>
-        <tr><th>School</th><td>{{ application.last_school_name || "—" }}</td><th>Address</th><td>{{ application.last_school_address || "—" }}</td></tr>
+        <tr><th>Former school</th><td>{{ application.last_school_name || "—" }}</td><th>Address</th><td>{{ application.last_school_address || "—" }}</td></tr>
       </table>
       <h2>Requirements ({{ checklist.received }} of {{ checklist.required }} required received)</h2>
       <ul class="print-checklist">

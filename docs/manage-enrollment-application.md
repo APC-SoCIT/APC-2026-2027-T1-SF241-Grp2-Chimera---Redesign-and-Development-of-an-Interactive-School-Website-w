@@ -1,13 +1,7 @@
-# PB-09: Manage Enrollment Application (Registrar)
+# Manage Enrollment Application (Registrar)
 
-| | |
-|---|---|
-| **Backlog item** | PB-09 · Sprint 2 · 8 points · Owner: Gian Mandac |
-| **User stories** | US-09 Manage Enrollment Applications · US-10 Review Application Details · US-11 Update Application Status · US-12 Print Enrollment Application |
-| **Route** | `/registrar` (Registrar dashboard), shown only to an active Registrar account |
-| **Status** | **Done**. Merged in fork PRs #3 and #4 (Nov 16, 2026), team PR #23; live since Nov 16 |
-
-Implements the Registrar side of the use case diagram (`ucd.drawio`).
+Implements the Registrar side of the use case diagram (`ucd.drawio`). Route: the
+staff dashboard, shown only to an active Registrar account.
 
 | Use case | Where it lives |
 |---|---|
@@ -23,39 +17,33 @@ Implements the Registrar side of the use case diagram (`ucd.drawio`).
 > Trigger Outbound Status Email behaves as an optional step. Consider drawing it as
 > «extend» rather than «include» in the next diagram revision.
 
-## Acceptance criteria
+## Checklist and enrollment form in sync (Nov 19, 2026)
 
-| Story | Criterion | Status |
-|---|---|---|
-| **US-09** | Only an authenticated Registrar can open the dashboard | ✅ |
-| | Search by applicant name or reference number | ✅ |
-| | Filter by processing status and submission date (from/to) | ✅ |
-| | Selecting a result opens its details | ✅ |
-| | The Registrar gets no account or scheduling administration | ✅ |
-| **US-10** | Shows all submitted fields (incl. parents/guardian, last school) and any attached documents | ✅ |
-| | An absent attachment is shown as absent and does not block the record | ✅ |
-| | Attachments can be opened or downloaded through protected access | ⏸ Post-MVP: applicant uploads are disabled in Sprint 1, so there are no files to open |
-| | Next / Previous loads the next application (across pages) | ✅ |
-| | Unknown reference shows *Application not found* | ✅ |
-| **US-11** | Status options For Review / Complete / Incomplete (Pending is submission-only) | ✅ |
-| | Confirmation before saving; Cancel leaves the old status | ✅ |
-| | Audit trail records Registrar, timestamp, old and new status | ✅ (`audit_logs`, action `application.status_change`) |
-| | Labels describe completeness, not an admission decision | ✅ (stated in the screen and in the email) |
-| **US-12** | A4 print/PDF layout with all submitted fields and the reference number | ✅ (one A4 page; also opens in a new tab for *Save as PDF*) |
-| | Printing does not change the status or resubmit | ✅ |
-| | Re-encoding into the legacy enrollment database happens outside the system | ✅ (by design, swimlane step 4) |
-| **Use case diagram additions** | Dynamic requirement checklist (by grade level and applicant type) | ✅ |
-| | Registrar remarks | ✅ |
-| | Status email, only after the Registrar previews and confirms it | ✅. Delivers to any address once `EMAIL_FROM` uses a Resend-verified domain |
+The requirement checklist is built by one shared set of rules
+(`supabase/functions/_shared/requirements.ts`) and is now used in **four places that
+always match**: the applicant's form, the Registrar's review panel, the printed A4
+verification form and the status email.
 
-**Tests:** `server/admin-auth-migration.test.ts` (Registrar functions, filters, audit trail,
-table lockdown), `src/components/RegistrarApplicationDetail.test.ts`,
-`src/components/StaffPortalPanels.test.ts`, `src/lib/enrollment/requirements.test.ts`,
-`src/lib/enrollment/print-form.test.ts`.
+| The applicant answers on the form | The checklist then |
+|---|---|
+| Student status, school level, grade | Chooses the list (old student, preschool, Grade 1/7/11 entry, or transferee/returnee rules) |
+| Religion | Shows **Baptismal certificate** for Catholic applicants, **Certificate of dedication** for others |
+| Former school's name (preschool) | Makes the report card **required** if the child attended a school, otherwise "if applicable" |
 
-**Suggested backlog updates:** PB-09 → *Done*; add the checklist, remarks, confirmed email
-and "Print A4 Verification Form" to the scope notes; mark US-10 attachment access Post-MVP;
-note that the email uses Resend, a third-party service that needs client approval under the SOW.
+Form changes:
+- **"What to bring to the Registrar's Office"** is shown on the review step and on the
+  receipt, so families bring exactly what the Registrar will tick.
+- **Former school's name is required** for new students and returnees above pre-school
+  (the report card, good moral and recommendation come from that school). It stays
+  optional for old students and pre-school.
+- The **Student status** hint explains that transferees choose *New*.
+- The Registrar panel and print form use the **same labels as the form** (Student status,
+  School level, Birthday, Contact number, Parent's email address, Messenger account,
+  Former school's name and address).
+
+No database change: requirement keys are unchanged, so checklist ticks already saved
+still apply. Redeploy the `send-application-status-email` edge function so emails use the
+new wording.
 
 ## Security
 
