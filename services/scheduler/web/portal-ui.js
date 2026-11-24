@@ -24,6 +24,7 @@
   const OPENABLE = new Set(['home', 'load-method', 'school-times', 'advisers', 'checks', 'review', 'teacher']);
   const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const state = () => ({
+    // Globals declared by app.js and workspace.js, which load before this file.
     data: typeof data === 'undefined' ? null : data, // eslint-disable-line no-undef
     run: typeof run === 'undefined' ? null : run, // eslint-disable-line no-undef
     groups: typeof schoolGroups === 'undefined' ? [] : schoolGroups, // eslint-disable-line no-undef
@@ -170,7 +171,7 @@
   window.addEventListener('message', (event) => {
     if (event.origin !== origin || event.source !== window.parent || event.data?.type !== 'SNCS_SCHEDULER_SHOW') return;
     const view = String(event.data.view || '');
-    if (!OPENABLE.has(view) || typeof showView !== 'function') return; // eslint-disable-line no-undef
+    if (!OPENABLE.has(view) || typeof showView !== 'function') return;
     showView(view); // eslint-disable-line no-undef
     window.scrollTo(0, 0);
     refresh();

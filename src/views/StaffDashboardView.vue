@@ -294,7 +294,8 @@ watch(() => props.role, () => {
               :aria-current="activeId === item.id ? 'true' : undefined" :data-label="item.label" @click="goTo(item)">
               <span v-if="item.step" class="portal-step-dot" :data-state="stepState(item)" aria-hidden="true">{{ stepState(item) === "done" ? "✓" : item.step }}</span>
               <CmsIcon v-else :name="item.icon" :size="18" />
-              <span class="portal-nav-text">{{ item.label }}<span v-if="item.step" class="sr-only">, step {{ item.step }}{{ stepState(item) === "done" ? ", done" : stepState(item) === "now" ? ", next" : "" }}</span></span>
+              <span class="portal-nav-text">{{ item.label }}</span>
+              <span v-if="item.step" class="sr-only">, step {{ item.step }}{{ stepState(item) === "done" ? ", done" : stepState(item) === "now" ? ", next" : "" }}</span>
             </button>
           </template>
         </template>
