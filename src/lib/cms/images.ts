@@ -54,13 +54,15 @@ export async function prepareImage(file: File): Promise<{ image: CmsImage; asset
         };
       }
     }
-    throw new Error("This image is too large for browser storage. Choose a smaller file.");
+    throw new Error("This image is too large. Choose a smaller file.");
   } finally {
     URL.revokeObjectURL(url);
   }
 }
 
 export function imageForDisplay(image: CmsImage, asset: CmsImageAsset | undefined): AnnouncementImage | undefined {
-  if (!asset || !/^data:image\/(webp|png);base64,/.test(asset.src)) return undefined;
+  // Images prepared in this browser, or uploaded to the school's content-images bucket.
+  if (!asset || !(/^data:image\/(webp|png);base64,/.test(asset.src)
+    || /^https:\/\/[a-z0-9]+\.supabase\.co\/storage\/v1\/object\/public\/content-images\//.test(asset.src))) return undefined;
   return { ...asset, alt: image.alt, caption: image.caption };
 }

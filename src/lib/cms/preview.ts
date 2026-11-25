@@ -24,6 +24,8 @@ export interface CmsItem {
   visibility: ContentVisibility;
   fileName: string;
   fileSize: number;
+  /** Where the PDF is in the resource-files bucket (database workspace only). */
+  storagePath?: string;
   createdBy: string;
   updatedBy: string;
   updatedAt: string;

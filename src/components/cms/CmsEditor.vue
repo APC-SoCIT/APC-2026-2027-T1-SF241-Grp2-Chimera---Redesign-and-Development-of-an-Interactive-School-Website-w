@@ -13,7 +13,10 @@ const props = defineProps<{
   item: CmsItem;
   items: CmsItem[];
   imageAssets: CmsImageAssets;
-  attemptSave: (item: CmsItem, images: CmsImageAssets) => boolean;
+  /** true: saved; false: the browser could not save; a string: the database's reason. */
+  attemptSave: (item: CmsItem, images: CmsImageAssets, file?: File) => boolean | string | Promise<boolean | string>;
+  /** Saving goes to the school database and the public website (not a browser preview). */
+  connected?: boolean;
 }>();
 const emit = defineEmits<{ close: [] }>();
 const form = ref({ ...props.item, images: props.item.images?.map((image) => ({ ...image })) });
@@ -27,6 +30,9 @@ const readingImages = ref(false);
 const imageError = ref("");
 const pendingImages = shallowRef<CmsImageAssets>({});
 const saveError = ref("");
+const saving = ref(false);
+// The chosen PDF itself; the database workspace uploads it when the form is saved.
+const pdfFile = shallowRef<File>();
 let fileRead = 0;
 
 watch(imageError, (issue) => {
@@ -121,6 +127,7 @@ async function selectPdf(event: Event) {
   delete errors.value.fileName;
   form.value.fileName = file.name;
   form.value.fileSize = file.size;
+  pdfFile.value = file;
 }
 
 function normalizedForm() {
@@ -159,7 +166,7 @@ function validateFields() {
 }
 
 async function save() {
-  if (readingFile.value || readingImages.value) return;
+  if (readingFile.value || readingImages.value || saving.value) return;
   const next = normalizedForm();
   const issues = validateAll();
   saveError.value = "";
@@ -171,7 +178,18 @@ async function save() {
       .find((field) => (field.dataset.validationKey ?? field.getAttribute("name")) === first)?.focus();
     return;
   }
-  if (!props.attemptSave(next, pendingImages.value)) saveError.value = "This browser could not save the changes. Check available browser storage and try again. Your edits are still in the form.";
+  saving.value = true;
+  try {
+    const result = await (next.type === "resource" && pdfFile.value
+      ? props.attemptSave(next, pendingImages.value, pdfFile.value)
+      : props.attemptSave(next, pendingImages.value));
+    if (result === true) return;
+    saveError.value = typeof result === "string" && result
+      ? `${result} Your edits are still in the form.`
+      : "This browser could not save the changes. Check available browser storage and try again. Your edits are still in the form.";
+  } finally {
+    saving.value = false;
+  }
 }
 
 function cancel() {
@@ -225,7 +243,7 @@ function cancel() {
           </span>
           <input id="cms-pdf" name="fileName" type="file" accept=".pdf,application/pdf" :aria-invalid="Boolean(fieldError('fileName'))"
             :aria-describedby="fieldError('fileName') ? 'cms-file-help cms-file-error' : 'cms-file-help'" @change="selectPdf" />
-          <small id="cms-file-help">PDF up to 10 MB. This preview stores the file name and size only.</small>
+          <small id="cms-file-help">PDF up to 10 MB. {{ connected ? 'The file is uploaded when you save.' : 'This preview stores the file name and size only.' }}</small>
           <small v-if="fieldError('fileName')" id="cms-file-error" class="cms-error" role="alert">{{ fieldError('fileName') }}</small>
         </div>
       </template>
@@ -298,8 +316,8 @@ function cancel() {
       <section class="cms-panel cms-form-panel">
         <h2>Publication</h2>
         <span class="cms-status" :data-state="form.status">{{ form.status }}</span>
-        <p v-if="form.status === 'published' && form.type !== 'resource' && form.visibility === 'public'">Saving updates the public preview.</p>
-        <p v-else-if="form.status === 'published'">Saving updates this published item in the preview library.</p>
+        <p v-if="form.status === 'published' && form.type !== 'resource' && form.visibility === 'public'">{{ connected ? 'Saving updates the public website right away.' : 'Saving updates the public preview.' }}</p>
+        <p v-else-if="form.status === 'published'">{{ connected ? 'Saving updates this published item.' : 'Saving updates this published item in the preview library.' }}</p>
         <p v-else-if="form.status === 'archived'">This item stays in the archive when you save it.</p>
         <p v-else>Drafts stay hidden until you publish them from the library.</p>
         <div v-if="form.type === 'resource'" class="cms-field">
@@ -320,8 +338,8 @@ function cancel() {
     <div class="cms-editor-footer">
       <p v-if="saveError" class="cms-error" role="alert">{{ saveError }}</p>
       <button type="button" class="cms-button" @click="cancel">Cancel</button>
-      <button type="submit" class="cms-button cms-primary" :disabled="readingFile || readingImages">
-        {{ readingFile ? 'Checking PDF…' : readingImages ? 'Preparing images…' : item.id ? 'Save changes' : 'Save draft' }}
+      <button type="submit" class="cms-button cms-primary" :disabled="readingFile || readingImages || saving">
+        {{ readingFile ? 'Checking PDF…' : readingImages ? 'Preparing images…' : saving ? 'Saving…' : item.id ? 'Save changes' : 'Save draft' }}
       </button>
     </div>
   </form>
