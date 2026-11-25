@@ -16,6 +16,11 @@ let draftAudience = 'section';
 const knownRevisions = new Map();
 const periodKey = () => JSON.stringify([data.school_year.trim(), data.period.trim()]);
 
+function workbookLocation(issue) {
+  const column = specs[issue.table]?.fields.find(([key]) => key === issue.field)?.[1] || issue.field;
+  return [issue.sheet, issue.row ? 'row ' + issue.row : '', column].filter(Boolean).join(' · ');
+}
+
 async function request(path, payload, raw = false) {
   const response = await (window.SNCSPortal?.fetch || fetch)(path, payload === undefined ? {cache:'no-store'} : {
     method:'POST', headers:{'X-SNCS-Local':'1', 'Content-Type':raw ? 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' : 'application/json'},
@@ -23,8 +28,11 @@ async function request(path, payload, raw = false) {
   });
   const value = await response.json();
   if (!response.ok) {
-    const error = new Error(value.error || value.message || 'The request failed.');
+    const rowIssue = value.issues?.[0];
+    const error = new Error(rowIssue ? workbookLocation(rowIssue) + ': ' + rowIssue.message :
+      value.error || value.message || 'The request failed.');
     error.fields = value.fields;
+    error.issues = value.issues;
     throw error;
   }
   return value;
@@ -332,13 +340,16 @@ async function downloadSchedules(version,type) {
 function renderRun() {
   if (!run) return;
   const result = run.result, policyErrors = run.policy_errors || [], good = !!result.verified && !policyErrors.length;
-  $('run-detail').innerHTML = `<div class="report-title"><h3 class="${good ? 'status-good' : 'status-bad'}">${good ? (run.snapshot.trial ? 'Trial timetable · provisional inputs' : 'Complete timetable · checks passed') : esc(result.status.replaceAll('_',' '))}</h3><span class="pill">${esc(run.status.toUpperCase())}</span></div><p>${esc(run.snapshot.school_year)} · ${esc(run.snapshot.period)}${run.snapshot.trial ? ' · PROVISIONAL TRIAL — NOT SCHOOL-APPROVED' : run.snapshot.demo ? ' · DEMO ONLY' : ''} · ${result.entries.length} meetings${result.seconds !== undefined ? ` · ${result.seconds}s search` : ''}</p>${good ? '<p>One timetable, two views. All supplied required meetings are placed. Teacher, section/strand, workload and availability checks passed. Rooms and other unmodeled school rules still require review.</p>' : `<p>${esc(result.message || 'Correct the input errors and generate again.')}</p>`}${(result.explanation || []).map((e) => `<div class="issue">${esc(e)}</div>`).join('')}${!good && result.report?.errors.length ? `<div id="failed-report"></div>` : ''}${good ? `<div class="schedule-browser"><div class="schedule-tabs" aria-label="Schedule audience"><button class="secondary" data-audience="section" aria-pressed="true">Class schedules</button><button class="secondary" data-audience="teacher" aria-pressed="false">Teacher schedules</button></div><div class="schedule-controls"><label><span id="schedule-entity-label">Section</span><select id="schedule-entity"></select></label><button class="secondary" id="print-draft">Print / save this schedule as PDF</button></div><p class="muted">Choose any teacher or section. Both views use the same saved version.</p><div id="draft-schedule"></div><div class="schedule-downloads"><button class="secondary" data-download-audience="teacher">Download all teacher schedules</button><button class="secondary" data-download-audience="section">Download all class schedules</button></div></div>${snapshotLoads(run)}<div class="exports"><a href="/api/export?id=${run.id}&format=csv">Download meetings CSV</a><a href="/api/export?id=${run.id}">Download version & inputs</a></div><div class="publish-row"><label>Coordinator / reviewer<input id="reviewer" placeholder="Name for the local review record" maxlength="180"></label><button id="publish" class="primary">Publish locally</button></div><p class="muted" id="publish-help"></p>` : ''}`;
+  $('run-detail').innerHTML = `<div class="report-title"><h3 class="${good ? 'status-good' : 'status-bad'}">${good ? (run.snapshot.trial ? 'Trial timetable · provisional inputs' : 'Complete timetable · checks passed') : esc(result.status.replaceAll('_',' '))}</h3><span class="pill">${esc(run.status.toUpperCase())}</span></div><p>${esc(run.snapshot.school_year)} · ${esc(run.snapshot.period)}${run.snapshot.trial ? ' · PROVISIONAL TRIAL — NOT SCHOOL-APPROVED' : run.snapshot.demo ? ' · DEMO ONLY' : ''} · ${result.entries.length} meetings${result.seconds !== undefined ? ` · ${result.seconds}s search` : ''}</p>${good ? '<p>One timetable, two views. All supplied required meetings are placed. Teacher and section/strand overlap, bell times and availability checks passed. Rooms and other unmodeled school rules still require review.</p>' : `<p>${esc(result.message || 'Correct the input errors and generate again.')}</p>`}${(result.explanation || []).map((e) => `<div class="issue">${esc(e)}</div>`).join('')}${!good && result.report?.errors.length ? `<div id="failed-report"></div>` : ''}${good ? `<div class="schedule-browser"><div class="schedule-tabs" aria-label="Schedule audience"><button class="secondary" data-audience="section" aria-pressed="true">Class schedules</button><button class="secondary" data-audience="teacher" aria-pressed="false">Teacher schedules</button></div><div class="schedule-controls"><label><span id="schedule-entity-label">Section</span><select id="schedule-entity"></select></label><button class="secondary" id="print-draft">Print / save this schedule as PDF</button></div><p class="muted">Choose any teacher or section. Both views use the same saved version.</p><div id="draft-schedule"></div><div class="schedule-downloads"><button class="secondary" data-download-audience="teacher">Download all teacher schedules</button><button class="secondary" data-download-audience="section">Download all class schedules</button></div></div>${snapshotLoads(run)}<div class="exports"><a href="/api/export?id=${run.id}&format=csv">Download meetings CSV</a><a href="/api/export?id=${run.id}">Download version & inputs</a></div><div class="publish-row"><label>Coordinator / reviewer<input id="reviewer" placeholder="Name for the local review record" maxlength="180"></label><button id="publish" class="primary">Publish locally</button></div><p class="muted" id="publish-help"></p>` : ''}`;
   if (policyErrors.length) {
     $('run-detail').querySelector('h3').textContent = 'Historical result exceeds 5:00 PM cutoff';
     $('run-detail').insertAdjacentHTML('afterbegin',`<div class="issue"><strong>Withdrawn from current review.</strong> This historical result used hours the school does not allow. Open the corrected 5:00 PM period instead.</div>${policyErrors.map(e => `<div class="issue">${esc(e)}</div>`).join('')}`);
   }
   if (good) {
     $('run-detail').querySelector('.schedule-browser').insertAdjacentHTML('beforebegin',trialNotes(run));
+    for (const warning of (result.report?.warnings || []).filter((issue) => issue.code === 'WORKLOAD')) {
+      $('run-detail').querySelector('.schedule-browser').insertAdjacentHTML('beforebegin', '<div class="issue warning">' + esc(warning.message) + '</div>');
+    }
     if (result.quality) $('run-detail').querySelector('.schedule-browser').insertAdjacentHTML('beforebegin',`<p>Weekly distribution: ${esc(result.quality.extra_same_day_meetings)} extra same-day class meetings.${result.quality.optimal ? ' This distribution score is optimal for the entered rules.' : ' Best distribution found within the search time; further improvement may be possible.'}</p>`);
     renderDraftSchedule();
   }
@@ -350,6 +361,11 @@ function updatePublishButton() {
   if (!button || !run) return;
   button.disabled = busy || dirty || run.status !== 'draft' || !run.snapshot.confirmed || !run.result.verified;
   if (run.snapshot.trial) { button.disabled = true; $('publish-help').textContent = 'Provisional trial only. This version cannot be published as a school schedule.'; return; }
+  if (run.status === 'draft' && run.result.report?.warnings?.some((issue) => issue.code === 'WORKLOAD')) {
+    button.disabled = true;
+    $('publish-help').textContent = 'Resolve the workload warnings or record approved allowances, then generate a fresh draft before publication.';
+    return;
+  }
   $('publish-help').textContent = dirty ? 'Unsaved edits: save and generate a fresh draft before publication.' : !run.snapshot.confirmed ? 'This draft used unconfirmed inputs. Confirm inputs in Readiness checks, then generate a new draft.' : run.status === 'published' ? 'This is the published local version.' : run.status !== 'draft' ? 'Open or generate a draft to publish.' : 'Local publication rechecks the saved version and keeps one published schedule for this period.';
 }
 async function loadTeacher() {
@@ -496,10 +512,23 @@ $('workbook').addEventListener('change', async () => {
   const file = $('workbook').files[0]; $('workbook').value = '';
   if (!file) return;
   await operation('Reading the workbook into a review preview…',async () => {
+    const panel = $('import-preview');
+    preview = null;
+    panel.hidden = true;
+    panel.replaceChildren();
     if (!file.name.toLowerCase().endsWith('.xlsx') || file.size > 5*1024*1024) throw new Error('Choose an .xlsx file smaller than 5 MB.');
-    preview = await request('/api/import',file,true);
-    $('import-preview').hidden = false;
-    $('import-preview').innerHTML = `<h3>Review import: ${esc(file.name)}</h3><p>${preview.data.teachers.length} teachers · ${preview.data.sections.length} sections · ${preview.data.loads.length} teaching-load records. ${preview.report.errors.length} issues need review before generation.</p><ul>${preview.data.source_notes.map((s) => `<li>${esc(s)}</li>`).join('')}</ul><div class="actions"><button class="primary" id="apply-import">Use this working copy</button><button class="subtle" id="cancel-import">Cancel preview</button></div>`;
+    try {
+      preview = await request('/api/import',file,true);
+    } catch (error) {
+      if (error.issues?.length) {
+        panel.hidden = false;
+        panel.innerHTML = '<h3>Workbook not imported</h3><p>Correct these rows in Excel and upload the file again. Your current inputs are unchanged.</p><ul>' +
+          error.issues.map((issue) => '<li><strong>' + esc(workbookLocation(issue)) + '</strong> — ' + esc(issue.message) + '</li>').join('') + '</ul>';
+      }
+      throw error;
+    }
+    panel.hidden = false;
+    panel.innerHTML = `<h3>Review import: ${esc(file.name)}</h3><p>${preview.data.teachers.length} teachers · ${preview.data.sections.length} sections · ${preview.data.loads.length} teaching-load records. ${preview.report.errors.length} issues need review before generation.</p><ul>${preview.data.source_notes.map((s) => `<li>${esc(s)}</li>`).join('')}</ul><div class="actions"><button class="primary" id="apply-import">Use this working copy</button><button class="subtle" id="cancel-import">Cancel preview</button></div>`;
     notice('Import preview ready. Your current inputs and saved periods are unchanged.');
   });
 });
