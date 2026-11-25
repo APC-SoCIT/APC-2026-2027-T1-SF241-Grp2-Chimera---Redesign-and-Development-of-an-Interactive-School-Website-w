@@ -11,6 +11,7 @@ import {
 } from "@/lib/schedule/teacher-schedule";
 
 const schedule = ref<TeacherSchedule>();
+const emit = defineEmits<{ loaded: [schedule: TeacherSchedule] }>();
 const loading = ref(true);
 const accessDenied = ref(false);
 const loadError = ref("");
@@ -34,6 +35,7 @@ async function load() {
   accessDenied.value = false;
   try {
     schedule.value = await getTeacherSchedule();
+    emit("loaded", schedule.value);
   } catch (error) {
     schedule.value = undefined;
     if (error instanceof ScheduleError && error.kind === "access") accessDenied.value = true;

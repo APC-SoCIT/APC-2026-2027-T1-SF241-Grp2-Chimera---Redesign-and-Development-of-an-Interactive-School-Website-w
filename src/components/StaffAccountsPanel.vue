@@ -15,7 +15,11 @@ type Role = StaffRole;
 type StaffAccount = { id: string; full_name: string; email: string; role: Role; account_status: string };
 
 // Tells the dashboard whether this Admin can manage staff accounts (Super Admin) or not (Content Admin).
-const emit = defineEmits<{ access: [canManageAccounts: boolean] }>();
+const emit = defineEmits<{
+  access: [canManageAccounts: boolean];
+  /** Counts for the dashboard's summary cards (this page of the staff list; more = there are further pages). */
+  summary: [counts: { total: number; active: number; admins: number; inactive: number; more: boolean }];
+}>();
 
 const roles = { admin: "Admin", registrar: "Registrar", teacher: "Teacher", academic_coordinator: "Academic Coordinator" } as const;
 const client = getStaffSupabaseClient();
@@ -56,6 +60,12 @@ async function loadAccounts(nextOffset = offset.value) {
     accounts.value = rows.slice(0, pageSize);
     hasMore.value = rows.length > pageSize;
     offset.value = nextOffset;
+    if (nextOffset === 0) emit("summary", {
+      total: accounts.value.length, more: hasMore.value,
+      active: accounts.value.filter((account) => account.account_status === "active").length,
+      inactive: accounts.value.filter((account) => account.account_status !== "active").length,
+      admins: accounts.value.filter((account) => account.role === "admin").length,
+    });
   } catch {
     accounts.value = [];
     listError.value = "Could not load staff accounts.";

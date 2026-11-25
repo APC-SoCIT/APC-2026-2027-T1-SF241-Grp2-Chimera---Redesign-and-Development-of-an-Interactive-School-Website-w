@@ -9,6 +9,8 @@
   Modified Date: 20261120
   Modified by: Gian Mandac (role-based side panel that can shrink to icons, content workspace look; PB-07 teacher schedule panel)
   Modified Date: 20261124
+  Modified by: Gian Mandac (shorter side panel for each role; campus banner and summary cards on every dashboard)
+  Modified Date: 20261125
 -->
 <script setup lang="ts">
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from "vue";
@@ -21,6 +23,8 @@ import RegistrarApplicationsPanel from "@/components/RegistrarApplicationsPanel.
 import CoordinatorSchedulerPanel from "@/components/CoordinatorSchedulerPanel.vue";
 import TeacherSchedulePanel from "@/components/TeacherSchedulePanel.vue";
 import { cmsPreviewEnabled } from "@/lib/cms/config";
+import { useCmsLibrary } from "@/lib/cms/store";
+import { weeklyMinutes, type TeacherSchedule } from "@/lib/schedule/teacher-schedule";
 import CmsIcon from "@/components/cms/CmsIcon.vue";
 import { schedulerViews, type SchedulerNavId, type SchedulerState, type SchedulerStep } from "@/lib/schedule/scheduler-bridge";
 
@@ -56,6 +60,49 @@ function nameFrom(session: Session | null) {
     ? provisioning.full_name.trim()
     : session?.user?.email ?? "";
 }
+
+// Summary Cards START
+// Four counts under the banner, from data each dashboard already loads. None for the
+// Registrar (the applications panel has its own status pipeline) or the Coordinator
+// (the scheduling workbench draws its own overview).
+type SummaryCard = { id: string; icon: string; value: string; label: string; note: string };
+const accountCounts = ref<{ total: number; active: number; admins: number; inactive: number; more: boolean }>();
+const teacherSchedule = ref<TeacherSchedule>();
+const contentLibrary = cmsPreviewEnabled && props.role === "admin" ? useCmsLibrary() : undefined;
+const summaryCards = computed<SummaryCard[]>(() => {
+  if (props.role === "admin" && canManageAccounts.value && accountCounts.value) {
+    const { total, active, admins, inactive, more } = accountCounts.value;
+    const plus = more ? "+" : "";
+    return [
+      { id: "staff", icon: "users", value: `${total}${plus}`, label: "Staff accounts", note: "Everyone who can sign in" },
+      { id: "active", icon: "check", value: `${active}${plus}`, label: "Active", note: "Can use their dashboard" },
+      { id: "admins", icon: "user-plus", value: `${admins}${plus}`, label: "Admins", note: "Super and Content Admins" },
+      { id: "inactive", icon: "archive", value: `${inactive}${plus}`, label: "Inactive", note: "Access turned off" },
+    ];
+  }
+  if (props.role === "admin" && canManageAccounts.value === false && contentLibrary) {
+    const items = contentLibrary.value.items.filter((item) => !item.deletedAt && item.type !== "resource");
+    const count = (status: string) => String(items.filter((item) => item.status === status).length);
+    return [
+      { id: "content", icon: "files", value: String(items.length), label: "Total content", note: "Across all content types" },
+      { id: "published", icon: "check", value: count("published"), label: "Published", note: "Visible to website visitors" },
+      { id: "draft", icon: "page", value: count("draft"), label: "Drafts", note: "Work in progress" },
+      { id: "archived", icon: "archive", value: count("archived"), label: "Archived", note: "Hidden from the website" },
+    ];
+  }
+  if (props.role === "teacher" && teacherSchedule.value?.entries.length) {
+    const entries = teacherSchedule.value.entries;
+    const distinct = (values: (string | null)[]) => String(new Set(values.filter(Boolean)).size);
+    return [
+      { id: "classes", icon: "event", value: String(entries.length), label: "Classes a week", note: "In the published schedule" },
+      { id: "hours", icon: "clock", value: String(Math.round(weeklyMinutes(entries) / 6) / 10), label: "Teaching hours", note: "Each week" },
+      { id: "sections", icon: "users", value: distinct(entries.map((entry) => entry.section)), label: "Sections", note: "Classes you teach" },
+      { id: "subjects", icon: "files", value: distinct(entries.map((entry) => entry.subject)), label: "Subjects", note: "This term" },
+    ];
+  }
+  return [];
+});
+// Summary Cards END
 
 // Session Access START
 let expiryTimer: ReturnType<typeof setTimeout> | undefined;
@@ -151,41 +198,32 @@ type NavGroup = { label: string; items: NavItem[] };
 const workspaceItems: NavItem[] = [
   { id: "overview", label: "Overview", icon: "grid", target: "staff-dashboard-heading" },
 ];
-const contentSections: [string, string, string][] = [
-  ["content", "All content", "files"], ["announcement", "Announcements", "announcement"],
-  ["event", "Events", "event"], ["page", "Pages", "page"], ["resource", "PDF resources", "resource"],
-];
 
-/** Only what each role can open today. */
+/** Only what each role opens most; everything else is one step away inside it. */
 const navGroups = computed<NavGroup[]>(() => {
-  // The Coordinator's side panel follows the scheduling workbench's steps.
-  if (props.role === "academic_coordinator") return [
-    { label: "Workspace", items: [{ id: "overview", label: "Overview", icon: "grid", scheduler: "overview" }] },
-    { label: "Build the timetable", items: [
-      { id: "loads", label: "Teacher loads", icon: "users", scheduler: "loads", step: 1 },
-      { id: "times", label: "School times", icon: "clock", scheduler: "times", step: 2 },
-      { id: "generate", label: "Check & generate", icon: "check", scheduler: "generate", step: 3 },
-      { id: "review", label: "Review & publish", icon: "eye", scheduler: "review", step: 4 },
-    ] },
-    { label: "Published", items: [{ id: "published", label: "Published timetable", icon: "eye", scheduler: "published" }] },
-  ];
+  // The Coordinator's workbench has its own step stations and "Continue" button, so the side
+  // panel only opens it at the current step, or the published timetable.
+  if (props.role === "academic_coordinator") {
+    const current = (["loads", "times", "generate", "review"] as const).find((id) => schedulerSteps.value[id]?.state === "now") ?? "loads";
+    return [
+      { label: "Workspace", items: [{ id: "overview", label: "Overview", icon: "grid", scheduler: "overview" }] },
+      { label: "Scheduling", items: [
+        { id: current, label: "Scheduling workbench", icon: "clock", scheduler: current },
+        { id: "published", label: "Published timetable", icon: "eye", scheduler: "published" },
+      ] },
+    ];
+  }
   const groups: NavGroup[] = [{ label: "Workspace", items: workspaceItems }];
   if (props.role === "admin") {
+    // Create account is the banner's button; content sections live in the content workspace's own side panel.
     if (canManageAccounts.value) {
-      groups.push({ label: "Account management", items: [
-        { id: "accounts", label: "Staff accounts", icon: "users", target: "staff-accounts-heading" },
-        { id: "create", label: "Create account", icon: "user-plus", target: "create-account-heading" },
-      ] });
+      groups.push({ label: "Accounts", items: [{ id: "accounts", label: "Staff accounts", icon: "users", target: "staff-accounts-heading" }] });
     }
     if (cmsPreviewEnabled) {
-      groups.push({ label: "Website management", items: contentSections.map(([section, label, icon]) => (
-        { id: `content-${section}`, label, icon, to: { name: "content-workspace", query: { section } } })) });
+      groups.push({ label: "Website", items: [{ id: "content", label: "Website content", icon: "files", to: { name: "content-workspace" } }] });
     }
   } else if (props.role === "registrar") {
-    groups.push({ label: "Enrollment", items: [
-      { id: "applications", label: "Applications", icon: "inbox", target: "registrar-applications-heading" },
-      { id: "enrollment-form", label: "Enrollment form", icon: "form", to: { name: "enrollment" }, newTab: true },
-    ] });
+    groups.push({ label: "Enrollment", items: [{ id: "applications", label: "Applications", icon: "inbox", target: "registrar-applications-heading" }] });
   } else if (props.role === "teacher") {
     groups.push({ label: "My teaching", items: [{ id: "schedule", label: "My schedule", icon: "clock", target: "teacher-schedule-heading" }] });
   }
@@ -193,7 +231,8 @@ const navGroups = computed<NavGroup[]>(() => {
 });
 
 const activeId = ref("overview");
-const activeLabel = computed(() => navGroups.value.flatMap((group) => group.items).find((item) => item.id === activeId.value)?.label ?? "Overview");
+const activeLabel = computed(() => navGroups.value.flatMap((group) => group.items).find((item) => item.id === activeId.value)?.label
+  ?? (["loads", "times", "generate", "review"].includes(activeId.value) ? "Scheduling workbench" : "Overview"));
 
 const intro = computed(() => {
   switch (props.role) {
@@ -340,12 +379,29 @@ watch(() => props.role, () => {
               @click="goTo({ id: 'create', label: 'Create account', icon: 'user-plus', target: 'create-account-heading' })">
               <CmsIcon name="user-plus" :size="18" /> Create account
             </button>
+            <RouterLink v-else-if="role === 'admin' && canManageAccounts === false && cmsPreviewEnabled" class="portal-hero-button"
+              :to="{ name: 'content-workspace' }">
+              <CmsIcon name="files" :size="18" /> Open content workspace
+            </RouterLink>
             <button v-else-if="role === 'registrar'" type="button" class="portal-hero-button"
               @click="goTo({ id: 'applications', label: 'Applications', icon: 'inbox', target: 'registrar-applications-heading' })">
               <CmsIcon name="inbox" :size="18" /> Review applications
             </button>
+            <button v-else-if="role === 'teacher'" type="button" class="portal-hero-button"
+              @click="goTo({ id: 'schedule', label: 'My schedule', icon: 'clock', target: 'teacher-schedule-heading' })">
+              <CmsIcon name="clock" :size="18" /> View my schedule
+            </button>
           </div>
         </div>
+
+        <section v-if="summaryCards.length" class="portal-stats" aria-label="Summary">
+          <div v-for="card in summaryCards" :key="card.id" class="portal-stat">
+            <span class="portal-stat-icon" :data-card="card.id"><CmsIcon :name="card.icon" :size="19" /></span>
+            <strong>{{ card.value }}</strong>
+            <span class="portal-stat-label">{{ card.label }}</span>
+            <small>{{ card.note }}</small>
+          </div>
+        </section>
 
         <section v-if="role === 'admin' && cmsPreviewEnabled" class="portal-content-card" aria-labelledby="portal-content-title">
           <div>
@@ -356,7 +412,7 @@ watch(() => props.role, () => {
           <RouterLink class="portal-content-open" :to="{ name: 'content-workspace' }">Open content workspace</RouterLink>
         </section>
         <div v-if="role === 'admin'" v-show="canManageAccounts !== false" class="portal-section">
-          <StaffAccountsPanel @access="canManageAccounts = $event" />
+          <StaffAccountsPanel @access="canManageAccounts = $event" @summary="accountCounts = $event" />
         </div>
         <div v-if="role === 'registrar'" class="portal-section">
           <RegistrarApplicationsPanel :staff-name="staffName" />
@@ -365,7 +421,7 @@ watch(() => props.role, () => {
           <CoordinatorSchedulerPanel ref="schedulerPanel" :access-token="schedulerToken" @state="onSchedulerState" />
         </div>
         <div v-if="role === 'teacher'" class="portal-section">
-          <TeacherSchedulePanel />
+          <TeacherSchedulePanel @loaded="teacherSchedule = $event" />
         </div>
       </section>
     </div>
@@ -480,6 +536,18 @@ watch(() => props.role, () => {
 .portal-hero p:last-child { margin-bottom: 0; }
 .portal-hero-button { display: inline-flex; align-items: center; gap: 7px; min-height: 42px; padding: 7px 13px; border: 1px solid var(--portal-gold); border-radius: 8px; background: var(--portal-gold); color: #3f2024; font: inherit; font-weight: 700; cursor: pointer; }
 .portal-hero-button:hover { background: #fce9aa; }
+a.portal-hero-button { text-decoration: none; }
+
+/* Summary cards, as on the content workspace overview */
+.portal-stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; margin: 0 0 18px; }
+.portal-stat { display: grid; gap: 2px; padding: 15px 16px 16px; border: 1px solid var(--portal-border); border-radius: 13px; background: #fff; box-shadow: 0 2px 8px #3f191605; }
+.portal-stat strong { margin-top: 10px; font-size: 1.85rem; line-height: 1.1; letter-spacing: -.03em; }
+.portal-stat-label { font-weight: 700; }
+.portal-stat small { color: var(--portal-muted); font-size: .8rem; }
+.portal-stat-icon { display: grid; place-items: center; width: 40px; height: 40px; border-radius: 10px; background: #fbe9e6; color: var(--red-800); }
+.portal-stat-icon[data-card="active"], .portal-stat-icon[data-card="published"] { background: #e7f4eb; color: #28654e; }
+.portal-stat-icon[data-card="draft"], .portal-stat-icon[data-card="hours"] { background: #fff4d8; color: #7a5a12; }
+.portal-stat-icon[data-card="inactive"], .portal-stat-icon[data-card="archived"] { background: #f0ecee; color: #66515c; }
 .portal-hero :focus-visible { outline-color: var(--portal-gold); }
 
 .portal-card { margin-bottom: 18px; border: 1px solid var(--portal-border); border-radius: 13px; background: #fff; box-shadow: 0 2px 8px #3f191605; }
@@ -518,4 +586,6 @@ watch(() => props.role, () => {
   .portal-signed-in { display: none; }
   .portal-hero { background-size: cover, 0 0; }
 }
+@media (max-width: 1100px) { .portal-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 480px) { .portal-stats { grid-template-columns: minmax(0, 1fr); } }
 </style>
