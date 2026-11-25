@@ -8,7 +8,8 @@ const events = ref<unknown[]>([]);
 vi.mock("@/lib/cms/public-website", () => ({ usePublicWebsite: () => ({
   pages: ref([]), events,
   announcements: ref([
-    { id: "office-transactions", title: "School office transactions" },
+    // From the database the office-hours notice has a numbered id; it is recognised by its page identifier.
+    { id: "content-12", slug: "office-transactions", title: "School office transactions" },
     { id: "genyo", title: "Learning platform update", slug: "learning-platform", category: "School update", summary: "Platform information", publishedAt: null },
   ]),
 }) }));
