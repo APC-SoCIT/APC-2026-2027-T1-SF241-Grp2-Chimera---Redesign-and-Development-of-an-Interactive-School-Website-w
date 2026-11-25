@@ -385,7 +385,9 @@ def validate(data):
         allowed = teacher['limit'] + teacher['approved_overload']
         report['capacity'].append({'teacher': teacher['name'], 'required': required, 'allowed': allowed, 'remaining': allowed - required})
         if required > allowed:
-            issue('WORKLOAD', f'{teacher["name"]} needs {required} minutes/week; allowed {allowed}. Short by {required - allowed} minutes. Reassign work or record an approved allowance after school review.', 'teachers', teacher)
+            issue('WORKLOAD', f'{teacher["name"]} needs {required} minutes/week; allowed {allowed}. '
+                  f'This is {required - allowed} minutes over. Reassign work or record an approved '
+                  'allowance before publication.', 'teachers', teacher, warning=True)
     section_need = Counter()
     for load in model['requirements']:
         for cohort in cohort_ids(load, sections, subjects):
@@ -514,12 +516,14 @@ def solve(data, time_limit=10):
     return result
 
 
-def verify(data, entries, activities=_UNSPECIFIED_ACTIVITIES):
+def verify(data, entries, activities=_UNSPECIFIED_ACTIVITIES, *, require_workload_approval=False):
     """Independent plain-Python check, also run again when publishing saved drafts."""
     report, model = validate(data)
     if model is None:
         return ['Inputs no longer validate.']
     errors = []
+    if require_workload_approval:
+        errors.extend(warning['message'] for warning in report['warnings'] if warning['code'] == 'WORKLOAD')
     loads = {r['id']: r for r in model['loads']}
     counts, daily = Counter(), Counter()
     checked = []

@@ -16,8 +16,8 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import parse_qs, urlparse
 
-from domain import fingerprint, integer, minute, shape_error, solve, validate, verify
-from workbook import coordinator_demo_data, demo_data, read_workbook
+from domain import TABLES, fingerprint, integer, minute, shape_error, solve, validate, verify
+from workbook import HEADERS, WorkbookInputError, coordinator_demo_data, demo_data, read_workbook, require_valid_workbook_rows
 from manual_load import LoadInputError, empty_data, prepare_load
 from school_day import coordinator_starting_times, school_cutoff_violations
 
@@ -87,6 +87,8 @@ class Store:
         if error:
             raise ValueError(error)
         key = workspace_key(data)
+        if any(row.get('_sheet') in HEADERS for table in TABLES for row in data[table]):
+            require_valid_workbook_rows(validate(data)[0])
         serialized = encoded(data)
         new_revision = uuid.uuid4().hex
         with self.connect() as db:
@@ -158,9 +160,12 @@ class Store:
             if not data.get('confirmed'):
                 raise ValueError('Confirm the curriculum, bell times, workload and availability before generating a publishable draft.')
             if (fingerprint(data) != row['input_hash'] or result.get('input_hash') != row['input_hash']
-                    or result.get('status') not in ['FEASIBLE', 'OPTIMAL'] or not result.get('verified')
-                    or verify(data, result.get('entries', []), result.get('activities', []))):
+                    or result.get('status') not in ['FEASIBLE', 'OPTIMAL'] or not result.get('verified')):
                 raise ValueError('The saved draft failed independent verification. Generate a new version.')
+            errors = verify(data, result.get('entries', []), result.get('activities', []),
+                            require_workload_approval=True)
+            if errors:
+                raise ValueError('The saved draft failed independent verification. ' + errors[0])
             db.execute("UPDATE runs SET status='superseded' WHERE workspace=? AND status='published'", (row['workspace'],))
             db.execute("UPDATE runs SET status='published',reviewer=?,published=? WHERE id=?", (reviewer.strip(), now(), run_id))
         return self.run(run_id)
@@ -206,6 +211,8 @@ def make_server(store, port=8765, gateway_secret=None):
         def guarded(self, action):
             try:
                 action()
+            except WorkbookInputError as exc:
+                self.respond({'error': str(exc), 'issues': exc.issues}, 422)
             except LoadInputError as exc:
                 self.respond({'error': str(exc), 'fields': exc.fields}, 422)
             except Conflict as exc:
@@ -286,6 +293,7 @@ def make_server(store, port=8765, gateway_secret=None):
             if path == '/api/import':
                 data = read_workbook(body)
                 report, _ = validate(data)
+                require_valid_workbook_rows(report)
                 self.respond({'data': data, 'report': report})
                 return
             if not self.headers.get('Content-Type', '').startswith('application/json'):
@@ -294,7 +302,7 @@ def make_server(store, port=8765, gateway_secret=None):
             if not isinstance(payload, dict):
                 raise ValueError('The request must be a JSON object.')
             if path == '/api/save':
-                # Invalid drafts can be saved for correction; generation and publication are gated.
+                # Scheduling-readiness errors can be saved for correction; invalid workbook rows cannot.
                 self.respond(store.save(payload['data'], payload.get('revision')))
             elif path == '/api/manual-load':
                 self.respond(store.save_load(payload['data'], payload.get('revision'), payload['load'],

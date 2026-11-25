@@ -133,9 +133,12 @@ counts. They must be confirmed against the official curriculum. Strand/subtrack
 choices must be explicit; for example, a STEM Medical subject is not automatically
 required for every STEM section. The school must confirm those offerings.
 
-The source workbook is incomplete: missing section allocations, bell times,
-external commitments and unresolved questions prevent a valid school timetable.
-The importer intentionally preserves these problems instead of inventing values.
+The source workbook is incomplete. Correct invalid worksheet rows before applying
+the workbook. Import errors include the original sheet, row and field where
+available. The preview does not change saved inputs, and an invalid worksheet
+row in an edited import prevents the whole working copy from being saved.
+Missing bell coverage and curriculum confirmation can be completed in the
+workbench before generating a timetable.
 
 Read-only CLI validation:
 
@@ -192,11 +195,13 @@ saves none. Curriculum stays independent and must be entered explicitly.
 Implemented: exact weekly 45/60-minute counts, independent curriculum vs teacher
 assignment checks, grade matching, single teacher per class, daily meeting limit,
 teacher overlap across staggered grade-group bells, section/strand overlap, Core
-classes occupying all strands, breaks, fixed unavailability and workload capacity.
+classes occupying all strands, breaks and fixed unavailability.
 
 Other teaching minutes count toward workload. Teachers who also teach elementary
 need actual blocked intervals, external weekly minutes and an explicit completeness
-confirmation. A declared workload allowance needs a recorded reason/approver. This
+confirmation. Workload above a configured limit warns during readiness and draft
+generation. Publication still requires the workload to be within the limit or
+covered by an allowance. A declared allowance needs a recorded reason/approver. This
 does not authorize an allowance under school policy: the school must decide which
 limits can be adjusted. An allowance never bypasses overlap or unavailable times.
 

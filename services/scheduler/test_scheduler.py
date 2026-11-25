@@ -11,6 +11,8 @@ from copy import deepcopy
 from pathlib import Path
 from unittest.mock import patch
 
+from openpyxl import Workbook
+
 from app import Conflict, Store, make_server
 from domain import DAYS, integer, minute, solve, validate, verify
 from workbook import HEADERS, demo_data, read_workbook
@@ -88,13 +90,20 @@ class DomainTests(unittest.TestCase):
 
     def test_workload_allowance_requires_reason_and_capacity_still_applies(self):
         self.data['teachers'][0]['limit'] = 300
-        self.assertIn('WORKLOAD', self.codes())
+        report, _ = validate(self.data)
+        self.assertEqual([], report['errors'])
+        self.assertIn('WORKLOAD', [warning['code'] for warning in report['warnings']])
+        result = solve(self.data)
+        self.assertTrue(result['verified'])
+        self.assertEqual([], verify(self.data, result['entries']))
         self.data['teachers'][0]['approved_overload'] = 30
         self.assertIn('APPROVAL_REASON', self.codes())
         self.data['teachers'][0]['overload_reason'] = 'Demo review: coordinator approved 30 additional minutes'
-        self.assertEqual([], self.codes())
+        report, _ = validate(self.data)
+        self.assertEqual([], report['errors'])
+        self.assertNotIn('WORKLOAD', [warning['code'] for warning in report['warnings']])
         self.data['teachers'][0]['extra_minutes'] = 60
-        self.assertIn('WORKLOAD', self.codes())
+        self.assertIn('WORKLOAD', [warning['code'] for warning in validate(self.data)[0]['warnings']])
 
     def test_incomplete_or_misspelled_unavailability_is_never_ignored(self):
         for updates in [dict(days=''), dict(start=''), dict(days='Mno'), dict(end='06:00'), dict(teacher='unknown')]:
@@ -366,6 +375,77 @@ class HttpTests(unittest.TestCase):
         req=urllib.request.Request(self.url+path,data=body,headers=headers or {'Content-Type':'application/json','X-SNCS-Local':'1'})
         with urllib.request.urlopen(req,timeout=10) as response:
             return json.load(response)
+
+    def import_workbook(self, *, teacher='Synthetic Teacher', meetings=2):
+        workbook = Workbook()
+        workbook.remove(workbook.active)
+        records = {
+            'Teachers': [['T01', 'Synthetic Teacher', 1500, 'No', '']],
+            'Sections': [[7, 'G7 Demo', '', '', '']],
+            'Subjects': [['Math', 7, 'Core', '']],
+            'Teaching Loads': [[teacher, 'Math', 7, 'G7 Demo', '', meetings, 1, '', '']],
+            'Bell Schedule': [['7-8', 'Mon-Thu', 'P1', 'Class', '07:00', '08:00', '']],
+            'Unavailable Times': [['Synthetic Teacher', 'Tue', '09:00', '10:00', 'Other assignment']],
+        }
+        for name, headings in HEADERS.items():
+            sheet = workbook.create_sheet(name)
+            sheet.append(headings)
+            for row in records[name]:
+                sheet.append(row)
+        stream = io.BytesIO()
+        workbook.save(stream)
+        workbook.close()
+        request = urllib.request.Request(self.url + '/api/import', data=stream.getvalue(), headers={
+            'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'X-SNCS-Local': '1',
+        })
+        with urllib.request.urlopen(request, timeout=10) as response:
+            return json.load(response)
+
+    def test_import_reports_sheet_row_and_field_without_saving_invalid_rows(self):
+        for workbook_input, field in [({'teacher': 'Unknown'}, 'teacher'), ({'meetings': '=1+1'}, 'n60')]:
+            with self.subTest(field=field):
+                with self.assertRaises(urllib.error.HTTPError) as caught:
+                    self.import_workbook(**workbook_input)
+                self.assertEqual(422, caught.exception.code)
+                issues = json.load(caught.exception)['issues']
+                self.assertIn(('Teaching Loads', 2, field),
+                              [(issue['sheet'], issue['row'], issue['field']) for issue in issues])
+                self.assertEqual([], self.call('/api/workspaces'))
+
+    def test_valid_workbook_saves_atomically_and_invalid_edit_preserves_revision(self):
+        preview = self.import_workbook()
+        self.assertEqual([], self.call('/api/workspaces'))
+        data = preview['data']
+        data.update(school_year='2026-2027', period='Import QA')
+        self.assertIn('CLASS_CAPACITY', [issue['code'] for issue in validate(data)[0]['errors']])
+        saved = self.call('/api/save', {'data': data})
+        path = '/api/workspace?id=' + saved['id']
+        original = self.call(path)
+        self.assertEqual('T01', original['data']['loads'][0]['teacher'])
+        self.assertEqual(1, len(original['data']['unavailable']))
+
+        data['loads'][0]['teacher'] = 'Unknown'
+        with self.assertRaises(urllib.error.HTTPError) as caught:
+            self.call('/api/save', {'data': data, 'revision': saved['revision']})
+        self.assertEqual(422, caught.exception.code)
+        issue = next(issue for issue in json.load(caught.exception)['issues'] if issue['code'] == 'TEACHER')
+        self.assertEqual(('Teaching Loads', 2, 'teacher'), (issue['sheet'], issue['row'], issue['field']))
+        self.assertEqual(original, self.call(path))
+
+    def test_workload_warning_allows_a_draft_and_requires_approval_to_publish(self):
+        data = demo_data()
+        data['confirmed'] = True
+        data['teachers'][0]['limit'] = 100
+        saved = self.call('/api/save', {'data': data})
+        run = self.call('/api/generate', {**saved, 'seconds': 2})
+        self.assertEqual('draft', run['status'])
+        self.assertIn('WORKLOAD', [warning['code'] for warning in run['result']['report']['warnings']])
+        with self.assertRaises(urllib.error.HTTPError) as caught:
+            self.call('/api/publish', {'id': run['id'], 'reviewer': 'Synthetic reviewer'})
+        self.assertEqual(400, caught.exception.code)
+        self.assertIn('before publication', json.load(caught.exception)['error'])
+        self.assertIsNone(self.call('/api/published?id=' + saved['id']))
 
     def test_full_api_flow_and_local_published_read(self):
         data=self.call('/api/demo'); data['confirmed']=True

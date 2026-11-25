@@ -18,6 +18,25 @@ HEADERS = {
     'Unavailable Times': ['Teacher', 'Day', 'Start Time', 'End Time', 'Reason'],
 }
 
+# These checks depend on scheduling decisions made after the workbook is read.
+READINESS_ERRORS = {
+    'EXTERNAL_COMMITMENTS', 'UNAPPROVED_CLASS', 'DEMAND_MISMATCH',
+    'CLASS_CAPACITY', 'SECTION_CAPACITY',
+}
+
+
+class WorkbookInputError(ValueError):
+    def __init__(self, issues):
+        super().__init__('Correct the highlighted workbook rows before importing or saving.')
+        self.issues = issues
+
+
+def require_valid_workbook_rows(report):
+    issues = [error for error in report['errors']
+              if error['sheet'] in HEADERS and error['code'] not in READINESS_ERRORS]
+    if issues:
+        raise WorkbookInputError(issues)
+
 
 def text(value):
     return '' if value is None else str(value).strip()
