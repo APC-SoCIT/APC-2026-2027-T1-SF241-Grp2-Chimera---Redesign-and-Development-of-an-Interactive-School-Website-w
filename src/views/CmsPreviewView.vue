@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, ref, useTemplateRef } from "vue";
 import { RouterLink, useRouter } from "vue-router";
+import CmsContactEditor from "@/components/cms/CmsContactEditor.vue";
 import CmsEditor from "@/components/cms/CmsEditor.vue";
 import CmsIcon from "@/components/cms/CmsIcon.vue";
 import CmsTrash from "@/components/cms/CmsTrash.vue";
@@ -12,7 +13,7 @@ import type { PublicationStatus } from "@/lib/content/model";
 import { formatFileSize } from "@/lib/resources/model";
 import "@/assets/cms-preview.css";
 
-type Section = "overview" | "content" | "trash" | ItemType;
+type Section = "overview" | "content" | "trash" | "contact" | ItemType;
 type StatusFilter = "all" | PublicationStatus;
 type ItemAction = PublicationStatus | "trash" | "remove";
 const navigation: { id: Section; title: string; icon: string }[] = [
@@ -22,6 +23,7 @@ const navigation: { id: Section; title: string; icon: string }[] = [
   { id: "event", title: "Events", icon: "event" },
   { id: "page", title: "Pages", icon: "page" },
   { id: "resource", title: "PDF resources", icon: "resource" },
+  { id: "contact", title: "Contact details", icon: "inbox" },
 ];
 const summaries: { id: StatusFilter; title: string; icon: string; note: string }[] = [
   { id: "all", title: "Total content", icon: "files", note: "Across all content types" },
@@ -49,6 +51,9 @@ const editor = ref<CmsItem | null>(null);
 const notice = ref("");
 const error = ref("");
 const navOpen = ref(false);
+// Unsaved contact details keep the Admin on that section until they save or discard.
+const contactDirty = ref(false);
+const leavingLocked = computed(() => Boolean(editor.value) || contactDirty.value);
 // Saves to the school database when the site is connected to Supabase, otherwise to this browser.
 const workspace = useCmsWorkspace(() => staffName.value);
 const library = workspace.library;
@@ -150,7 +155,7 @@ function selectSection(next: Section, filter: StatusFilter = "all") {
 
 function beginEdit(item?: CmsItem) {
   const area = section.value;
-  if (area === "trash") return;
+  if (area === "trash" || area === "contact") return;
   editor.value = item ?? blankItem(area === "overview" || area === "content" ? "announcement" : area);
   notice.value = "";
   error.value = "";
@@ -293,7 +298,7 @@ function dismissMenu() {
 <template>
   <div ref="cms-shell" class="cms-shell" @keydown.esc="navOpen && dismissMenu()">
     <aside class="cms-sidebar">
-      <button type="button" class="cms-brand" :disabled="Boolean(editor)" @click="selectSection('overview')">
+      <button type="button" class="cms-brand" :disabled="leavingLocked" @click="selectSection('overview')">
         <img src="/images/source-site/sncs-seal.png" alt="" width="40" height="40" />
         <span><strong>SNCS</strong><small>Content workspace</small></span>
       </button>
@@ -314,14 +319,14 @@ function dismissMenu() {
           <p v-if="entry.id === 'overview'" class="cms-nav-label">Workspace</p>
           <p v-if="entry.id === 'content'" class="cms-nav-label">Website management</p>
           <button class="cms-nav-item" type="button" :class="{ 'cms-nav-active': section === entry.id && !editor }"
-            :aria-current="section === entry.id && !editor ? 'page' : undefined" :disabled="Boolean(editor)" @click="selectSection(entry.id)">
+            :aria-current="section === entry.id && !editor ? 'page' : undefined" :disabled="leavingLocked" @click="selectSection(entry.id)">
             <CmsIcon :name="entry.icon" :size="18" /> {{ entry.title }}
           </button>
         </template>
       </nav>
       <div id="cms-sidebar-footer" class="cms-sidebar-footer">
         <button type="button" class="cms-nav-item" :class="{ 'cms-nav-active': section === 'trash' }"
-          :aria-current="section === 'trash' ? 'page' : undefined" :disabled="Boolean(editor)" @click="selectSection('trash')">
+          :aria-current="section === 'trash' ? 'page' : undefined" :disabled="leavingLocked" @click="selectSection('trash')">
           <CmsIcon name="trash" :size="18" /> Trash
           <span v-if="deletedItems.length" class="cms-trash-count">{{ deletedItems.length }}</span>
         </button>
@@ -332,7 +337,7 @@ function dismissMenu() {
           <span class="cms-avatar" aria-hidden="true">{{ staffName.charAt(0).toUpperCase() }}</span>
           <span><strong>{{ staffName }}</strong><small>{{ live ? 'Admin · Changes go to the school website' : 'Admin · Preview, changes stay in this browser' }}</small></span>
         </div>
-        <button type="button" class="cms-public-link" :disabled="Boolean(editor) || signingOut" @click="signOut">
+        <button type="button" class="cms-public-link" :disabled="leavingLocked || signingOut" @click="signOut">
           {{ signingOut ? "Signing out…" : "Sign out" }}
         </button>
       </div>
@@ -346,6 +351,7 @@ function dismissMenu() {
       <section ref="cms-main" class="cms-main" aria-label="CMS workspace">
         <CmsEditor v-if="editor" :item="editor" :items="library.items" :image-assets="library.imageAssets"
           :attempt-save="saveItem" :connected="live" @close="closeEditor" />
+        <CmsContactEditor v-else-if="section === 'contact'" :connected="live" :actor="staffName" @dirty="contactDirty = $event" />
         <div v-else-if="workspace.loading.value && !library.items.length" class="cms-panel cms-loading" role="status">Loading website content…</div>
         <div v-else-if="workspace.loadError.value && !library.items.length" class="cms-panel cms-loading">
           <p class="cms-error" role="alert">{{ workspace.loadError.value }}</p>

@@ -2,6 +2,7 @@
 import { computed, ref, useTemplateRef, watch } from "vue";
 import { useRoute } from "vue-router";
 import { useBlurValidation } from "@/lib/cms/blur-validation";
+import { usePublicContactDetails } from "@/lib/cms/contact";
 import { schoolToday } from "@/lib/content/dates";
 
 const route = useRoute();
@@ -19,7 +20,11 @@ watch(() => route.query.topic, (value) => {
 }, { immediate: true });
 const labels: Record<string, string> = { admissions: "Admissions guidance", fees: "Current fee sheet", visit: "Campus visit" };
 const gradeOptions = ["Nursery", "Kindergarten", ...Array.from({ length: 12 }, (_, index) => "Grade " + (index + 1))];
-const recipient = computed(() => topic.value === "fees" ? "sncsfinance@gmail.com" : "officeoftheregistrar@sncstaguig.edu.ph");
+// Fee questions go to the Finance Office's first email address; everything else to admissions.
+const contact = usePublicContactDetails();
+const financeEmail = computed(() => contact.value.offices.find((office) => office.slug === "finance")
+  ?.channels.find((channel) => channel.kind === "email")?.value ?? "sncsfinance@gmail.com");
+const recipient = computed(() => topic.value === "fees" ? financeEmail.value : contact.value.admissionsEmail);
 const { message: fieldError, focusField, blurField, validateAll } = useBlurValidation(() => {
   const issues: Record<string, string> = {};
   if (!name.value.trim()) issues.name = "Enter your name.";

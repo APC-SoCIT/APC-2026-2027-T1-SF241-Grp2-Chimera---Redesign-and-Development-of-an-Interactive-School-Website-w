@@ -2,9 +2,13 @@
 import PageHero from "@/components/PageHero.vue";
 import StudentServices from "@/components/StudentServices.vue";
 import AdmissionsInquiry from "@/components/AdmissionsInquiry.vue";
-import { getPublicOffices, getPublicSchoolContactInformation } from "@/lib/content/directory";
-const offices = getPublicOffices();
-const schoolInformation = getPublicSchoolContactInformation();
+import { computed } from "vue";
+import { usePublicContactDetails } from "@/lib/cms/contact";
+import { toOffices, toSchoolInformation } from "@/lib/content/contact";
+// Admins edit these in the content workspace (Contact details).
+const contact = usePublicContactDetails();
+const offices = computed(() => toOffices(contact.value));
+const schoolInformation = computed(() => toSchoolInformation(contact.value));
 </script>
 <template>
   <PageHero eyebrow="Contact SNCS" title="We’re ready to help" description="Find the right school office for admissions, records, academic concerns, and other questions." />

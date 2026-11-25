@@ -1,9 +1,12 @@
 <script setup lang="ts">
 import { ref, watch } from "vue";
 import { RouterLink, useRoute } from "vue-router";
+import { usePublicContactDetails } from "@/lib/cms/contact";
+import { phoneHref } from "@/lib/content/contact";
 
 const menu = ref<HTMLDetailsElement | null>(null);
 const route = useRoute();
+const contact = usePublicContactDetails();
 
 const navigation = [
   { to: "/about", label: "About" },
@@ -29,7 +32,7 @@ watch(() => route.fullPath, closeMenu);
 
 <template>
   <header class="site-header">
-    <div class="school-utility"><div class="container"><span>Faith · Excellence · Service</span><nav aria-label="Community links"><RouterLink to="/#current-families">Current families</RouterLink><RouterLink to="/events#school-calendar">School calendar</RouterLink><a href="tel:+63288379702">(02) 8837-9702</a></nav></div></div>
+    <div class="school-utility"><div class="container"><span>Faith · Excellence · Service</span><nav aria-label="Community links"><RouterLink to="/#current-families">Current families</RouterLink><RouterLink to="/events#school-calendar">School calendar</RouterLink><a :href="phoneHref(contact.mainPhone)">{{ contact.mainPhone }}</a></nav></div></div>
     <div class="container header-inner">
       <RouterLink class="brand" to="/" aria-label="Sto. Niño Catholic School home">
         <img

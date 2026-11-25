@@ -3,15 +3,16 @@ import { computed } from "vue";
 import { RouterLink } from "vue-router";
 import EventCard from "@/components/EventCard.vue";
 import { partitionEvents, formatPublicationDate } from "@/lib/content/dates";
-import { getPublicSchoolContactInformation } from "@/lib/content/directory";
+import { usePublicContactDetails } from "@/lib/cms/contact";
+import { phoneHref } from "@/lib/content/contact";
 import { usePublicWebsite } from "@/lib/cms/public-website";
 
 const website = usePublicWebsite();
 const { pages } = website;
-const news = computed(() => website.announcements.value.filter((item) => item.id !== "office-transactions").slice(0, 3));
+const news = computed(() => website.announcements.value.filter((item) => item.slug !== "office-transactions").slice(0, 3));
 const calendar = computed(() => partitionEvents(website.events.value));
 const dates = computed(() => (calendar.value.upcoming.length ? calendar.value.upcoming : calendar.value.past).slice(0, 3));
-const school = getPublicSchoolContactInformation();
+const school = usePublicContactDetails();
 const levels = [
   { title: "Early years", grades: "Nursery & Kindergarten", copy: "A child's first steps in the school community.", group: "preschool" },
   { title: "Elementary", grades: "Grades 1–6", copy: "Building foundations for learning and character.", group: "grade-1" },
@@ -99,5 +100,5 @@ const questions = [
 
   <section id="current-families" class="section current-families scroll-target" aria-labelledby="current-families-title"><div class="container"><p class="eyebrow">Already part of SNCS?</p><h2 id="current-families-title">For current students and parents.</h2><div class="family-resources"><RouterLink to="/resources"><strong>Forms & downloads</strong><span>Taguig Learner's Certificate scholarship forms</span></RouterLink><RouterLink to="/events#school-calendar"><strong>School calendar</strong><span>Dates, activities, and school notices</span></RouterLink><a href="https://library.sncstaguig.edu.ph/"><strong>School library</strong><span>Reading and research resources</span></a><RouterLink to="/contact"><strong>School offices</strong><span>Find the right person to contact</span></RouterLink></div><div class="more-resources"><h3>More resources</h3><a href="https://www.sncstaguig.com/home#h.fvyo8xp2gi0z_l">Director's Daily Reflection</a><a href="https://www.psahelpline.ph/sncs">PSA document ordering</a><a href="https://www.facebook.com/messages/t/316900518777">School Facebook & feedback</a></div><ul v-if="pages.length" class="published-page-list"><li v-for="page in pages" :key="page.id"><RouterLink :to="{ name: 'published-pages', params: { slug: page.slug } }">{{ page.title }}</RouterLink></li></ul></div></section>
 
-  <section class="visit-school" aria-labelledby="visit-school-title"><div class="container visit-school-layout"><div><p class="eyebrow light">Let's get to know each other</p><h2 id="visit-school-title">Visit us in Signal Village.</h2><p v-if="school">{{ school.address }}</p><p v-if="school" class="visit-hours"><strong>School office hours</strong><br />{{ school.officeHours }}</p><div class="hero-actions"><RouterLink class="button button-primary" to="/contact?topic=visit#inquiry">Request a campus visit</RouterLink><a class="button button-outline-light" href="tel:+63288379702">Call (02) 8837-9702</a></div></div><div class="visit-details"><h3>Questions? We're here to help.</h3><p>Ask the Registrar about admissions and visit arrangements, or contact Finance for current tuition and fees.</p><a href="mailto:officeoftheregistrar@sncstaguig.edu.ph">Email the Registrar</a><a href="https://www.google.com/maps/search/?api=1&amp;query=Sto.+Nino+Catholic+School+Sampaloc+Street+Taguig" target="_blank" rel="noopener noreferrer">Find SNCS on Google Maps<span class="sr-only"> (opens a new tab)</span></a></div></div></section>
+  <section class="visit-school" aria-labelledby="visit-school-title"><div class="container visit-school-layout"><div><p class="eyebrow light">Let's get to know each other</p><h2 id="visit-school-title">Visit us in Signal Village.</h2><p>{{ school.address }}</p><p class="visit-hours"><strong>School office hours</strong><br />{{ school.officeHours }}</p><div class="hero-actions"><RouterLink class="button button-primary" to="/contact?topic=visit#inquiry">Request a campus visit</RouterLink><a class="button button-outline-light" :href="phoneHref(school.mainPhone)">Call {{ school.mainPhone }}</a></div></div><div class="visit-details"><h3>Questions? We're here to help.</h3><p>Ask the Registrar about admissions and visit arrangements, or contact Finance for current tuition and fees.</p><a :href="'mailto:' + school.admissionsEmail">Email the Registrar</a><a href="https://www.google.com/maps/search/?api=1&amp;query=Sto.+Nino+Catholic+School+Sampaloc+Street+Taguig" target="_blank" rel="noopener noreferrer">Find SNCS on Google Maps<span class="sr-only"> (opens a new tab)</span></a></div></div></section>
 </template>

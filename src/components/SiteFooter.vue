@@ -7,10 +7,11 @@
 <script setup lang="ts">
 import { RouterLink } from "vue-router";
 import { usePublicWebsite } from "@/lib/cms/public-website";
-import { getPublicSchoolContactInformation } from "@/lib/content/directory";
+import { usePublicContactDetails } from "@/lib/cms/contact";
+import { phoneHref } from "@/lib/content/contact";
 
 const currentYear = new Date().getFullYear();
-const schoolInformation = getPublicSchoolContactInformation();
+const contact = usePublicContactDetails();
 const { pages } = usePublicWebsite();
 </script>
 
@@ -22,7 +23,7 @@ const { pages } = usePublicWebsite();
         <p>A faith-centered learning community in Taguig City.</p>
         <p class="footer-preview-label">SNCS website redesign</p>
         <a href="https://www.sncstaguig.com/home">Visit our previous website</a>
-        <a href="mailto:officeoftheregistrar@sncstaguig.edu.ph">Email admissions</a>
+        <a :href="'mailto:' + contact.admissionsEmail">Email admissions</a>
         <a href="https://www.facebook.com/messages/t/316900518777" target="_blank" rel="noopener noreferrer">Message SNCS on Facebook<span class="sr-only"> (opens a new tab)</span></a>
       </div>
       <div>
@@ -40,8 +41,8 @@ const { pages } = usePublicWebsite();
       </div>
       <div>
         <p class="footer-heading">Visit</p>
-        <template v-if="schoolInformation"><a href="https://www.google.com/maps/search/?api=1&amp;query=Sto.+Nino+Catholic+School+Sampaloc+Street+Taguig" target="_blank" rel="noopener noreferrer">{{ schoolInformation.address }}<span class="sr-only"> (opens Google Maps in a new tab)</span></a><p>{{ schoolInformation.officeHours }}</p></template>
-        <a href="tel:+63288379702">(02) 8837-9702</a>
+        <a href="https://www.google.com/maps/search/?api=1&amp;query=Sto.+Nino+Catholic+School+Sampaloc+Street+Taguig" target="_blank" rel="noopener noreferrer">{{ contact.address }}<span class="sr-only"> (opens Google Maps in a new tab)</span></a><p>{{ contact.officeHours }}</p>
+        <a :href="phoneHref(contact.mainPhone)">{{ contact.mainPhone }}</a>
         <RouterLink to="/contact">Contact the school</RouterLink>
         <RouterLink to="/login">Staff portal</RouterLink>
       </div>
