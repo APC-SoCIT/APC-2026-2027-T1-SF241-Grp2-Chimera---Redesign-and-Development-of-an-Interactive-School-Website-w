@@ -64,8 +64,15 @@ const menuToggle = useTemplateRef<HTMLButtonElement>("menu-toggle");
 const shell = useTemplateRef<HTMLElement>("cms-shell");
 let actionTrigger: HTMLElement | null = null;
 
+// Super Admins (Admins who manage staff accounts) get a way back to the staff list.
+const canManageAccounts = ref(false);
+
 // Show the signed-in Admin's name, as the Admin dashboard does.
 onMounted(async () => {
+  // Open the section chosen in the Admin dashboard's side panel (?section=announcement, …).
+  const requested = new URLSearchParams(window.location.search).get("section");
+  const match = navigation.find((entry) => entry.id === requested);
+  if (match) section.value = match.id;
   try {
     const { data: { session } } = await getStaffSupabaseClient().auth.getSession();
     const provisioning = session?.user?.app_metadata?.chimera_staff_provisioning as { full_name?: unknown } | undefined;
@@ -73,6 +80,13 @@ onMounted(async () => {
     staffName.value = name || session?.user?.email || demoAdmin;
   } catch {
     // Keep the generic name; the route guard has already verified Admin access.
+  }
+  try {
+    // The same check the dashboard's staff list makes: only Super Admins may list staff accounts.
+    const { error } = await getStaffSupabaseClient().rpc("list_staff_accounts", { p_offset: 0 });
+    canManageAccounts.value = !error;
+  } catch {
+    canManageAccounts.value = false;
   }
 });
 
@@ -270,6 +284,13 @@ function dismissMenu() {
         <CmsIcon :name="navOpen ? 'close' : 'menu'" />
       </button>
       <nav id="cms-navigation" aria-label="CMS navigation" class="cms-navigation" :class="{ 'cms-nav-open': navOpen }">
+        <p class="cms-nav-label">Admin dashboard</p>
+        <RouterLink class="cms-nav-item cms-nav-link" :to="{ name: 'admin-dashboard' }">
+          <CmsIcon name="grid" :size="18" /> Dashboard overview
+        </RouterLink>
+        <RouterLink v-if="canManageAccounts" class="cms-nav-item cms-nav-link" :to="{ name: 'admin-dashboard', hash: '#staff-accounts' }">
+          <CmsIcon name="users" :size="18" /> Staff accounts
+        </RouterLink>
         <template v-for="entry in navigation" :key="entry.id">
           <p v-if="entry.id === 'overview'" class="cms-nav-label">Workspace</p>
           <p v-if="entry.id === 'content'" class="cms-nav-label">Website management</p>
@@ -287,9 +308,6 @@ function dismissMenu() {
         </button>
         <RouterLink class="cms-public-link" :to="{ name: 'home' }" target="_blank" rel="noopener">
           <CmsIcon name="external" :size="17" /> Public website<span class="sr-only"> (opens in a new tab)</span>
-        </RouterLink>
-        <RouterLink class="cms-public-link" :to="{ name: 'admin-dashboard' }">
-          <CmsIcon name="grid" :size="17" /> Admin dashboard
         </RouterLink>
         <div class="cms-profile">
           <span class="cms-avatar" aria-hidden="true">{{ staffName.charAt(0).toUpperCase() }}</span>

@@ -19,6 +19,11 @@ beforeEach(()=>{
 it('serves only the empty shell and known assets without exposing scheduling data',async()=>{
   const shell=await request(app()).get('/api/scheduler?asset=index.html').expect(200);
   expect(shell.text).toContain('/api/scheduler?asset=portal.js');
+  // Staff dashboard look and side panel bridge (Gian Mandac, 20261124)
+  expect(shell.text).toContain('/api/scheduler?asset=portal.css');
+  expect(shell.text).toContain('/api/scheduler?asset=portal-ui.js');
+  const css=await request(app()).get('/api/scheduler?asset=portal.css').expect(200);
+  expect(css.headers['content-type']).toContain('text/css');
   expect(shell.text).not.toContain('sb_publishable_example');
   expect(shell.headers['content-security-policy']).toContain("frame-ancestors 'self'");
   await request(app()).get('/api/scheduler?asset=../../.env.local').expect(404);

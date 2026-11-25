@@ -23,6 +23,15 @@ const paths: Record<string, string> = {
   eye: "M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0z",
   upload: "M4 16v4h16v-4M12 16V4m-5 5 5-5 5 5",
   info: "M22 12a10 10 0 1 1-20 0 10 10 0 0 1 20 0z M12 11v6m0-10v.1",
+  // Staff dashboard navigation
+  users: "M16 20v-1.5a3.5 3.5 0 0 0-3.5-3.5h-5A3.5 3.5 0 0 0 4 18.5V20 M10 11a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7z M20 20v-1.5a3.5 3.5 0 0 0-2.5-3.35 M15.5 4.2a3.5 3.5 0 0 1 0 6.6",
+  "user-plus": "M15 20v-1.5a3.5 3.5 0 0 0-3.5-3.5h-5A3.5 3.5 0 0 0 3 18.5V20 M9 11a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7z M19 8v6 M16 11h6",
+  inbox: "M3 13h5l2 3h4l2-3h5 M5 5h14l2 8v6H3v-6z",
+  form: "M6 3h12v18H6z M9 8h6 M9 12h6 M9 16h3",
+  clock: "M22 12a10 10 0 1 1-20 0 10 10 0 0 1 20 0z M12 7v5l3 2",
+  logout: "M15 4h4v16h-4 M10 8l-4 4 4 4 M6 12h11",
+  "collapse-left": "M15 6l-6 6 6 6 M20 6l-6 6 6 6",
+  "collapse-right": "M9 6l6 6-6 6 M4 6l6 6-6 6",
 };
 </script>
 

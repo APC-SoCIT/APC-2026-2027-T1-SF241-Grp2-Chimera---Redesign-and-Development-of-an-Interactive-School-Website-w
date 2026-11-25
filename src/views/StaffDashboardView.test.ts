@@ -7,6 +7,8 @@
  * Modified Date: 20261119
  * Modified by: Jan Sultan | Email: jgsultan@student.apc.edu.ph
  * Modified Date: 20261120
+ * Modified by: Gian Mandac (sign-out now lives in the side panel)
+ * Modified Date: 20261124
  */
 // @vitest-environment jsdom
 import { flushPromises, mount } from "@vue/test-utils";
@@ -23,7 +25,7 @@ vi.mock("@/components/StaffAccountsPanel.vue", () => ({ default: {
   template: '<div data-testid="staff-list">Admin Private — admin-private@example.com</div>',
 } }));
 vi.mock("@/lib/supabase", () => ({ getStaffSupabaseClient: () => ({ auth: { onAuthStateChange, signOut } }) }));
-vi.mock("vue-router", () => ({ RouterLink: { template: "<a><slot /></a>" }, useRouter: () => ({ replace }) }));
+vi.mock("vue-router", () => ({ RouterLink: { template: "<a><slot /></a>" }, useRoute: () => ({ hash: "" }), useRouter: () => ({ replace }) }));
 vi.mock("@/lib/cms/config", () => ({ cmsPreviewEnabled: true }));
 
 let dashboard: ReturnType<typeof mount>;
@@ -86,7 +88,7 @@ it("signs out the current session and returns to login", async () => {
   emit("INITIAL_SESSION", 10);
   await vi.advanceTimersByTimeAsync(0);
   signOut.mockResolvedValue({ error: null });
-  await dashboard.get("button").trigger("click");
+  await dashboard.get(".portal-signout").trigger("click");
   await flushPromises();
   expect(signOut).toHaveBeenCalledWith({ scope: "local" });
   expect(replace).toHaveBeenCalledWith({ name: "login" });

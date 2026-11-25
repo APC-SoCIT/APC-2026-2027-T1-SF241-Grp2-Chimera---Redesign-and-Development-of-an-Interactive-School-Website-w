@@ -3,6 +3,8 @@
  * Created Date: 20261114
  * Modified by: Jan Sultan | Email: jgsultan@student.apc.edu.ph
  * Modified Date: 20261119
+ * Modified by: Gian Mandac (sign-out now lives in the side panel)
+ * Modified Date: 20261124
  */
 // @vitest-environment jsdom
 import { flushPromises, mount, type VueWrapper } from "@vue/test-utils";
@@ -99,7 +101,7 @@ it("signs out the current Teacher session and blocks a direct revisit", async ()
     emitAuth("SIGNED_OUT", null);
     return { error: null };
   });
-  await page.get("button").trigger("click");
+  await page.get(".portal-signout").trigger("click");
   await flushPromises();
   expect(auth.signOut).toHaveBeenCalledExactlyOnceWith({ scope: "local" });
   expectSignInPage();
