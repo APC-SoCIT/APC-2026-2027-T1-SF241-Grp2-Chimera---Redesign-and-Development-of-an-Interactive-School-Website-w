@@ -73,7 +73,7 @@ describe("signed-in Admin", () => {
     expect(wrapper.find("#cms-login-email").exists()).toBe(false);
     expect(wrapper.get("h1").text()).toBe("Content overview");
     expect(wrapper.get(".cms-profile").text()).toContain("Ana Reyes");
-    expect(wrapper.get(".cms-sidebar-footer").text()).toContain("Admin dashboard");
+    expect(wrapper.get("#cms-navigation").text()).toContain("Dashboard overview");
     const signOutButton = wrapper.findAll(".cms-sidebar-footer button").find((button) => button.text() === "Sign out");
     await signOutButton!.trigger("click");
     await flushPromises();

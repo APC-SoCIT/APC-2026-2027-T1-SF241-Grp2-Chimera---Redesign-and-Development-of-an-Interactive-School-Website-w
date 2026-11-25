@@ -17,7 +17,7 @@ const { onAuthStateChange, getStaffPortalRole, accountAccess, showView } = vi.ho
 }));
 vi.mock("@/lib/staff-auth", () => ({ getStaffPortalRole }));
 vi.mock("@/lib/supabase", () => ({ getStaffSupabaseClient: () => ({ auth: { onAuthStateChange, signOut: vi.fn() } }) }));
-vi.mock("vue-router", () => ({ RouterLink: { props: ["to"], template: "<a><slot /></a>" }, useRouter: () => ({ replace: vi.fn() }) }));
+vi.mock("vue-router", () => ({ RouterLink: { props: ["to"], template: "<a><slot /></a>" }, useRoute: () => ({ hash: "" }), useRouter: () => ({ replace: vi.fn() }) }));
 vi.mock("@/lib/cms/config", () => ({ cmsPreviewEnabled: true }));
 vi.mock("@/components/RegistrarApplicationsPanel.vue", () => ({ default: { template: "<div>applications</div>" } }));
 // The workbench reports its open step and progress; the side panel asks it to open steps.

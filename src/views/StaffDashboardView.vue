@@ -15,7 +15,7 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from "vue";
 import type { Session } from "@supabase/supabase-js";
-import { RouterLink, useRouter, type RouteLocationRaw } from "vue-router";
+import { RouterLink, useRoute, useRouter, type RouteLocationRaw } from "vue-router";
 import { getStaffSupabaseClient } from "@/lib/supabase";
 import { getStaffPortalRole, type StaffRole } from "@/lib/staff-auth";
 import StaffAccountsPanel from "@/components/StaffAccountsPanel.vue";
@@ -31,6 +31,7 @@ import { schedulerViews, type SchedulerNavId, type SchedulerState, type Schedule
 const props = defineProps<{ heading: string; role?: StaffRole }>();
 
 const router = useRouter();
+const route = useRoute();
 const { auth } = getStaffSupabaseClient();
 const signingOut = ref(false);
 const signOutError = ref(false);
@@ -288,6 +289,13 @@ function toggleCollapsed() {
   collapsed.value = !collapsed.value;
   try { localStorage.setItem(collapsedKey, collapsed.value ? "collapsed" : "expanded"); } catch { /* storage unavailable */ }
 }
+// The content workspace's "Staff accounts" link opens /admin#staff-accounts: go straight to the list
+// once the accounts panel has confirmed this Admin may manage staff accounts.
+watch(canManageAccounts, async (allowed) => {
+  if (!allowed || route.hash !== "#staff-accounts") return;
+  await nextTick();
+  void goTo({ id: "accounts", label: "Staff accounts", icon: "users", target: "staff-accounts-heading" });
+});
 watch(() => props.role, () => {
   activeId.value = "overview";
   canManageAccounts.value = undefined;

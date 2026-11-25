@@ -25,7 +25,7 @@ vi.mock("@/components/StaffAccountsPanel.vue", () => ({ default: {
   template: '<div data-testid="staff-list">Admin Private — admin-private@example.com</div>',
 } }));
 vi.mock("@/lib/supabase", () => ({ getStaffSupabaseClient: () => ({ auth: { onAuthStateChange, signOut } }) }));
-vi.mock("vue-router", () => ({ RouterLink: { template: "<a><slot /></a>" }, useRouter: () => ({ replace }) }));
+vi.mock("vue-router", () => ({ RouterLink: { template: "<a><slot /></a>" }, useRoute: () => ({ hash: "" }), useRouter: () => ({ replace }) }));
 vi.mock("@/lib/cms/config", () => ({ cmsPreviewEnabled: true }));
 
 let dashboard: ReturnType<typeof mount>;

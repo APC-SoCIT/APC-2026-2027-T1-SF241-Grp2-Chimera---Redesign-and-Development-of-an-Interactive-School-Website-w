@@ -17,7 +17,7 @@ const { client, replace } = vi.hoisted(() => ({
   replace: vi.fn(),
 }));
 vi.mock("@/lib/supabase", () => ({ getStaffSupabaseClient: () => client }));
-vi.mock("vue-router", () => ({ RouterLink: { template: "<a><slot /></a>" }, useRouter: () => ({ replace }) }));
+vi.mock("vue-router", () => ({ RouterLink: { template: "<a><slot /></a>" }, useRoute: () => ({ hash: "" }), useRouter: () => ({ replace }) }));
 
 let dashboard: VueWrapper;
 let currentRole: string;
