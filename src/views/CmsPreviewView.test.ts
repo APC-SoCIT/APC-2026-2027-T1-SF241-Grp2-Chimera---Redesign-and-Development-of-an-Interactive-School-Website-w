@@ -64,6 +64,37 @@ describe("Trash removal confirmation", () => {
   });
 });
 
+describe("archived content", () => {
+  beforeEach(() => {
+    vi.spyOn(window, "scrollTo").mockImplementation(() => {});
+    HTMLDialogElement.prototype.showModal = function () { this.open = true; };
+    HTMLDialogElement.prototype.close = function () {
+      this.open = false;
+      this.dispatchEvent(new Event("close"));
+    };
+    const archived = { ...blankItem("announcement"), id: "archived-test", title: "Archived test notice", slug: "archived-test-notice",
+      status: "archived" as const, updatedAt: "2099-01-01T00:00:00Z" };
+    writeCmsLibrary(recordChange(readLibrary(null), archived, "Archived test notice"));
+  });
+
+  it("offers Restore to draft and Publish for an archived item, and restores it as a draft", async () => {
+    const wrapper = mount(CmsPreviewView, { global: { stubs: { RouterLink: true } } });
+    await flushPromises();
+    const row = wrapper.findAll("tr").find((tr) => tr.text().includes("Archived test notice"))!;
+    const actions = row.findAll(".cms-action-list button").map((button) => button.text());
+    expect(actions).toEqual(["Edit", "Restore to draft", "Publish", "Move to Trash"]);
+    await row.findAll(".cms-action-list button").find((button) => button.text() === "Restore to draft")!.trigger("click");
+    await flushPromises();
+    expect(wrapper.get("dialog").text()).toContain("out of the archive and back to Draft");
+    expect(wrapper.get(".cms-dialog-actions .cms-primary").text()).toBe("Restore to draft");
+    await wrapper.get(".cms-dialog-actions .cms-primary").trigger("click");
+    await flushPromises();
+    expect(useCmsLibrary().value.items.find((item) => item.id === "archived-test")?.status).toBe("draft");
+    expect(wrapper.get('[role="status"]').text()).toContain("is now a draft");
+    wrapper.unmount();
+  });
+});
+
 describe("signed-in Admin", () => {
   beforeEach(() => vi.spyOn(window, "scrollTo").mockImplementation(() => {}));
 

@@ -36,6 +36,10 @@ const statusOptions: { id: StatusFilter; label: string }[] = [
 const statusActions: Record<ItemAction, string> = {
   published: "Publish", draft: "Unpublish", archived: "Archive", trash: "Move to Trash", remove: "Remove permanently",
 };
+/** Moving an archived item back to Draft is a restore, not an unpublish. */
+function actionLabel(item: CmsItem, target: ItemAction): string {
+  return item.status === "archived" && target === "draft" ? "Restore to draft" : statusActions[target];
+}
 // Signed-in Admin: the route only opens for a verified Admin (staffRole "admin" in the router).
 const router = useRouter();
 const staffName = ref(demoAdmin);
@@ -231,7 +235,7 @@ async function updatePublication() {
       ? { ...change.item, deletedAt: new Date().toISOString() }
       : { ...change.item, status: change.status, publishedAt: change.status === "published" ? new Date().toISOString() : change.item.publishedAt };
     try {
-      await workspace.commit(next, statusActions[change.status] + " · " + change.item.title);
+      await workspace.commit(next, actionLabel(change.item, change.status) + " · " + change.item.title);
     } catch (issue) {
       error.value = failure(issue, "This browser could not save the change. Please try again.");
       return;
@@ -467,7 +471,8 @@ function dismissMenu() {
                       <summary :aria-label="'Actions for ' + item.title">⋯</summary>
                       <div class="cms-action-list">
                         <button type="button" @click="beginEdit(item)">Edit</button>
-                        <button v-if="item.status === 'draft'" type="button" @click="openPublication(item, 'published', $event)">Publish</button>
+                        <button v-if="item.status === 'archived'" type="button" @click="openPublication(item, 'draft', $event)">Restore to draft</button>
+                        <button v-if="item.status !== 'published'" type="button" @click="openPublication(item, 'published', $event)">Publish</button>
                         <button v-if="item.status === 'published'" type="button" @click="openPublication(item, 'draft', $event)">Unpublish</button>
                         <button v-if="item.status !== 'archived'" type="button" @click="openPublication(item, 'archived', $event)">Archive</button>
                         <button type="button" class="cms-trash-action" @click="openPublication(item, 'trash', $event)">Move to Trash</button>
@@ -493,7 +498,7 @@ function dismissMenu() {
 
     <dialog ref="publication-dialog" class="cms-dialog" aria-labelledby="cms-publication-title" @close="closePublication">
       <div v-if="pending" class="cms-dialog-inner">
-        <h2 id="cms-publication-title">{{ pending.status === 'remove' ? 'Remove item permanently?' : pending.status === 'trash' ? 'Move item to Trash?' : statusActions[pending.status] + ' item?' }}</h2>
+        <h2 id="cms-publication-title">{{ pending.status === 'remove' ? 'Remove item permanently?' : pending.status === 'trash' ? 'Move item to Trash?' : actionLabel(pending.item, pending.status) + (pending.item.status === 'archived' && pending.status === 'draft' ? '?' : ' item?') }}</h2>
         <p><strong>{{ pending.item.title }}</strong></p>
         <p v-if="pending.status === 'remove'">This permanently deletes the item{{ live ? ', its files' : '' }} and its change history from this workspace. It will disappear from Trash and cannot be restored or recovered with Undo or Redo.</p>
         <p v-else-if="pending.status === 'published' && pending.item.type !== 'resource' && pending.item.visibility === 'public'">
@@ -501,13 +506,14 @@ function dismissMenu() {
         </p>
         <p v-else-if="pending.status === 'published' && pending.item.type === 'resource'">{{ live ? (pending.item.visibility === 'public' ? 'Families can download this PDF from the Resources page.' : 'This PDF is private, so it stays off the Resources page.') : 'This updates the PDF’s status in the workspace. Downloadable files use the school’s resource service.' }}</p>
         <p v-else-if="pending.status === 'published'">This item will stay private after publishing.</p>
+        <p v-else-if="pending.status === 'draft' && pending.item.status === 'archived'">This moves the item out of the archive and back to Draft. It stays hidden from the website until you publish it.</p>
         <p v-else-if="pending.status === 'draft'">This returns the item to Draft and removes it from public listings.</p>
         <p v-else-if="pending.status === 'trash'">This removes the item from the library and any public listings. You can restore it from Trash.</p>
         <p v-else>This moves the item to the archive and removes it from public listings.</p>
         <p v-if="error" class="cms-error" role="alert">{{ error }}</p>
         <div class="cms-dialog-actions">
           <button type="button" class="cms-button" autofocus @click="dialog?.close()">Cancel</button>
-          <button type="button" class="cms-button cms-primary" :disabled="busy" @click="updatePublication">{{ busy ? 'Saving…' : statusActions[pending.status] }}</button>
+          <button type="button" class="cms-button cms-primary" :disabled="busy" @click="updatePublication">{{ busy ? 'Saving…' : actionLabel(pending.item, pending.status) }}</button>
         </div>
       </div>
     </dialog>
