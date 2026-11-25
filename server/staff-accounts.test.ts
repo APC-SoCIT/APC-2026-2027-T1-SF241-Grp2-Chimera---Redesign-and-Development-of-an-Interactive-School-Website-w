@@ -2,7 +2,7 @@
  * Author: Jan Sultan | Email: jgsultan@student.apc.edu.ph
  * Created Date: 20261114
  * Modified by: Jan Sultan | Email: jgsultan@student.apc.edu.ph
- * Modified Date: 20261119
+ * Modified Date: 20261126
  */
 import type { createClient } from "@supabase/supabase-js";
 import request from "supertest";
@@ -36,7 +36,9 @@ const target = "00000000-0000-4000-8000-000000000002";
 it.each(["reset-password", "deactivate"])("checks target eligibility before executing %s", async (action) => {
   client.rpc.mockResolvedValueOnce({ data: true, error: null }).mockResolvedValueOnce({ data: target, error: null });
   const result = await submit({ action, staffId: "2" }).expect("Cache-Control", "no-store").expect(200);
-  expect(client.rpc).toHaveBeenNthCalledWith(2, "get_staff_auth_target", { p_actor_id: user.id, p_staff_id: "2" });
+  expect(client.rpc).toHaveBeenNthCalledWith(2,
+    action === "deactivate" ? "get_staff_deactivation_target" : "get_staff_auth_target",
+    { p_actor_id: user.id, p_staff_id: "2" });
   const update = client.auth.admin.updateUserById.mock.calls[0][1];
   expect(client.auth.admin.updateUserById).toHaveBeenCalledWith(target, {
     password: expect.stringMatching(/^[\w-]{32}aA1!$/),
@@ -53,6 +55,21 @@ it("rejects account actions for an unauthorized manager or unavailable target", 
   expect(client.rpc).toHaveBeenCalledTimes(1);
   client.rpc.mockResolvedValueOnce({ data: true, error: null }).mockResolvedValueOnce({ data: null, error: null });
   await submit({ action: "deactivate", staffId: "2" }).expect(403);
+  expect(client.auth.admin.updateUserById).not.toHaveBeenCalled();
+});
+
+it("rejects protected Admin deactivation before changing the Auth password or ban", async () => {
+  client.rpc.mockResolvedValueOnce({ data: true, error: null }).mockResolvedValueOnce({ data: null, error: null });
+  const response = await submit({ action: "deactivate", staffId: "2" }).expect(403);
+  expect(response.body.message).toContain("Protected top-level Admins");
+  expect(client.rpc).toHaveBeenLastCalledWith("get_staff_deactivation_target", { p_actor_id: user.id, p_staff_id: "2" });
+  expect(client.auth.admin.updateUserById).not.toHaveBeenCalled();
+});
+
+it("fails closed if the protected-account lookup fails", async () => {
+  client.rpc.mockResolvedValueOnce({ data: true, error: null })
+    .mockResolvedValueOnce({ data: null, error: { code: "PGRST202" } });
+  await submit({ action: "deactivate", staffId: "2" }).expect(503);
   expect(client.auth.admin.updateUserById).not.toHaveBeenCalled();
 });
 

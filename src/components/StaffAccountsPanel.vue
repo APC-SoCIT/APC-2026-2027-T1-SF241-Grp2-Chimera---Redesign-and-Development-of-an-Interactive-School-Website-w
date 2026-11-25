@@ -2,7 +2,7 @@
   Author: Jan Sultan | Email: jgsultan@student.apc.edu.ph
   Created Date: 20261114
   Modified by: Jan Sultan | Email: jgsultan@student.apc.edu.ph
-  Modified Date: 20261119
+  Modified Date: 20261126
   Modified by: Gian Mandac (staff dashboard layout: card styling, reports account-management access)
   Modified Date: 20261124
 -->
@@ -12,7 +12,7 @@ import { getStaffSupabaseClient } from "@/lib/supabase";
 import type { StaffRole } from "@/lib/staff-auth";
 
 type Role = StaffRole;
-type StaffAccount = { id: string; full_name: string; email: string; role: Role; account_status: string };
+type StaffAccount = { id: string; full_name: string; email: string; role: Role; account_status: string; is_protected_admin: boolean };
 
 // Tells the dashboard whether this Admin can manage staff accounts (Super Admin) or not (Content Admin).
 const emit = defineEmits<{
@@ -208,7 +208,7 @@ onMounted(() => void loadAccounts());
           <thead><tr><th scope="col">Name</th><th scope="col">Email</th><th scope="col">Role</th><th scope="col">Status</th><th scope="col">Action</th></tr></thead>
           <tbody>
             <tr v-for="account in accounts" :key="account.id">
-              <th scope="row">{{ account.full_name }}</th>
+              <th scope="row">{{ account.full_name }}<span v-if="account.is_protected_admin"> — Protected top-level Admin</span></th>
               <td>{{ account.email }}</td>
               <td>
                 <select v-if="editingId === account.id" v-model="selectedRole" :aria-label="`Role for ${account.full_name}`">
@@ -228,10 +228,10 @@ onMounted(() => void loadAccounts());
                   <button type="button" :disabled="saving" @click="confirmation = undefined">Cancel</button>
                 </template>
                 <template v-else>
-                  <button type="button" :disabled="saving" @click="editingId = account.id; selectedRole = account.role; confirmation = undefined">Change role</button>
+                  <button type="button" :disabled="saving || account.is_protected_admin" @click="editingId = account.id; selectedRole = account.role; confirmation = undefined">Change role</button>
                   <template v-if="account.account_status === 'active'">
                     <button type="button" :disabled="saving" @click="confirmation = { account, action: 'reset-password' }; editingId = undefined">Reset password</button>
-                    <button type="button" :disabled="saving" @click="confirmation = { account, action: 'deactivate' }; editingId = undefined">Deactivate</button>
+                    <button type="button" :disabled="saving || account.is_protected_admin" @click="confirmation = { account, action: 'deactivate' }; editingId = undefined">Deactivate</button>
                   </template>
                 </template>
               </td>
