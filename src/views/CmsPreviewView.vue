@@ -4,9 +4,8 @@ import { RouterLink, useRouter } from "vue-router";
 import CmsEditor from "@/components/cms/CmsEditor.vue";
 import CmsIcon from "@/components/cms/CmsIcon.vue";
 import CmsTrash from "@/components/cms/CmsTrash.vue";
-import { permanentlyRemoveItem, recordChange, stepHistory, type CmsLibrary } from "@/lib/cms/history";
 import { blankItem, demoAdmin, formatCmsDate, itemLabels, type CmsItem, type ItemType } from "@/lib/cms/preview";
-import { useCmsLibrary, writeCmsLibrary } from "@/lib/cms/store";
+import { useCmsWorkspace } from "@/lib/cms/workspace";
 import { getStaffSupabaseClient } from "@/lib/supabase";
 import type { CmsImageAssets } from "@/lib/cms/images";
 import type { PublicationStatus } from "@/lib/content/model";
@@ -50,7 +49,11 @@ const editor = ref<CmsItem | null>(null);
 const notice = ref("");
 const error = ref("");
 const navOpen = ref(false);
-const library = useCmsLibrary();
+// Saves to the school database when the site is connected to Supabase, otherwise to this browser.
+const workspace = useCmsWorkspace(() => staffName.value);
+const library = workspace.library;
+const live = workspace.usesDatabase;
+const busy = ref(false);
 const items = computed(() => library.value.items.filter((item) => !item.deletedAt));
 const deletedItems = computed(() => library.value.items
   .filter((item): item is CmsItem & { deletedAt: string } => Boolean(item.deletedAt))
@@ -69,14 +72,16 @@ const canManageAccounts = ref(false);
 
 // Show the signed-in Admin's name, as the Admin dashboard does.
 onMounted(async () => {
+  void workspace.load();
   // Open the section chosen in the Admin dashboard's side panel (?section=announcement, …).
   const requested = new URLSearchParams(window.location.search).get("section");
   const match = navigation.find((entry) => entry.id === requested);
   if (match) section.value = match.id;
   try {
     const { data: { session } } = await getStaffSupabaseClient().auth.getSession();
-    const provisioning = session?.user?.app_metadata?.chimera_staff_provisioning as { full_name?: unknown } | undefined;
-    const name = typeof provisioning?.full_name === "string" ? provisioning.full_name.trim() : "";
+    const provisioning = session?.user?.app_metadata?.chimera_staff_provisioning as Record<string, unknown> | undefined;
+    const name = ["firstName", "lastName"].map((key) => typeof provisioning?.[key] === "string" ? (provisioning[key] as string).trim() : "")
+      .filter(Boolean).join(" ");
     staffName.value = name || session?.user?.email || demoAdmin;
   } catch {
     // Keep the generic name; the route guard has already verified Admin access.
@@ -160,26 +165,20 @@ function closeEditor() {
   focusTitle();
 }
 
-function persist(next: CmsLibrary) {
-  return writeCmsLibrary(next);
+/** The database's own message when connected; the preview's wording otherwise. */
+function failure(issue: unknown, browserMessage: string) {
+  return live && issue instanceof Error && issue.message ? issue.message : browserMessage;
 }
 
-function saveChange(next: CmsItem, label: string, newAssets?: CmsImageAssets) {
-  if (next.id) {
-    const current = library.value.items.find((item) => item.id === next.id);
-    if (!current || current.updatedAt !== next.updatedAt) return false;
+async function saveItem(next: CmsItem, images: CmsImageAssets, file?: File): Promise<boolean | string> {
+  busy.value = true;
+  try {
+    await workspace.commit(next, (next.id ? "Edited" : "Created") + " " + next.title, images, file);
+  } catch (issue) {
+    return live ? failure(issue, "") : false;
+  } finally {
+    busy.value = false;
   }
-  const saved = {
-    ...next,
-    id: next.id || crypto.randomUUID(),
-    updatedAt: new Date().toISOString(),
-    updatedBy: staffName.value,
-  };
-  return persist(recordChange(library.value, saved, label, newAssets));
-}
-
-function saveItem(next: CmsItem, images: CmsImageAssets) {
-  if (!saveChange(next, (next.id ? "Edited" : "Created") + " " + next.title, images)) return false;
   if (!next.id || (section.value !== "overview" && section.value !== "content" && section.value !== next.type)) selectSection(next.type);
   else clearFilters();
   closeEditor();
@@ -210,56 +209,77 @@ function openPermanentRemoval(item: CmsItem, event: MouseEvent) {
   void nextTick(() => dialog.value?.showModal());
 }
 
-function updatePublication() {
+async function updatePublication() {
   const change = pending.value;
-  if (!change) return;
-  if (change.status === "remove") {
-    const current = library.value.items.find((item) => item.id === change.item.id);
-    const next = permanentlyRemoveItem(library.value, change.item.id);
-    if (!current?.deletedAt || current.updatedAt !== change.item.updatedAt || !persist(next)) {
-      error.value = "This item could not be removed. It may have changed in another tab. Please close this dialog and try again.";
+  if (!change || busy.value) return;
+  busy.value = true;
+  error.value = "";
+  try {
+    if (change.status === "remove") {
+      try {
+        await workspace.remove(change.item);
+      } catch (issue) {
+        error.value = failure(issue, "This item could not be removed. It may have changed in another tab. Please close this dialog and try again.");
+        return;
+      }
+      actionTrigger = null;
+      dialog.value?.close();
+      notice.value = `“${change.item.title}” was permanently removed.`;
+      focusTitle();
+      return;
+    }
+    const next = change.status === "trash"
+      ? { ...change.item, deletedAt: new Date().toISOString() }
+      : { ...change.item, status: change.status, publishedAt: change.status === "published" ? new Date().toISOString() : change.item.publishedAt };
+    try {
+      await workspace.commit(next, statusActions[change.status] + " · " + change.item.title);
+    } catch (issue) {
+      error.value = failure(issue, "This browser could not save the change. Please try again.");
       return;
     }
     actionTrigger = null;
     dialog.value?.close();
-    notice.value = `“${change.item.title}” was permanently removed.`;
+    notice.value = change.status === "trash"
+      ? `“${change.item.title}” moved to Trash.`
+      : live
+        ? `“${change.item.title}” is now ${change.status === "draft" ? "a draft" : change.status}.`
+        : `“${change.item.title}” is now ${change.status === "draft" ? "a draft" : change.status} in the preview.`;
     focusTitle();
-    return;
+  } finally {
+    busy.value = false;
   }
-  const next = change.status === "trash"
-    ? { ...change.item, deletedAt: new Date().toISOString() }
-    : { ...change.item, status: change.status, publishedAt: change.status === "published" ? new Date().toISOString() : change.item.publishedAt };
-  if (!saveChange(next, statusActions[change.status] + " · " + change.item.title)) {
-    error.value = "This browser could not save the change. Please try again.";
-    return;
-  }
-  actionTrigger = null;
-  dialog.value?.close();
-  notice.value = change.status === "trash"
-    ? `“${change.item.title}” moved to Trash.`
-    : `“${change.item.title}” is now ${change.status === "draft" ? "a draft" : change.status} in the preview.`;
-  focusTitle();
 }
 
-function restoreItem(item: CmsItem) {
+async function restoreItem(item: CmsItem) {
+  if (busy.value) return;
   error.value = "";
   notice.value = "";
-  if (!saveChange({ ...item, deletedAt: undefined, status: "draft" }, "Restored " + item.title)) {
-    error.value = "This browser could not restore the item. Please try again.";
+  busy.value = true;
+  try {
+    await workspace.commit({ ...item, deletedAt: undefined, status: "draft" }, "Restored " + item.title);
+  } catch (issue) {
+    error.value = failure(issue, "This browser could not restore the item. Please try again.");
     return;
+  } finally {
+    busy.value = false;
   }
   notice.value = `“${item.title}” was restored as a draft.`;
   focusTitle();
 }
 
-function changeHistory(action: "undo" | "redo") {
-  const change = action === "undo" ? nextUndo.value : nextRedo.value;
-  if (!change) return;
+async function changeHistory(action: "undo" | "redo") {
+  if (busy.value || !(action === "undo" ? nextUndo.value : nextRedo.value)) return;
   error.value = "";
   notice.value = "";
-  if (!persist(stepHistory(library.value, action))) {
-    error.value = "This browser could not update the change history. Please try again.";
+  busy.value = true;
+  let change;
+  try {
+    change = await workspace.step(action);
+  } catch (issue) {
+    error.value = failure(issue, "This browser could not update the change history. Please try again.");
     return;
+  } finally {
+    busy.value = false;
   }
   notice.value = (action === "undo" ? "Undid" : "Redid") + " change to “" + change.after.title + "”.";
   if (action === "undo" ? !nextUndo.value : !nextRedo.value) focusTitle();
@@ -311,7 +331,7 @@ function dismissMenu() {
         </RouterLink>
         <div class="cms-profile">
           <span class="cms-avatar" aria-hidden="true">{{ staffName.charAt(0).toUpperCase() }}</span>
-          <span><strong>{{ staffName }}</strong><small>Admin · Preview, changes stay in this browser</small></span>
+          <span><strong>{{ staffName }}</strong><small>{{ live ? 'Admin · Changes go to the school website' : 'Admin · Preview, changes stay in this browser' }}</small></span>
         </div>
         <button type="button" class="cms-public-link" :disabled="Boolean(editor) || signingOut" @click="signOut">
           {{ signingOut ? "Signing out…" : "Sign out" }}
@@ -322,21 +342,26 @@ function dismissMenu() {
     <div class="cms-workspace">
       <header class="cms-topbar">
         <div class="cms-breadcrumb"><span>Workspace</span><CmsIcon name="chevron" :size="14" /><strong>{{ editor ? 'Editor' : sectionTitle }}</strong></div>
-        <span class="cms-prototype"><i></i> Local preview</span>
+        <span class="cms-prototype" :data-live="live || undefined"><i></i> {{ live ? 'Connected to the school website' : 'Local preview' }}</span>
       </header>
       <section ref="cms-main" class="cms-main" aria-label="CMS workspace">
         <CmsEditor v-if="editor" :item="editor" :items="library.items" :image-assets="library.imageAssets"
-          :attempt-save="saveItem" @close="closeEditor" />
+          :attempt-save="saveItem" :connected="live" @close="closeEditor" />
+        <div v-else-if="workspace.loading.value && !library.items.length" class="cms-panel cms-loading" role="status">Loading website content…</div>
+        <div v-else-if="workspace.loadError.value && !library.items.length" class="cms-panel cms-loading">
+          <p class="cms-error" role="alert">{{ workspace.loadError.value }}</p>
+          <button type="button" class="cms-button" @click="workspace.load()">Try again</button>
+        </div>
         <template v-else-if="section === 'trash'">
           <div class="cms-heading">
             <div>
               <h1 tabindex="-1">Trash</h1>
-              <p>Recover deleted items and revisit changes to the website preview.</p>
+              <p>{{ live ? 'Recover deleted items and revisit recent changes to the website.' : 'Recover deleted items and revisit changes to the website preview.' }}</p>
             </div>
           </div>
           <p v-if="notice" class="cms-notice" role="status"><CmsIcon name="check" :size="18" />{{ notice }}</p>
           <p v-if="error" class="cms-error" role="alert">{{ error }}</p>
-          <CmsTrash :items="deletedItems" :next-undo="nextUndo?.label" :next-redo="nextRedo?.label"
+          <CmsTrash :items="deletedItems" :next-undo="nextUndo?.label" :next-redo="nextRedo?.label" :busy="busy"
             @restore="restoreItem" @remove="openPermanentRemoval" @step="changeHistory" />
         </template>
         <template v-else>
@@ -471,11 +496,11 @@ function dismissMenu() {
       <div v-if="pending" class="cms-dialog-inner">
         <h2 id="cms-publication-title">{{ pending.status === 'remove' ? 'Remove item permanently?' : pending.status === 'trash' ? 'Move item to Trash?' : statusActions[pending.status] + ' item?' }}</h2>
         <p><strong>{{ pending.item.title }}</strong></p>
-        <p v-if="pending.status === 'remove'">This permanently deletes the item and its change history from this workspace. It will disappear from Trash and cannot be restored or recovered with Undo or Redo.</p>
+        <p v-if="pending.status === 'remove'">This permanently deletes the item{{ live ? ', its files' : '' }} and its change history from this workspace. It will disappear from Trash and cannot be restored or recovered with Undo or Redo.</p>
         <p v-else-if="pending.status === 'published' && pending.item.type !== 'resource' && pending.item.visibility === 'public'">
-          This makes the item visible on the connected public preview.
+          {{ live ? 'This makes the item visible on the public website.' : 'This makes the item visible on the connected public preview.' }}
         </p>
-        <p v-else-if="pending.status === 'published' && pending.item.type === 'resource'">This updates the PDF’s status in the workspace. Downloadable files use the school’s resource service.</p>
+        <p v-else-if="pending.status === 'published' && pending.item.type === 'resource'">{{ live ? (pending.item.visibility === 'public' ? 'Families can download this PDF from the Resources page.' : 'This PDF is private, so it stays off the Resources page.') : 'This updates the PDF’s status in the workspace. Downloadable files use the school’s resource service.' }}</p>
         <p v-else-if="pending.status === 'published'">This item will stay private after publishing.</p>
         <p v-else-if="pending.status === 'draft'">This returns the item to Draft and removes it from public listings.</p>
         <p v-else-if="pending.status === 'trash'">This removes the item from the library and any public listings. You can restore it from Trash.</p>
@@ -483,7 +508,7 @@ function dismissMenu() {
         <p v-if="error" class="cms-error" role="alert">{{ error }}</p>
         <div class="cms-dialog-actions">
           <button type="button" class="cms-button" autofocus @click="dialog?.close()">Cancel</button>
-          <button type="button" class="cms-button cms-primary" @click="updatePublication">{{ statusActions[pending.status] }}</button>
+          <button type="button" class="cms-button cms-primary" :disabled="busy" @click="updatePublication">{{ busy ? 'Saving…' : statusActions[pending.status] }}</button>
         </div>
       </div>
     </dialog>

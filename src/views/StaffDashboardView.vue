@@ -22,8 +22,8 @@ import StaffAccountsPanel from "@/components/StaffAccountsPanel.vue";
 import RegistrarApplicationsPanel from "@/components/RegistrarApplicationsPanel.vue";
 import CoordinatorSchedulerPanel from "@/components/CoordinatorSchedulerPanel.vue";
 import TeacherSchedulePanel from "@/components/TeacherSchedulePanel.vue";
-import { cmsPreviewEnabled } from "@/lib/cms/config";
-import { useCmsLibrary } from "@/lib/cms/store";
+import { cmsDatabaseEnabled, cmsPreviewEnabled } from "@/lib/cms/config";
+import { useCmsWorkspace } from "@/lib/cms/workspace";
 import { weeklyMinutes, type TeacherSchedule } from "@/lib/schedule/teacher-schedule";
 import CmsIcon from "@/components/cms/CmsIcon.vue";
 import { schedulerViews, type SchedulerNavId, type SchedulerState, type SchedulerStep } from "@/lib/schedule/scheduler-bridge";
@@ -69,7 +69,12 @@ function nameFrom(session: Session | null) {
 type SummaryCard = { id: string; icon: string; value: string; label: string; note: string };
 const accountCounts = ref<{ total: number; active: number; admins: number; inactive: number; more: boolean }>();
 const teacherSchedule = ref<TeacherSchedule>();
-const contentLibrary = cmsPreviewEnabled && props.role === "admin" ? useCmsLibrary() : undefined;
+// Content counts come from the same place the content workspace saves to (browser preview or school database).
+const contentWorkspace = cmsPreviewEnabled && props.role === "admin" ? useCmsWorkspace(() => staffName.value) : undefined;
+const contentLibrary = contentWorkspace?.library;
+watch(canManageAccounts, (allowed) => {
+  if (allowed === false && contentWorkspace?.usesDatabase) void contentWorkspace.load();
+});
 const summaryCards = computed<SummaryCard[]>(() => {
   if (props.role === "admin" && canManageAccounts.value && accountCounts.value) {
     const { total, active, admins, inactive, more } = accountCounts.value;
@@ -415,7 +420,8 @@ watch(() => props.role, () => {
           <div>
             <h2 id="portal-content-title">Website content</h2>
             <p>Manage the school website's news, events, pages and PDF resources in the SNCS content workspace.</p>
-            <p class="portal-content-note">Preview: content changes stay in this browser until the content database is connected.</p>
+            <p v-if="cmsDatabaseEnabled" class="portal-content-note">What you publish appears on the school website right away.</p>
+            <p v-else class="portal-content-note">Preview: content changes stay in this browser until the content database is connected.</p>
           </div>
           <RouterLink class="portal-content-open" :to="{ name: 'content-workspace' }">Open content workspace</RouterLink>
         </section>

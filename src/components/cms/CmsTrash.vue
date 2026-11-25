@@ -2,7 +2,7 @@
 import CmsIcon from "./CmsIcon.vue";
 import { formatCmsDate, itemLabels, type CmsItem } from "@/lib/cms/preview";
 
-defineProps<{ items: CmsItem[]; nextUndo?: string; nextRedo?: string }>();
+defineProps<{ items: CmsItem[]; nextUndo?: string; nextRedo?: string; busy?: boolean }>();
 const emit = defineEmits<{ step: ["undo" | "redo"]; restore: [CmsItem]; remove: [CmsItem, MouseEvent] }>();
 </script>
 
@@ -16,13 +16,13 @@ const emit = defineEmits<{ step: ["undo" | "redo"]; restore: [CmsItem]; remove: 
     </div>
     <div class="cms-history-actions">
       <div>
-        <button type="button" class="cms-button" :disabled="!nextUndo" aria-describedby="cms-next-undo" @click="emit('step', 'undo')">
+        <button type="button" class="cms-button" :disabled="!nextUndo || busy" aria-describedby="cms-next-undo" @click="emit('step', 'undo')">
           <CmsIcon name="undo" :size="17" /> Undo
         </button>
         <p id="cms-next-undo">{{ nextUndo || 'No changes to undo' }}</p>
       </div>
       <div>
-        <button type="button" class="cms-button" :disabled="!nextRedo" aria-describedby="cms-next-redo" @click="emit('step', 'redo')">
+        <button type="button" class="cms-button" :disabled="!nextRedo || busy" aria-describedby="cms-next-redo" @click="emit('step', 'redo')">
           <CmsIcon name="redo" :size="17" /> Redo
         </button>
         <p id="cms-next-redo">{{ nextRedo || 'No changes to redo' }}</p>
@@ -45,8 +45,8 @@ const emit = defineEmits<{ step: ["undo" | "redo"]; restore: [CmsItem]; remove: 
           <small>{{ itemLabels[item.type] }} · Deleted {{ formatCmsDate(item.deletedAt!) }}</small>
         </div>
         <div class="cms-trash-item-actions">
-          <button type="button" class="cms-button" :aria-label="'Restore ' + item.title" @click="emit('restore', item)">Restore</button>
-          <button type="button" class="cms-button cms-trash-action" :aria-label="'Remove permanently ' + item.title"
+          <button type="button" class="cms-button" :disabled="busy" :aria-label="'Restore ' + item.title" @click="emit('restore', item)">Restore</button>
+          <button type="button" class="cms-button cms-trash-action" :disabled="busy" :aria-label="'Remove permanently ' + item.title"
             @click="emit('remove', item, $event)">Remove permanently</button>
         </div>
       </li>

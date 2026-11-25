@@ -5,7 +5,7 @@ import { blankItem, sampleItems } from "./preview";
 import { usePublicWebsite } from "./public-website";
 import { useCmsLibrary, writeCmsLibrary } from "./store";
 
-vi.mock("./config", () => ({ cmsPreviewEnabled: true }));
+vi.mock("./config", () => ({ cmsPreviewEnabled: true, cmsDatabaseEnabled: false }));
 
 const timestamp = "2026-11-16T15:00:00.000Z";
 
