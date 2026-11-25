@@ -68,7 +68,8 @@ describe("site contact details migration", () => {
         ('admin@example.com', '', 'Ana Reyes', 'admin', 'active', $1, false),
         ('r@example.com', '', 'Registrar', 'registrar', 'active', $2, false)`, ids);
     // An Admin already posted an item with one of the original identifiers; the copy must not replace it.
-    await asUser(admin, "select public.cms_save_content(null, 'event', 'Family lunch', 'kainang-pamilya', '', 'Our own post.', '2026-09-28T00:00:00+08:00', '[]')");
+    const own = await asUser<{ id: number }>(admin, "select public.cms_save_content(null, 'event', 'Family lunch', 'kainang-pamilya', '', 'Our own post.', '2026-09-28T00:00:00+08:00', '[]') as id");
+    await asUser(admin, "select public.cms_set_status('content', $1, 'published')", [own.rows[0].id]);
     await db.exec(migration("202611260002_pb01_site_contact_details.sql"));
   }, 30_000);
   afterAll(async () => { await db?.close(); });
