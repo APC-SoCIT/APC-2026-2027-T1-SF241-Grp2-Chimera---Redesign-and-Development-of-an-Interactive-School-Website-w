@@ -7,6 +7,8 @@
  * Modified Date: 20261119
  * Modified by: Jan Sultan | Email: jgsultan@student.apc.edu.ph
  * Modified Date: 20261120
+ * Modified by: Gian Mandac (sign-out now lives in the side panel)
+ * Modified Date: 20261124
  */
 // @vitest-environment jsdom
 import { flushPromises, mount } from "@vue/test-utils";
@@ -23,7 +25,8 @@ vi.mock("@/components/StaffAccountsPanel.vue", () => ({ default: {
   template: '<div data-testid="staff-list">Admin Private — admin-private@example.com</div>',
 } }));
 vi.mock("@/lib/supabase", () => ({ getStaffSupabaseClient: () => ({ auth: { onAuthStateChange, signOut } }) }));
-vi.mock("vue-router", () => ({ RouterLink: { template: "<a><slot /></a>" }, useRouter: () => ({ replace }) }));
+vi.mock("vue-router", () => ({ RouterLink: { template: "<a><slot /></a>" }, useRoute: () => ({ hash: "" }), useRouter: () => ({ replace }) }));
+vi.mock("@/lib/cms/config", () => ({ cmsPreviewEnabled: true }));
 
 let dashboard: ReturnType<typeof mount>;
 
@@ -54,6 +57,16 @@ it("leaves the open dashboard when a session expires without refresh", () => {
   expect(replace).toHaveBeenCalledWith({ name: "login" });
 });
 
+it('shows scheduling after verified Academic Coordinator access and removes it at expiry',async()=>{
+  await dashboard.setProps({heading:'Academic Coordinator dashboard',role:'academic_coordinator'});
+  getStaffPortalRole.mockResolvedValue('academic_coordinator');
+  emit('INITIAL_SESSION',10,'coordinator-id');
+  await vi.advanceTimersByTimeAsync(0);await flushPromises();
+  expect(dashboard.find('iframe[title="Academic Coordinator scheduling workspace"]').exists()).toBe(true);
+  vi.advanceTimersByTime(10_000);await flushPromises();
+  expect(dashboard.find('iframe').exists()).toBe(false);
+});
+
 it("keeps the dashboard open after refresh and uses the new expiry", () => {
   emit("INITIAL_SESSION", 2);
   vi.advanceTimersByTime(1000);
@@ -75,7 +88,7 @@ it("signs out the current session and returns to login", async () => {
   emit("INITIAL_SESSION", 10);
   await vi.advanceTimersByTimeAsync(0);
   signOut.mockResolvedValue({ error: null });
-  await dashboard.get("button").trigger("click");
+  await dashboard.get(".portal-signout").trigger("click");
   await flushPromises();
   expect(signOut).toHaveBeenCalledWith({ scope: "local" });
   expect(replace).toHaveBeenCalledWith({ name: "login" });
@@ -196,4 +209,16 @@ it("shows the SNCS seal and the signed-in staff member's name once access is ver
   expect(dashboard.get("img").attributes("alt")).toContain("Sto. Niño Catholic School");
   expect(dashboard.text()).toContain("Ana Reyes");
   expect(dashboard.get(".portal-avatar").text()).toBe("AR");
+});
+
+it("gives only Admins the Website content entry to the content workspace", async () => {
+  emit("INITIAL_SESSION", 10);
+  await vi.advanceTimersByTimeAsync(0);
+  expect(dashboard.get(".portal-content-card h2").text()).toBe("Website content");
+  expect(dashboard.get(".portal-content-open").text()).toBe("Open content workspace");
+  await dashboard.setProps({ heading: "Registrar dashboard", role: "registrar" });
+  getStaffPortalRole.mockResolvedValue("registrar");
+  emit("INITIAL_SESSION", 10, "registrar-id");
+  await vi.advanceTimersByTimeAsync(0);
+  expect(dashboard.find(".portal-content-card").exists()).toBe(false);
 });

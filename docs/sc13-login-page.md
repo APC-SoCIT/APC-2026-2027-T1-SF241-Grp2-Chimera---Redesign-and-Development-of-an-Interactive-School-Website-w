@@ -11,6 +11,8 @@ password sign-in opens `/admin`, `/registrar`, `/teacher`, or `/academic-coordin
 staff member's current role. Direct dashboard visits check for that route's
 role. Invalid credentials and denied access leave the user at sign-in.
 
+When the browser-local CMS design preview is enabled, the Admin dashboard also shows a **Website content** card that opens the Content Workspace at `/admin/content`. That route uses the same sign-in and only opens for the Admin role.
+
 ## Configure a test project
 
 1. Use a Supabase test project with the team's existing `public.users` table.

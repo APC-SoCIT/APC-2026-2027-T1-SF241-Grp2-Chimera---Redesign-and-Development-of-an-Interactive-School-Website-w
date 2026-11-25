@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import PageHero from "@/components/PageHero.vue";
 import AnnouncementCard from "@/components/AnnouncementCard.vue";
-import { getPublicAnnouncements } from "@/lib/content/content";
-const announcements = getPublicAnnouncements();
+import { usePublicWebsite } from "@/lib/cms/public-website";
+const { announcements } = usePublicWebsite();
 </script>
 <template>
   <PageHero eyebrow="News and advisories" title="Stay informed at SNCS" description="Read school announcements and updates for our learners and families." />

@@ -48,12 +48,24 @@ The project follows the architecture proposed in the SSYSADD1 paper:
 - **Backend:** Node.js with Express (PB-12 enrollment API)
 - **Data and files:** Supabase PostgreSQL and public TLC PDFs in Supabase Storage;
   enrollment document uploads are disabled
-- **Authentication (future backlog):** Express-managed authentication and sessions
+- **Staff authentication:** Supabase Auth with role-checked staff routes
 - **Scheduling (future backlog):** a separate Python service using Google OR-Tools
 
-The Registrar's Manage Enrollment Application workflow is described in
-[docs/manage-enrollment-application.md](docs/manage-enrollment-application.md).
-CMS and scheduling remain future work.
+The browser-local CMS design preview is available at `/admin/content` when enabled;
+Admins open it from the Admin dashboard after signing in through the staff portal.
+See [CMS preview deployment](docs/cms-preview-deployment.md) for its setup.
+The Supabase staff portal starts at `/login`; its protected Admin dashboard is `/admin`.
+Registrar and Teacher dashboards retain their existing paths.
+See [staff login setup](docs/sc13-login-page.md) and
+[Registrar workflow](docs/manage-enrollment-application.md) for configuration.
+Shared CMS persistence and scheduling remain future work.
+
+An isolated [local scheduling preparation workbench](services/scheduler/README.md)
+now supports coordinator entry, SNCS Excel import preview, validation, CP-SAT
+generation, and local draft/publication testing. Academic Coordinators now open it
+from their signed-in dashboard through a role-checked API gateway. Scheduling
+storage remains in the Python service's SQLite database. See [coordinator setup](docs/coordinator-scheduling-setup.md)
+and [Sprint 3 scope and remaining school decisions](docs/scheduling-preparation.md).
 
 ## PB-10 public website
 
@@ -120,8 +132,9 @@ replace this data source while preserving the page components and enforcing the
 same `published` and `public` visibility contract. This frontend filter is not a
 database access policy: a future backend must return only public records and
 enforce authorization before sending data to the browser. Resource reads already
-use RLS and limited column grants. CMS editing screens, other Supabase content
-adapters, and staff authentication remain pending. PB-12 adds enrollment
+use RLS and limited column grants. The CMS design preview stores edits and
+uploaded images in each browser. Shared CMS content adapters and production
+staff authentication remain pending. PB-12 adds enrollment
 submission; live use requires the server configuration described above.
 
 ## Asset note

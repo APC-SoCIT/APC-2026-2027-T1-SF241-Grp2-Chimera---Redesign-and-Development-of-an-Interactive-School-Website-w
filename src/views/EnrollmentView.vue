@@ -114,7 +114,7 @@ async function submit() {
   <section class="enrollment-hero">
     <div class="container">
       <p class="eyebrow">Admissions · Pre-school, Elementary, Junior & Senior High School</p>
-      <h1>Start your next chapter.</h1>
+      <h1>SNCS admissions application</h1>
       <p>Apply to Sto. Niño Catholic School. Complete your details, review your application, and take the next step with our Registrar.</p>
     </div>
   </section>

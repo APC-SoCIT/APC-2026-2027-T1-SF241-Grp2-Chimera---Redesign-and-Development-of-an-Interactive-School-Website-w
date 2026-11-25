@@ -20,7 +20,7 @@ watch(() => props.image.src, () => { failed.value = false; });
       decoding="async"
       @error="failed = true"
     />
-    <p v-else class="announcement-image-unavailable">Image unavailable. Please refer to the announcement text.</p>
+    <p v-else class="announcement-image-unavailable">Image unavailable.</p>
     <figcaption v-if="!thumbnail && !failed && image.caption">{{ image.caption }}</figcaption>
   </figure>
 </template>
