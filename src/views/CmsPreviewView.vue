@@ -67,7 +67,7 @@ const menuToggle = useTemplateRef<HTMLButtonElement>("menu-toggle");
 const shell = useTemplateRef<HTMLElement>("cms-shell");
 let actionTrigger: HTMLElement | null = null;
 
-// Super Admins (Admins who manage staff accounts) get a way back to the staff list.
+// Admins who manage staff accounts get a way back to the staff list.
 const canManageAccounts = ref(false);
 
 // Show the signed-in Admin's name, as the Admin dashboard does.
@@ -79,15 +79,14 @@ onMounted(async () => {
   if (match) section.value = match.id;
   try {
     const { data: { session } } = await getStaffSupabaseClient().auth.getSession();
-    const provisioning = session?.user?.app_metadata?.chimera_staff_provisioning as Record<string, unknown> | undefined;
-    const name = ["firstName", "lastName"].map((key) => typeof provisioning?.[key] === "string" ? (provisioning[key] as string).trim() : "")
-      .filter(Boolean).join(" ");
+    const provisioning = session?.user?.app_metadata?.chimera_staff_provisioning as { full_name?: unknown } | undefined;
+    const name = typeof provisioning?.full_name === "string" ? provisioning.full_name.trim() : "";
     staffName.value = name || session?.user?.email || demoAdmin;
   } catch {
     // Keep the generic name; the route guard has already verified Admin access.
   }
   try {
-    // The same check the dashboard's staff list makes: only Super Admins may list staff accounts.
+    // The same check the dashboard's staff list makes: only Admins who manage staff accounts may list them.
     const { error } = await getStaffSupabaseClient().rpc("list_staff_accounts", { p_offset: 0 });
     canManageAccounts.value = !error;
   } catch {
