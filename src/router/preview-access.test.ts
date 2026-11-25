@@ -7,7 +7,7 @@ import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { getStaffPortalRole } from "@/lib/staff-auth";
 import router from "./index";
 
-vi.mock("@/lib/cms/config", () => ({ cmsPreviewEnabled: true }));
+vi.mock("@/lib/cms/config", () => ({ cmsPreviewEnabled: true, cmsDatabaseEnabled: false }));
 vi.mock("@/lib/staff-auth", () => ({ getStaffPortalRole: vi.fn() }));
 vi.mock("vue-router", async (importOriginal) => {
   const original = await importOriginal<typeof import("vue-router")>();

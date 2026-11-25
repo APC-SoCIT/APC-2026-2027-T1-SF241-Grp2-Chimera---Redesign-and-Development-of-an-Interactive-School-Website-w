@@ -49,6 +49,7 @@ describe("CMS database migration", () => {
     `);
     const schema = readFileSync(new URL("../supabase/reference/SNCS_Schema_Final.sql", import.meta.url), "utf8");
     await db.exec(schema.slice(schema.indexOf("CREATE TABLE users ("), schema.indexOf("-- 3. ENROLLMENT")));
+    await db.exec(schema.slice(schema.indexOf("CREATE TABLE enrollment_periods ("), schema.indexOf("-- 4. SCHEDULING")));
     for (const migration of [
       "202610020001_pb11_public_resources.sql",
       "202611130001_sc13_admin_auth.sql", "202611140001_sc20_staff_portal_role.sql",
