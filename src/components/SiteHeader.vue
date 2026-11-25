@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, watch } from "vue";
 import { RouterLink, useRoute } from "vue-router";
+import PublicSearchForm from "./PublicSearchForm.vue";
 
 const menu = ref<HTMLDetailsElement | null>(null);
 const route = useRoute();
@@ -45,6 +46,7 @@ watch(() => route.fullPath, closeMenu);
         </span>
       </RouterLink>
 
+      <div class="header-actions">
       <nav class="desktop-nav" aria-label="Primary navigation">
         <RouterLink class="button button-secondary nav-registration" to="/admissions">Admissions</RouterLink>
         <RouterLink v-for="item in navigation" :key="item.to" :to="item.to">
@@ -53,6 +55,7 @@ watch(() => route.fullPath, closeMenu);
         <RouterLink class="button nav-staff-login" to="/login">Staff login</RouterLink>
       </nav>
 
+      <PublicSearchForm @open="closeMenu" />
       <details ref="menu" class="mobile-menu" @keydown.esc="dismissMenu">
         <summary>Menu</summary>
         <nav aria-label="Mobile navigation">
@@ -68,6 +71,15 @@ watch(() => route.fullPath, closeMenu);
           <RouterLink class="mobile-staff-login" to="/login" @click="closeMenu">Staff login</RouterLink>
         </nav>
       </details>
+      </div>
     </div>
   </header>
 </template>
+
+<style scoped>
+.header-actions{display:flex;align-items:center;gap:.75rem;flex:none}
+.brand{min-width:0}
+.brand span{min-width:0}
+@media(max-width:1180px){.desktop-nav{display:none}.mobile-menu{display:block}}
+@media(max-width:480px){.header-actions{gap:.2rem}.brand{gap:.5rem}}
+</style>

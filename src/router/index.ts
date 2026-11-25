@@ -48,6 +48,7 @@ const router = createRouter({
     { path: "/about", name: "about", component: AboutView, meta: { title: "About" } },
     { path: "/campus", name: "campus", component: CampusView, meta: { title: "Campus" } },
     { path: "/news", name: "news", component: NewsView, meta: { title: "News" } },
+    { path: "/search", name: "search", component: () => import("@/views/SearchView.vue"), meta: { title: "Search" } },
     { path: "/news/:slug", name: "announcement", component: AnnouncementView, meta: { title: "Announcement" } },
     { path: "/events", name: "events", component: EventsView, meta: { title: "Events" } },
     { path: "/contact", name: "contact", component: ContactView, meta: { title: "Contact" } },

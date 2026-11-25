@@ -1,6 +1,7 @@
 import { computed, shallowRef } from "vue";
 import { getPublicAnnouncements, getPublicEvents } from "@/lib/content/content";
 import type { Announcement, SchoolEvent } from "@/lib/content/model";
+import { isPubliclyVisible } from "@/lib/content/selectors";
 import { getPublicSupabaseClient } from "@/lib/supabase";
 import { cmsDatabaseEnabled, cmsPreviewEnabled } from "./config";
 import { contentItem, summaryOf, type ContentRow } from "./database";
@@ -8,10 +9,6 @@ import { useCmsLibrary } from "./store";
 import type { CmsItem } from "./preview";
 import { sourceAnnouncements, sourceEvents } from "./website-items";
 import { imageForDisplay, type CmsImageAssets } from "./images";
-
-function isVisible(item: CmsItem) {
-  return item.status === "published" && item.visibility === "public" && !item.deletedAt;
-}
 
 const previewSummary = summaryOf;
 // The built-in copy of a school notice (category, photo, end date, link to the school's site),
@@ -55,37 +52,59 @@ function toEvent(item: CmsItem, assets: CmsImageAssets): SchoolEvent {
   };
 }
 
-// Published content from the school database, loaded once per visit. Until it arrives (and in
-// the prerendered pages) visitors see the built-in content, so pages never start empty.
+// Public pages and search share this one CMS data source. In database mode, do not fall
+// back to built-in notices: an Admin may have unpublished or made those notices private.
 const databaseContent = shallowRef<{ items: CmsItem[]; assets: CmsImageAssets } | null>(null);
+const databaseLoading = shallowRef(false);
+const databaseError = shallowRef("");
+// Also suppress baked-in notices during prerendering of a database-backed deployment.
+const databaseMode = cmsDatabaseEnabled || import.meta.env.VITE_CMS_DATABASE === "true";
 let request: Promise<void> | undefined;
 
-function loadPublishedContent() {
-  request ??= (async () => {
+export function refreshPublishedContent(): Promise<void> {
+  if (!databaseMode || import.meta.env.SSR) return Promise.resolve();
+  if (!cmsDatabaseEnabled) {
+    databaseError.value = "School updates could not be loaded. Please try again.";
+    return Promise.resolve();
+  }
+  if (request) return request;
+  databaseLoading.value = true;
+  databaseError.value = "";
+  // Clear the previous publication snapshot while checking its current visibility.
+  databaseContent.value = null;
+  const pending = (async () => {
     try {
       const { data, error } = await getPublicSupabaseClient().rpc("cms_public_content");
-      if (error || !Array.isArray(data)) throw error;
-      const mapped = (data as ContentRow[]).map((row) => contentItem({ ...row, status: "published" }));
+      if (error || !Array.isArray(data)) throw new Error("Published content unavailable");
+      const mapped = (data as ContentRow[]).map(contentItem);
       databaseContent.value = { items: mapped.map((entry) => entry.item), assets: Object.assign({}, ...mapped.map((entry) => entry.assets)) };
     } catch {
-      request = undefined; // Keep the built-in content; try again on the next page.
+      databaseError.value = "School updates could not be loaded. Please try again.";
+    } finally {
+      databaseLoading.value = false;
     }
   })();
+  request = pending;
+  void pending.then(() => { if (request === pending) request = undefined; });
+  return pending;
 }
 
 export function usePublicWebsite() {
-  if (cmsDatabaseEnabled) loadPublishedContent();
-  const library = !cmsDatabaseEnabled && cmsPreviewEnabled ? useCmsLibrary() : undefined;
-  const source = computed(() => cmsDatabaseEnabled ? databaseContent.value
+  if (databaseMode) void refreshPublishedContent();
+  const library = !databaseMode && cmsPreviewEnabled ? useCmsLibrary() : undefined;
+  const source = computed(() => databaseMode ? databaseContent.value
     : library ? { items: library.value.items, assets: library.value.imageAssets } : null);
-  const published = computed(() => source.value?.items.filter(isVisible) ?? []);
+  const published = computed(() => source.value?.items.filter(isPubliclyVisible) ?? []);
   const assets = computed(() => source.value?.assets ?? {});
   return {
-    announcements: computed(() => source.value
+    loading: computed(() => databaseMode && databaseLoading.value),
+    error: computed(() => databaseMode ? databaseError.value : ""),
+    refresh: refreshPublishedContent,
+    announcements: computed(() => databaseMode || source.value
       ? published.value.filter((item) => item.type === "announcement")
         .map((item) => toAnnouncement(item, assets.value)).sort((a, b) => (b.publishedAt ?? "").localeCompare(a.publishedAt ?? ""))
       : getPublicAnnouncements()),
-    events: computed(() => source.value
+    events: computed(() => databaseMode || source.value
       ? published.value.filter((item) => item.type === "event" && item.eventDate).map((item) => toEvent(item, assets.value))
       : getPublicEvents()),
     pages: computed(() => published.value.filter((item) => item.type === "page").map((item) => ({

@@ -14,3 +14,6 @@ supabase/.temp/
 
 # This project uses pnpm (pnpm-lock.yaml); npm lockfiles cause mixed installs
 package-lock.json
+
+# Keep data and credentials from the earlier localhost CMS review out of Git
+.local-cms/
