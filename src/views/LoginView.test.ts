@@ -21,7 +21,7 @@ vi.mock("vue-router", async (importOriginal) => {
   return { ...original, createWebHistory: original.createMemoryHistory };
 });
 
-vi.mock("@/lib/cms/config", () => ({ cmsPreviewEnabled: false }));
+vi.mock("@/lib/cms/config", () => ({ cmsPreviewEnabled: false, cmsDatabaseEnabled: false }));
 
 describe("staff login and protected routes", () => {
   let wrapper: VueWrapper | undefined;
