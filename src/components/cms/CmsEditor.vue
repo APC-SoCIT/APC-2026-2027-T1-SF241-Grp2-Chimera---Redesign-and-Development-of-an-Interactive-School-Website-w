@@ -318,7 +318,7 @@ function cancel() {
         <span class="cms-status" :data-state="form.status">{{ form.status }}</span>
         <p v-if="form.status === 'published' && form.type !== 'resource' && form.visibility === 'public'">{{ connected ? 'Saving updates the public website right away.' : 'Saving updates the public preview.' }}</p>
         <p v-else-if="form.status === 'published'">{{ connected ? 'Saving updates this published item.' : 'Saving updates this published item in the preview library.' }}</p>
-        <p v-else-if="form.status === 'archived'">This item stays in the archive when you save it.</p>
+        <p v-else-if="form.status === 'archived'">This item stays in the archive when you save it. To bring it back, open the ⋯ menu next to it in the library and choose Restore to draft or Publish.</p>
         <p v-else>Drafts stay hidden until you publish them from the library.</p>
         <div v-if="form.type === 'resource'" class="cms-field">
           <label for="cms-visibility">Visibility</label>
