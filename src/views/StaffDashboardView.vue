@@ -121,6 +121,11 @@ let accessVersion = 0;
 function clearAccess() {
   schedulerToken.value = "";
   accessVerified.value = false;
+  // Summary figures and account access belong to the account that loaded them: drop them so the
+  // next account (even with the same role) never sees them while its own panels load or fail.
+  accountCounts.value = undefined;
+  teacherSchedule.value = undefined;
+  canManageAccounts.value = undefined;
   contentVersion.value += 1;
   accessVersion += 1;
   authorizedUserId = undefined;
