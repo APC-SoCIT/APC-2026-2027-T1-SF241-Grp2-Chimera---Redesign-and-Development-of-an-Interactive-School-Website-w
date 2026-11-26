@@ -28,10 +28,13 @@ Both public rendering and keyword matching use `isPubliclyVisible()`:
 - the item is outside Trash.
 
 Search refreshes the shared data when its keyword changes, the page regains
-focus, and every 30 seconds while visible. Errors display retry feedback.
-Database mode does not substitute built-in notices while loading or after a
-failure, because an Admin may have hidden those original notices. A database
-build also omits those notices from prerendered HTML.
+focus, and every 30 seconds while visible. Background refreshes keep the last
+verified results on screen and preserve focus on unchanged links. The next
+successful response removes anything that is no longer public. A failed request
+clears the CMS results and shows a retry. Announcements and school pages show a
+loading state while checking for content that is missing from the current
+response. Database builds omit built-in notices from prerendered HTML because
+an Admin may have hidden them.
 
 ## Required database update
 
@@ -45,9 +48,19 @@ process before hosting this change in database mode. The new migration:
 - preserves the existing public RPC response shape, staff authorization, and
   content save function. Editing an existing private record retains its visibility.
 
-Keep the existing `VITE_CMS_DATABASE=true` and public Supabase configuration for
-the connected CMS. This work has not applied migrations to the shared database,
-changed hosting settings, or deployed the website.
+## Merge and production rollout
+
+The `main` workflow deploys using Vercel's current production settings. With
+database mode off, the site searches its built-in public content. To turn on
+live CMS search, use the following order:
+
+1. Apply the visibility migration through the team's migration process.
+2. Publish the initial approved announcements, events, and school pages in
+   Supabase through the existing CMS on a restricted preview connected to the
+   school database. Confirm the approved content is visible in that preview.
+3. Set `VITE_CMS_DATABASE=true` alongside the public Supabase configuration in
+   Vercel production and redeploy. Check `/news`, a direct announcement link,
+   and `/search` after deployment.
 
 ## Regression checks
 
@@ -57,11 +70,9 @@ CMS, and verifies that anonymous public records and derived search results exclu
 them. Published public records remain visible. The Admin can still list the private
 records and their actual visibility.
 
-Frontend tests additionally check that the shared public adapter and search both
-reject private, draft, archived, and trashed records, even if supplied in an RPC
-response. They cover publication refresh, no fallback on database failure, and
-private-content-safe prerendering. Existing popup keyboard and responsive behavior
-is retained.
+Frontend tests check the shared public adapter and search against private,
+draft, archived, and trashed records. They also cover focus during a background
+refresh, a newly published announcement loading from the database, withdrawal
+of previously published content, and recovery after a database failure.
 
-Run `npm test`, `npm run typecheck`, and `npm run build` before review. No push or
-deployment is included in this local rebase.
+Run `pnpm test`, `pnpm typecheck`, and `pnpm build` before merging.

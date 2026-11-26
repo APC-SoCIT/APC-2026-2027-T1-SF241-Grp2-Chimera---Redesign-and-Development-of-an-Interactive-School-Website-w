@@ -15,6 +15,6 @@ export function usePublicSearch() {
     })),
     ...website.pages.value.map(item => ({ ...item, type: "page" as const, href: "/pages/" + encodeURIComponent(item.slug) })),
   ]);
-  return { loading: website.loading, error: website.error, refresh: website.refresh,
+  return { loading: website.initialLoading, error: website.error, refresh: website.refresh,
     find: (query: string) => searchDocuments(documents.value, query) };
 }

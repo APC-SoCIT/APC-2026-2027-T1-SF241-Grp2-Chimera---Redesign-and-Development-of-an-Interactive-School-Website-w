@@ -54,11 +54,11 @@ function toEvent(item: CmsItem, assets: CmsImageAssets): SchoolEvent {
 
 // Public pages and search share this one CMS data source. In database mode, do not fall
 // back to built-in notices: an Admin may have unpublished or made those notices private.
-const databaseContent = shallowRef<{ items: CmsItem[]; assets: CmsImageAssets } | null>(null);
-const databaseLoading = shallowRef(false);
-const databaseError = shallowRef("");
-// Also suppress baked-in notices during prerendering of a database-backed deployment.
+// Prerendered pages in database mode show a loading state until the browser fetches content.
 const databaseMode = cmsDatabaseEnabled || import.meta.env.VITE_CMS_DATABASE === "true";
+const databaseContent = shallowRef<{ items: CmsItem[]; assets: CmsImageAssets } | null>(null);
+const databaseLoading = shallowRef(databaseMode && import.meta.env.SSR);
+const databaseError = shallowRef("");
 let request: Promise<void> | undefined;
 
 export function refreshPublishedContent(): Promise<void> {
@@ -70,8 +70,7 @@ export function refreshPublishedContent(): Promise<void> {
   if (request) return request;
   databaseLoading.value = true;
   databaseError.value = "";
-  // Clear the previous publication snapshot while checking its current visibility.
-  databaseContent.value = null;
+  // Keep the last verified results in place while checking for publication changes.
   const pending = (async () => {
     try {
       const { data, error } = await getPublicSupabaseClient().rpc("cms_public_content");
@@ -79,6 +78,7 @@ export function refreshPublishedContent(): Promise<void> {
       const mapped = (data as ContentRow[]).map(contentItem);
       databaseContent.value = { items: mapped.map((entry) => entry.item), assets: Object.assign({}, ...mapped.map((entry) => entry.assets)) };
     } catch {
+      databaseContent.value = null;
       databaseError.value = "School updates could not be loaded. Please try again.";
     } finally {
       databaseLoading.value = false;
@@ -97,7 +97,8 @@ export function usePublicWebsite() {
   const published = computed(() => source.value?.items.filter(isPubliclyVisible) ?? []);
   const assets = computed(() => source.value?.assets ?? {});
   return {
-    loading: computed(() => databaseMode && databaseLoading.value),
+    loading: computed(() => databaseLoading.value),
+    initialLoading: computed(() => databaseLoading.value && databaseContent.value === null),
     error: computed(() => databaseMode ? databaseError.value : ""),
     refresh: refreshPublishedContent,
     announcements: computed(() => databaseMode || source.value

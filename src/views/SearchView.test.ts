@@ -10,7 +10,7 @@ import SearchView from "./SearchView.vue";
 vi.mock("@/lib/cms/public-website", () => ({ usePublicWebsite: () => website }));
 const website = {
   announcements: ref<Announcement[]>([]), pages: ref<CmsItem[]>([]),
-  loading: ref(false), error: ref(""), refresh: vi.fn(async () => {}),
+  initialLoading: ref(false), error: ref(""), refresh: vi.fn(async () => {}),
 };
 async function openSearch(query = "needlemark") {
   const router = createRouter({ history: createMemoryHistory(), routes: [
@@ -24,7 +24,7 @@ async function openSearch(query = "needlemark") {
 beforeEach(() => {
   website.announcements.value = [];
   website.pages.value = [];
-  website.loading.value = false;
+  website.initialLoading.value = false;
   website.error.value = "";
   website.refresh.mockClear();
 });
@@ -60,10 +60,10 @@ describe("public search uses the existing CMS", () => {
     wrapper.unmount();
   });
   it("shows loading and retry feedback rather than claiming no matches on a CMS error", async () => {
-    website.loading.value = true;
+    website.initialLoading.value = true;
     const { wrapper } = await openSearch();
     expect(wrapper.get('[role="status"]').text()).toBe("Searching published content…");
-    website.loading.value = false;
+    website.initialLoading.value = false;
     website.error.value = "School updates could not be loaded. Please try again.";
     await flushPromises();
     expect(wrapper.get('[role="alert"]').text()).toContain("School updates could not be loaded");
