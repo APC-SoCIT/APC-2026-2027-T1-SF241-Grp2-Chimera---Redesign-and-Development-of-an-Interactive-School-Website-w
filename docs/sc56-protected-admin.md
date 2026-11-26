@@ -6,10 +6,10 @@ Ordinary Admin accounts can still be deactivated by another authorized manager.
 
 ## Deployment and designation
 
-1. Apply `supabase/migrations/202611260002_sc56_protected_admin.sql` in the
+1. Apply `supabase/migrations/202611260003_sc56_protected_admin.sql` in the
    Supabase project used by the deployment **before deploying the new API**.
-   PB-01 owns version `202611260001`; SC-56 uses the distinct version
-   `202611260002`. Do not apply the old SC-56 filename.
+   PB-01 uses versions `202611260001` and `202611260002`. SC-56 uses version
+   `202611260003`. Apply this version for SC-56.
 
    If this environment already applied the previous SC-56 SQL, stop and have
    the database operator reconcile the schema and migration history first.

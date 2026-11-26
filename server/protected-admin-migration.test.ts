@@ -52,7 +52,7 @@ describe("SC-56 protected top-level Admin", () => {
       await db.query("insert into auth.sessions values ($1, $1)", [id]);
     }
     // Upgrade with existing accounts: no guessed owner and no destructive backfill.
-    await db.exec(readFileSync(new URL("../supabase/migrations/202611260002_sc56_protected_admin.sql", import.meta.url), "utf8"));
+    await db.exec(readFileSync(new URL("../supabase/migrations/202611260003_sc56_protected_admin.sql", import.meta.url), "utf8"));
     expect((await db.query("select id from public.users where is_protected_admin")).rows).toEqual([]);
     await db.query("update public.users set is_protected_admin = true where auth_user_id = $1", [owner]);
   }, 30_000);
@@ -62,7 +62,7 @@ describe("SC-56 protected top-level Admin", () => {
     const files = readdirSync(new URL("../supabase/migrations/", import.meta.url)).filter(name => name.endsWith(".sql"));
     const versions = files.map(name => name.split("_")[0]);
     expect(new Set(versions).size).toBe(versions.length);
-    expect(files).toContain("202611260002_sc56_protected_admin.sql");
+    expect(files).toContain("202611260003_sc56_protected_admin.sql");
   });
 
   it("exposes designation only in authorized staff listings and rejects protected/self/unauthorized deactivation targets", async () => {
