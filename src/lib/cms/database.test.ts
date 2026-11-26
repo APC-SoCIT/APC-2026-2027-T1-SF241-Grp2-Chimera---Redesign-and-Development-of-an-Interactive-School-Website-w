@@ -28,6 +28,11 @@ const page = (fields: Partial<CmsItem> = {}): CmsItem => ({
 });
 
 describe("content workspace database calls", () => {
+  it("preserves a private record's visibility when mapping it for the existing editor", () => {
+    const { item } = contentItem({ contentId: 7, contentType: "page", title: "Internal page", slug: "internal-page", body: "Internal information", eventStartsAt: null, status: "published", visibility: "private", publishedAt: null, updatedAt: "2026-11-26T00:00:00Z" });
+    expect(item.visibility).toBe("private");
+    expect(item.status).toBe("published");
+  });
   it("creates a draft, then publishes it, in that order", async () => {
     const { client, calls } = fakeClient({ cms_save_content: 12 });
     const id = await applyItemState(client, null, { ...page({ id: "" }), status: "published" }, {});

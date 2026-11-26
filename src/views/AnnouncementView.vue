@@ -8,7 +8,7 @@ import CmsFormattedBody from "@/components/cms/CmsFormattedBody.vue";
 import { usePublicWebsite } from "@/lib/cms/public-website";
 import { formatPublicationDate } from "@/lib/content/dates";
 const route = useRoute();
-const { announcements } = usePublicWebsite();
+const { announcements, loading, error, refresh } = usePublicWebsite();
 const item = computed(() => announcements.value.find((entry) => entry.slug === route.params.slug));
 </script>
 
@@ -31,7 +31,20 @@ const item = computed(() => announcements.value.find((entry) => entry.slug === r
     </section>
   </template>
   <template v-else>
-    <PageHero eyebrow="Announcements" title="Announcement unavailable" description="This announcement may no longer be available." />
-    <section class="section"><div class="container"><RouterLink class="button button-secondary" to="/news">Browse announcements</RouterLink></div></section>
+    <PageHero
+      eyebrow="Announcements"
+      :title="loading || error ? 'School announcement' : 'Announcement unavailable'"
+      :description="loading || error ? undefined : 'This announcement may no longer be available.'"
+    />
+    <section class="section">
+      <div class="container">
+        <p v-if="loading" role="status">Loading announcement…</p>
+        <template v-else-if="error">
+          <p role="alert">{{ error }}</p>
+          <button class="button button-secondary" type="button" @click="refresh">Try again</button>
+        </template>
+        <RouterLink v-else class="button button-secondary" to="/news">Browse announcements</RouterLink>
+      </div>
+    </section>
   </template>
 </template>

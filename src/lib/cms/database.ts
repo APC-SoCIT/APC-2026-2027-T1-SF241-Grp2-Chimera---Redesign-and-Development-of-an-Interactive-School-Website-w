@@ -7,7 +7,7 @@
  * (migration 202611260001_pb01_cms_database.sql), which check Admin access and write the audit log.
  */
 import type { SupabaseClient } from "@supabase/supabase-js";
-import type { PublicationStatus } from "@/lib/content/model";
+import type { ContentVisibility, PublicationStatus } from "@/lib/content/model";
 import { slugify, type CmsItem, type ContentType } from "./preview";
 import type { CmsImage, CmsImageAsset, CmsImageAssets } from "./images";
 
@@ -29,6 +29,7 @@ export interface ContentRow {
   images?: unknown;
   eventStartsAt: string | null;
   status?: PublicationStatus;
+  visibility?: ContentVisibility;
   publishedAt: string | null;
   updatedAt: string;
   deletedAt?: string | null;
@@ -101,7 +102,7 @@ export function contentItem(row: ContentRow): { item: CmsItem; assets: CmsImageA
       body: row.body,
       eventDate: eventDay(row.eventStartsAt),
       category: "",
-      visibility: "public",
+      visibility: row.visibility ?? "public",
       fileName: "",
       fileSize: 0,
       createdBy: row.createdByName || "SNCS website",

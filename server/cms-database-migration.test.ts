@@ -7,6 +7,9 @@
 import { readFileSync } from "node:fs";
 import { PGlite } from "@electric-sql/pglite";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { contentItem, type ContentRow } from "../src/lib/cms/database";
+import { isPubliclyVisible } from "../src/lib/content/selectors";
+import { searchDocuments, type SearchDocument } from "../src/lib/search/search";
 
 describe("CMS database migration", () => {
   let db: PGlite;
@@ -55,6 +58,7 @@ describe("CMS database migration", () => {
       "202611130001_sc13_admin_auth.sql", "202611140001_sc20_staff_portal_role.sql",
       "202611140002_sc18_manage_staff_accounts.sql", "202611140003_sc21_registrar_application_access.sql",
       "202611140004_sc19_sc30_staff_access.sql", "202611260001_pb01_cms_database.sql",
+      "202611260002_pb01_public_content_visibility.sql",
     ]) {
       await db.exec(readFileSync(new URL(`../supabase/migrations/${migration}`, import.meta.url), "utf8"));
     }
@@ -80,6 +84,36 @@ describe("CMS database migration", () => {
     expect(listed.rows).toEqual([{ title: "Enrollment opens", createdByName: "Ana Reyes" }]);
     const audit = await db.query<{ action: string }>("select action from public.audit_logs where entity_type = 'cms_content' order by id");
     expect(audit.rows.map((row) => row.action)).toEqual(["cms.create", "cms.status"]);
+  });
+
+  it("keeps published private announcements and pages out of BOTH public pages and keyword search", async () => {
+    const ids: number[] = [];
+    for (const type of ["announcement", "page"]) {
+      const id = await saveContent([null, type, `Visibilityneedle private ${type}`, `visibilityneedle-private-${type}`, "Private information", "Visibilityneedle confidential body", null, "[]"]);
+      ids.push(id);
+      // Simulate a private record left by another integration. Existing CMS edits must preserve it.
+      await db.query("update public.cms_content set visibility = 'private' where id = $1", [id]);
+      await asUser(admin, "select public.cms_set_status('content', $1, 'published')", [id]);
+      await saveContent([id, type, `Visibilityneedle private ${type}`, `visibilityneedle-private-${type}`, "Edited", "Visibilityneedle edited private body", null, "[]"]);
+    }
+    const visibleId = await saveContent([null, "page", "Visibilityneedle public page", "visibilityneedle-public", "Public information", "Visibilityneedle public body", null, "[]"]);
+    await asUser(admin, "select public.cms_set_status('content', $1, 'published')", [visibleId]);
+    const rows = (await asVisitor<ContentRow>("select * from public.cms_public_content()")).rows;
+    expect(rows.filter(row => ids.includes(Number(row.contentId)))).toEqual([]);
+    const publicItems = rows.map(row => contentItem(row).item).filter(isPubliclyVisible);
+    expect(publicItems.filter(item => item.title.startsWith("Visibilityneedle"))).toEqual([
+      expect.objectContaining({ title: "Visibilityneedle public page" }),
+    ]);
+    const documents: SearchDocument[] = publicItems.filter(item => item.type === "page" || item.type === "announcement").map(item => ({
+      ...item, type: item.type as "page" | "announcement", href: (item.type === "page" ? "/pages/" : "/news/") + item.slug,
+    }));
+    expect(searchDocuments(documents, "visibilityneedle").map(result => result.title)).toEqual(["Visibilityneedle public page"]);
+    expect(searchDocuments(documents, "confidential")).toEqual([]);
+    const managed = (await asUser<ContentRow>(admin, "select * from public.cms_list_content()")).rows;
+    expect(managed.filter(row => ids.includes(Number(row.contentId)))).toEqual([
+      expect.objectContaining({ status: "published", visibility: "private" }),
+      expect.objectContaining({ status: "published", visibility: "private" }),
+    ]);
   });
 
   it("hides items in Trash and only deletes them permanently from Trash", async () => {

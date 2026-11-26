@@ -42,6 +42,10 @@ and [Sprint 3 scope and remaining school decisions](docs/scheduling-preparation.
 
 ## PB-10 public website
 
+The header search popup uses the existing CMS content source for public pages and
+announcements. See [public search and visibility](docs/public-search-review.md)
+for the required visibility migration, regression coverage, and local review scope.
+
 - Responsive Home, About, Campus, News, Events, Contact, and Admissions routes
 - Sourced school history, updated mission/vision, six core values, and separate motto
 - Announcement details, date-range events with upcoming/past separation, and office contacts
