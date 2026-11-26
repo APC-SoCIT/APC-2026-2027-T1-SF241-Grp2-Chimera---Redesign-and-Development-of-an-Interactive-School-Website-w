@@ -2,7 +2,7 @@
  * Author: Jan Sultan | Email: jgsultan@student.apc.edu.ph
  * Created Date: 20261114
  * Modified by: Jan Sultan | Email: jgsultan@student.apc.edu.ph
- * Modified Date: 20261120
+ * Modified Date: 20261126
  */
 // @vitest-environment jsdom
 import { flushPromises, mount } from "@vue/test-utils";
@@ -58,6 +58,37 @@ it("submits an Academic Coordinator role assignment for an existing account", as
     await wrapper.get("tbody button").trigger("click");
     await flushPromises();
     expect(client.rpc).toHaveBeenCalledWith("assign_staff_role", { p_staff_id: "2", p_role: "academic_coordinator" });
+  } finally {
+    wrapper.unmount();
+  }
+});
+
+it("labels the protected Admin and disables deactivation, role changes and resets without disabling normal staff actions", async () => {
+  client.rpc.mockResolvedValue({ data: [
+    { id: "1", full_name: "School Owner", role: "admin", email: "owner@example.com", account_status: "active", is_protected_admin: true },
+    { id: "2", full_name: "Teacher", role: "teacher", email: "teacher@example.com", account_status: "active", is_protected_admin: false },
+  ], error: null });
+  const fetchRequest = vi.fn();
+  vi.stubGlobal("fetch", fetchRequest);
+  const wrapper = mount(StaffAccountsPanel);
+  try {
+    await flushPromises();
+    const [protectedRow, ordinaryRow] = wrapper.findAll("tbody tr");
+    expect(protectedRow.text()).toContain("Protected top-level Admin");
+    const protectedButtons = protectedRow.findAll("button");
+    expect(protectedButtons.find(button => button.text() === "Change role")!.element.disabled).toBe(true);
+    const deactivate = protectedButtons.find(button => button.text() === "Deactivate")!;
+    expect(deactivate.element.disabled).toBe(true);
+    await deactivate.trigger("click");
+    expect(protectedRow.text()).not.toContain("Confirm deactivation");
+    expect(fetchRequest).not.toHaveBeenCalled();
+    const reset = protectedButtons.find(button => button.text() === "Reset password")!;
+    expect(reset.element.disabled).toBe(true);
+    expect(reset.attributes("title")).toContain("trusted operator");
+    await reset.trigger("click");
+    expect(protectedRow.text()).not.toContain("Confirm password reset");
+    expect(fetchRequest).not.toHaveBeenCalled();
+    expect(ordinaryRow.findAll("button").every(button => !button.element.disabled)).toBe(true);
   } finally {
     wrapper.unmount();
   }

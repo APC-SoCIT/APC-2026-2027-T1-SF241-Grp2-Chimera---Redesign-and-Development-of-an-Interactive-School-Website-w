@@ -2,7 +2,7 @@
  * Author: Jan Sultan | Email: jgsultan@student.apc.edu.ph
  * Created Date: 20261114
  * Modified by: Jan Sultan | Email: jgsultan@student.apc.edu.ph
- * Modified Date: 20261119
+ * Modified Date: 20261126
  */
 import express from "express";
 import { randomBytes, randomUUID } from "node:crypto";
@@ -87,12 +87,15 @@ export function createStaffAccountsApi(env = process.env, makeClient = createCli
         res.status(422).json({ message: "Choose a valid staff account." });
         return;
       }
-      const { data: target, error: targetError } = await client.rpc("get_staff_auth_target", {
+      const targetRpc = action === "deactivate" ? "get_staff_deactivation_target" : "get_staff_auth_target";
+      const { data: target, error: targetError } = await client.rpc(targetRpc, {
         p_actor_id: user.id, p_staff_id: staffId,
       });
       if (targetError) throw targetError;
       if (!target) {
-        res.status(403).json({ message: "Choose another active staff account with a linked login." });
+        res.status(403).json({ message: action === "deactivate"
+          ? "This account cannot be deactivated. Protected top-level Admins and your own account must remain active."
+          : "This account cannot be reset. Protected top-level Admin password recovery requires a trusted operator; choose another active account with a linked login." });
         return;
       }
 
