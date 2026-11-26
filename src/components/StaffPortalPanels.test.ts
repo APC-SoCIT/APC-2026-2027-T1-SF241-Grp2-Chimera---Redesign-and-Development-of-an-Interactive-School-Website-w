@@ -63,7 +63,7 @@ it("submits an Academic Coordinator role assignment for an existing account", as
   }
 });
 
-it("labels the protected Admin and disables deactivation and role changes without disabling normal staff actions", async () => {
+it("labels the protected Admin and disables deactivation, role changes and resets without disabling normal staff actions", async () => {
   client.rpc.mockResolvedValue({ data: [
     { id: "1", full_name: "School Owner", role: "admin", email: "owner@example.com", account_status: "active", is_protected_admin: true },
     { id: "2", full_name: "Teacher", role: "teacher", email: "teacher@example.com", account_status: "active", is_protected_admin: false },
@@ -82,7 +82,12 @@ it("labels the protected Admin and disables deactivation and role changes withou
     await deactivate.trigger("click");
     expect(protectedRow.text()).not.toContain("Confirm deactivation");
     expect(fetchRequest).not.toHaveBeenCalled();
-    expect(protectedButtons.find(button => button.text() === "Reset password")!.element.disabled).toBe(false);
+    const reset = protectedButtons.find(button => button.text() === "Reset password")!;
+    expect(reset.element.disabled).toBe(true);
+    expect(reset.attributes("title")).toContain("trusted operator");
+    await reset.trigger("click");
+    expect(protectedRow.text()).not.toContain("Confirm password reset");
+    expect(fetchRequest).not.toHaveBeenCalled();
     expect(ordinaryRow.findAll("button").every(button => !button.element.disabled)).toBe(true);
   } finally {
     wrapper.unmount();

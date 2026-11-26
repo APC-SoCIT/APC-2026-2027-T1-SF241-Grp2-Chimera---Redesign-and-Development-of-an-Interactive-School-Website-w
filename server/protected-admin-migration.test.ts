@@ -2,7 +2,7 @@
  * Author: Jan Sultan | Email: jgsultan@student.apc.edu.ph
  * Created Date: 20261126
  */
-import { readFileSync } from "node:fs";
+import { readFileSync, readdirSync } from "node:fs";
 import { PGlite } from "@electric-sql/pglite";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
@@ -52,11 +52,18 @@ describe("SC-56 protected top-level Admin", () => {
       await db.query("insert into auth.sessions values ($1, $1)", [id]);
     }
     // Upgrade with existing accounts: no guessed owner and no destructive backfill.
-    await db.exec(readFileSync(new URL("../supabase/migrations/202611260001_sc56_protected_admin.sql", import.meta.url), "utf8"));
+    await db.exec(readFileSync(new URL("../supabase/migrations/202611260002_sc56_protected_admin.sql", import.meta.url), "utf8"));
     expect((await db.query("select id from public.users where is_protected_admin")).rows).toEqual([]);
     await db.query("update public.users set is_protected_admin = true where auth_user_id = $1", [owner]);
   }, 30_000);
   afterAll(async () => { await db?.close(); });
+
+  it("keeps every migration version unique, including PB-01 and SC-56", () => {
+    const files = readdirSync(new URL("../supabase/migrations/", import.meta.url)).filter(name => name.endsWith(".sql"));
+    const versions = files.map(name => name.split("_")[0]);
+    expect(new Set(versions).size).toBe(versions.length);
+    expect(files).toContain("202611260002_sc56_protected_admin.sql");
+  });
 
   it("exposes designation only in authorized staff listings and rejects protected/self/unauthorized deactivation targets", async () => {
     const { rows } = await asUser(manager, "select * from public.list_staff_accounts()");
@@ -118,12 +125,31 @@ describe("SC-56 protected top-level Admin", () => {
       .toEqual([{ actor_user_id: "2", action: "account.deactivate", old_value: { account_status: "active" }, new_value: { account_status: "inactive" } }]);
   });
 
-  it("keeps password reset available for a protected Admin without permitting deactivation", async () => {
-    expect((await db.query("select public.get_staff_auth_target($1, 1) as target", [manager])).rows).toEqual([{ target: owner }]);
-    await db.query("update auth.users set raw_app_meta_data = $1 where id = $2", [{ chimera_staff_action: {
-      action: "reset-password", staff_id: "1", actor_id: manager, request_id: "allowed-reset",
-    } }, owner]);
+  it("rejects protected Admin resets through preflight and the legacy Auth metadata trigger", async () => {
+    expect((await db.query("select public.get_staff_auth_target($1, 1) as target", [manager])).rows).toEqual([{ target: null }]);
+    await expect(db.transaction(async tx => {
+      await tx.query("update auth.users set encrypted_password = 'changed' where id = $1", [owner]);
+      await tx.query("delete from auth.sessions where user_id = $1", [owner]);
+      await tx.query("update auth.users set raw_app_meta_data = $1 where id = $2", [{ chimera_staff_action: {
+        action: "reset-password", staff_id: "1", actor_id: manager, request_id: "blocked-reset",
+      } }, owner]);
+    })).rejects.toMatchObject({ code: "42501" });
     expect((await db.query("select account_status, must_change_password, is_protected_admin from public.users where id = 1")).rows)
-      .toEqual([{ account_status: "active", must_change_password: true, is_protected_admin: true }]);
+      .toEqual([{ account_status: "active", must_change_password: false, is_protected_admin: true }]);
+    expect((await db.query("select encrypted_password, raw_app_meta_data from auth.users where id = $1", [owner])).rows)
+      .toEqual([{ encrypted_password: "original", raw_app_meta_data: null }]);
+    expect((await db.query("select id from auth.sessions where user_id = $1", [owner])).rows).toHaveLength(1);
+    expect((await db.query("select id from public.audit_logs where entity_id = 1")).rows).toEqual([]);
+  });
+
+  it("still resets ordinary staff and audits the password-reset requirement", async () => {
+    expect((await db.query("select public.get_staff_auth_target($1, 3) as target", [manager])).rows).toEqual([{ target: teacher }]);
+    await db.query("update auth.users set raw_app_meta_data = $1 where id = $2", [{ chimera_staff_action: {
+      action: "reset-password", staff_id: "3", actor_id: manager, request_id: "ordinary-reset",
+    } }, teacher]);
+    expect((await db.query("select must_change_password from public.users where id = 3")).rows)
+      .toEqual([{ must_change_password: true }]);
+    expect((await db.query("select action from public.audit_logs where entity_id = 3")).rows)
+      .toEqual([{ action: "account.password_reset" }]);
   });
 });

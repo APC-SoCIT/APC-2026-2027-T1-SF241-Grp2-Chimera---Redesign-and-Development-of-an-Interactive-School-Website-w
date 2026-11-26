@@ -8,6 +8,7 @@ import { nextTick } from "vue";
 import type { AuthChangeEvent, Session } from "@supabase/supabase-js";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import StaffDashboardView from "./StaffDashboardView.vue";
+import TeacherSchedulePanel from "@/components/TeacherSchedulePanel.vue";
 
 const { client, replace } = vi.hoisted(() => ({
   client: {
@@ -88,3 +89,41 @@ it.each(["SIGNED_IN", "TOKEN_REFRESHED"] as const)("preserves unfinished forms a
   expect(replace).toHaveBeenCalledWith({ name: "login" });
 });
 // Dashboard Work Preservation END
+
+// Summary Cards Across Accounts START
+const statValues = () => dashboard.findAll(".portal-stat strong").map((value) => value.text());
+async function switchAccount(userId: string) {
+  emit("SIGNED_IN", userId);
+  await vi.advanceTimersByTimeAsync(0);
+  await flushPromises();
+}
+
+it("drops the previous Admin's staff counts when another Admin signs in and the list fails to load", async () => {
+  expect(statValues()).toEqual(["1", "1", "0", "0"]);
+  client.rpc.mockImplementation(async (name: string) => (name === "get_staff_portal_role"
+    ? { data: currentRole, error: null } : { data: null, error: { code: "PGRST000", message: "offline" } }));
+  await switchAccount("other-admin-id");
+  expect(dashboard.find(".portal-stats").exists()).toBe(false);
+});
+
+it("drops the previous Teacher's schedule figures when another Teacher signs in and the schedule fails to load", async () => {
+  dashboard.unmount();
+  currentRole = "teacher";
+  client.auth.onAuthStateChange.mockClear();
+  client.auth.onAuthStateChange.mockReturnValue({ data: { subscription: { unsubscribe: vi.fn() } } });
+  dashboard = mount(StaffDashboardView, { props: { heading: "Teacher dashboard", role: "teacher" } });
+  emit("INITIAL_SESSION", "teacher-one");
+  await vi.advanceTimersByTimeAsync(0);
+  await flushPromises();
+  dashboard.findComponent(TeacherSchedulePanel).vm.$emit("loaded", { entries: [
+    { day_of_week: 1, start_time: "08:00", end_time: "09:00", subject: "Math", section: "7-A", room: "101" },
+  ] });
+  await nextTick();
+  expect(statValues()[0]).toBe("1");
+
+  client.rpc.mockImplementation(async (name: string) => (name === "get_staff_portal_role"
+    ? { data: currentRole, error: null } : { data: null, error: { code: "PGRST000", message: "offline" } }));
+  await switchAccount("teacher-two");
+  expect(dashboard.find(".portal-stats").exists()).toBe(false);
+});
+// Summary Cards Across Accounts END

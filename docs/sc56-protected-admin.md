@@ -6,8 +6,16 @@ Ordinary Admin accounts can still be deactivated by another authorized manager.
 
 ## Deployment and designation
 
-1. Apply `supabase/migrations/202611260001_sc56_protected_admin.sql` in the
+1. Apply `supabase/migrations/202611260002_sc56_protected_admin.sql` in the
    Supabase project used by the deployment **before deploying the new API**.
+   PB-01 owns version `202611260001`; SC-56 uses the distinct version
+   `202611260002`. Do not apply the old SC-56 filename.
+
+   If this environment already applied the previous SC-56 SQL, stop and have
+   the database operator reconcile the schema and migration history first.
+   Renaming the file does not undo applied SQL; rerunning its `ADD COLUMN`
+   and `CREATE FUNCTION` statements would fail. The revised SQL also blocks
+   protected-Admin password resets, so a filename change alone is insufficient.
 2. In Supabase SQL Editor, identify the intended account (read-only):
 
    ```sql
@@ -23,6 +31,7 @@ Ordinary Admin accounts can still be deactivated by another authorized manager.
    set is_protected_admin = true
    where auth_user_id = 'REPLACE_WITH_AUTH_USER_UUID'::uuid
      and role = 'admin' and account_status = 'active' and manage_staff_accounts
+     and not must_change_password
    returning id, full_name, email, is_protected_admin;
    ```
 
@@ -31,9 +40,19 @@ Ordinary Admin accounts can still be deactivated by another authorized manager.
    An already deactivated account must be restored through the project's
    authorized recovery process, including its Auth ban, before designation.
 
-4. Deploy the commit. The staff list labels the account as **Protected top-level
-   Admin** and disables **Deactivate** and **Change role**. Password resets remain
-   available under the existing authorization checks.
+4. Deploy to a hosted **test/preview** environment first. The staff list labels
+   the account as **Protected top-level Admin** and disables **Deactivate**,
+   **Change role**, and **Reset password**. Verify the checklist below and attach
+   evidence before promoting the updated API to production.
+
+## Password-reset policy
+
+Other staff managers **must not reset the protected Admin's password**. Recovery
+requires a trusted database/project operator using the approved Supabase Auth
+recovery process outside the staff-management dashboard. The API rejects the
+reset with **403**, and the database rejects the reset metadata transaction even
+if an older API bypasses the preflight. This adds no new application role.
+Ordinary staff password resets retain their existing authorization checks.
 
 Protection cannot be assigned or removed through the staff API, browser role
 assignment RPC, or account-creation input. A trusted database operator can
@@ -47,6 +66,8 @@ From a different Admin with `manage_staff_accounts`, verify:
 - A direct `POST /api/staff/accounts` with `action: "deactivate"` and the
   protected staff ID returns **403** before an Auth update is attempted.
 - Refreshing confirms the protected account remains active; its login works.
+- A protected-Admin password-reset request returns **403** without returning a
+  temporary password or changing the existing login or session.
 - Ordinary staff deactivation, self-deactivation rejection, audit recording,
   and existing password-reset flows still work.
 
@@ -58,3 +79,10 @@ There is no successful `account.deactivate` audit entry for a rejected action.
 
 Attach fresh hosted N05 evidence after deployment. Local tests do not prove the
 hosted migration and account designation have been completed.
+
+Record the preview URL, commit SHA, migration version, designated staff ID,
+test time, acting staff ID, response status, and screenshot/audit evidence.
+Check the protected account's active status **and** an ordinary disposable
+account's successful deactivation (`account.deactivate` audit entry and denied
+subsequent access). Until those hosted checks are recorded, the deployment
+verification is pending; do not describe it as passed based on automated tests.

@@ -95,7 +95,7 @@ export function createStaffAccountsApi(env = process.env, makeClient = createCli
       if (!target) {
         res.status(403).json({ message: action === "deactivate"
           ? "This account cannot be deactivated. Protected top-level Admins and your own account must remain active."
-          : "Choose another active staff account with a linked login." });
+          : "This account cannot be reset. Protected top-level Admin password recovery requires a trusted operator; choose another active account with a linked login." });
         return;
       }
 

@@ -8,7 +8,7 @@ alter table public.users
     add column is_protected_admin boolean not null default false,
     add constraint users_protected_admin_check check (
         not is_protected_admin or
-        (role = 'admin' and account_status = 'active' and manage_staff_accounts)
+        (role = 'admin' and account_status = 'active' and manage_staff_accounts and not must_change_password)
     );
 
 -- Enforce protection at the write boundary as well as the API preflight.
@@ -20,6 +20,9 @@ begin
     if old.is_protected_admin then
         if tg_op = 'DELETE' then
             raise insufficient_privilege using message = 'The protected top-level Admin cannot be deleted';
+        end if;
+        if new.is_protected_admin and new.must_change_password then
+            raise insufficient_privilege using message = 'Protected Admin password recovery requires a trusted operator';
         end if;
         if new.is_protected_admin and
             (new.role <> 'admin' or new.account_status <> 'active' or not new.manage_staff_accounts) then
@@ -36,6 +39,17 @@ before update or delete on public.users
 for each row execute function public.guard_protected_admin();
 
 create function public.get_staff_deactivation_target(p_actor_id uuid, p_staff_id bigint)
+returns uuid language sql stable security definer set search_path = ''
+as $$
+    select auth_user_id from public.users
+    where id = p_staff_id and account_status = 'active'
+      and not is_protected_admin and auth_user_id <> p_actor_id
+      and public.can_manage_staff_accounts(p_actor_id);
+$$;
+
+-- Resetting a protected Admin would allow another manager to take over its login.
+-- The write guard also rejects a reset sent by an older API after preflight.
+create or replace function public.get_staff_auth_target(p_actor_id uuid, p_staff_id bigint)
 returns uuid language sql stable security definer set search_path = ''
 as $$
     select auth_user_id from public.users

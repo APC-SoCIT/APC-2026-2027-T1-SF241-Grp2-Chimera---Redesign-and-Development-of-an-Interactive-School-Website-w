@@ -58,11 +58,14 @@ it("rejects account actions for an unauthorized manager or unavailable target", 
   expect(client.auth.admin.updateUserById).not.toHaveBeenCalled();
 });
 
-it("rejects protected Admin deactivation before changing the Auth password or ban", async () => {
+it.each(["deactivate", "reset-password"])("rejects protected Admin %s before changing the Auth password or ban", async (action) => {
   client.rpc.mockResolvedValueOnce({ data: true, error: null }).mockResolvedValueOnce({ data: null, error: null });
-  const response = await submit({ action: "deactivate", staffId: "2" }).expect(403);
-  expect(response.body.message).toContain("Protected top-level Admins");
-  expect(client.rpc).toHaveBeenLastCalledWith("get_staff_deactivation_target", { p_actor_id: user.id, p_staff_id: "2" });
+  const response = await submit({ action, staffId: "2" }).expect(403);
+  expect(response.body.message).toContain("Protected top-level Admin");
+  if (action === "reset-password") expect(response.body.message).toContain("trusted operator");
+  expect(client.rpc).toHaveBeenLastCalledWith(
+    action === "deactivate" ? "get_staff_deactivation_target" : "get_staff_auth_target",
+    { p_actor_id: user.id, p_staff_id: "2" });
   expect(client.auth.admin.updateUserById).not.toHaveBeenCalled();
 });
 

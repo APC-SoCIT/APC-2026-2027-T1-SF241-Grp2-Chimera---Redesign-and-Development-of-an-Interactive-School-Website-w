@@ -230,7 +230,7 @@ onMounted(() => void loadAccounts());
                 <template v-else>
                   <button type="button" :disabled="saving || account.is_protected_admin" @click="editingId = account.id; selectedRole = account.role; confirmation = undefined">Change role</button>
                   <template v-if="account.account_status === 'active'">
-                    <button type="button" :disabled="saving" @click="confirmation = { account, action: 'reset-password' }; editingId = undefined">Reset password</button>
+                    <button type="button" :disabled="saving || account.is_protected_admin" :title="account.is_protected_admin ? 'Protected Admin password recovery requires a trusted operator.' : undefined" @click="confirmation = { account, action: 'reset-password' }; editingId = undefined">Reset password</button>
                     <button type="button" :disabled="saving || account.is_protected_admin" @click="confirmation = { account, action: 'deactivate' }; editingId = undefined">Deactivate</button>
                   </template>
                 </template>
