@@ -7,7 +7,9 @@ import { flushPromises, mount } from "@vue/test-utils";
 import { afterEach, expect, it, vi } from "vitest";
 import RegistrarApplicationDetail from "./RegistrarApplicationDetail.vue";
 
-const client = vi.hoisted(() => ({ rpc: vi.fn(), functions: { invoke: vi.fn() } }));
+const client = vi.hoisted(() => ({ rpc: vi.fn(), auth: { getSession: vi.fn() } }));
+const sendEmail = vi.hoisted(() => vi.fn());
+vi.stubGlobal("fetch", sendEmail);
 vi.mock("@/lib/supabase", () => ({ getStaffSupabaseClient: () => client }));
 
 const application = {
@@ -58,7 +60,8 @@ it("saves a status only after confirmation and emails only after the Registrar c
   client.rpc.mockImplementation(async (name: string) => name === "get_registrar_application"
     ? { data: structuredClone(application), error: null }
     : { data: { status: "incomplete", registrar_remarks: "Bring the report card", changed: true }, error: null });
-  client.functions.invoke.mockResolvedValue({ data: { success: true }, error: null });
+  client.auth.getSession.mockResolvedValue({ data: { session: { access_token: "registrar-token" } }, error: null });
+  sendEmail.mockResolvedValue(new Response(JSON.stringify({ success: true }), { status: 200 }));
   const wrapper = mountDetail();
   try {
     await flushPromises();
@@ -80,12 +83,16 @@ it("saves a status only after confirmation and emails only after the Registrar c
     expect(wrapper.emitted("updated")).toEqual([["SNCS-TEST01", "incomplete"]]);
 
     // No automatic email: the preview waits for the Registrar.
-    expect(client.functions.invoke).not.toHaveBeenCalled();
+    expect(sendEmail).not.toHaveBeenCalled();
     expect(wrapper.get(".email-preview").text()).toContain("Requirements still needed");
     expect(wrapper.get(".email-preview").text()).toContain("Bring the report card");
     await wrapper.findAll("button").find((button) => button.text() === "Confirm and send email")!.trigger("click");
     await flushPromises();
-    expect(client.functions.invoke).toHaveBeenCalledWith("send-application-status-email", { body: { reference_no: "SNCS-TEST01" } });
+    expect(sendEmail).toHaveBeenCalledWith("/api/staff/status-email", expect.objectContaining({
+      method: "POST",
+      headers: expect.objectContaining({ Authorization: "Bearer registrar-token" }),
+      body: JSON.stringify({ reference_no: "SNCS-TEST01" }),
+    }));
     expect(wrapper.text()).toContain("Status email sent to test@example.com");
   } finally {
     wrapper.unmount();
@@ -104,7 +111,7 @@ it("lets the Registrar decline the status email", async () => {
     await flushPromises();
     await wrapper.findAll("button").find((button) => button.text() === "Don’t send")!.trigger("click");
     expect(wrapper.find(".email-preview").exists()).toBe(false);
-    expect(client.functions.invoke).not.toHaveBeenCalled();
+    expect(sendEmail).not.toHaveBeenCalled();
   } finally {
     wrapper.unmount();
   }
