@@ -382,12 +382,13 @@ async function openPrintableForm() {
                 <p><strong>Subject:</strong> Enrollment Application Update - [{{ application.reference_no }}]</p>
                 <p><strong>Status:</strong> {{ applicationStatuses[application.status] }}</p>
                 <p v-if="application.registrar_remarks"><strong>Remarks:</strong> {{ application.registrar_remarks }}</p>
-                <p><strong>Requirements received:</strong></p>
-                <ul v-if="emailChecklist.received.length"><li v-for="item in emailChecklist.received" :key="item.key">{{ item.label }}</li></ul>
-                <p v-else class="muted">None recorded yet.</p>
-                <p><strong>Requirements still needed:</strong></p>
+                <p><strong>Requirements still needed</strong> (bring to the Registrar's Office for onsite verification):</p>
                 <ul v-if="emailChecklist.missing.length"><li v-for="item in emailChecklist.missing" :key="item.key">{{ item.label }}</li></ul>
                 <p v-else class="muted">None. All required documents have been received.</p>
+                <p><strong>Already received:</strong></p>
+                <ul v-if="emailChecklist.received.length"><li v-for="item in emailChecklist.received" :key="item.key">{{ item.label }}</li></ul>
+                <p v-else class="muted">None recorded yet.</p>
+                <p class="muted">Includes the reference number, office hours and the Registrar's Office address.</p>
               </div>
               <p v-if="emailState === 'failed'" class="error" role="alert">The email could not be sent. Check the connection and try again.</p>
               <div class="row">

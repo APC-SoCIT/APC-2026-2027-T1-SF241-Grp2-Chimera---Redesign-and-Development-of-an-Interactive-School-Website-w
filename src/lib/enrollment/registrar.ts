@@ -113,12 +113,20 @@ export async function updateStatus(reference: string, status: ProcessingStatus, 
   return data as { status: ApplicationStatus; registrar_remarks: string | null; changed: boolean };
 }
 
-/** Trigger Outbound Status Email: the edge function reads the recipient and status from the database. */
+/**
+ * Trigger Outbound Status Email: the backend sends it through Gmail and reads the
+ * recipient and status from the database with the Registrar's own session.
+ * Modified by: Gian Mandac (Date: 20261127): moved from the edge function to /api/staff/status-email.
+ */
 export async function sendStatusEmail(reference: string) {
-  const { error } = await getStaffSupabaseClient().functions.invoke("send-application-status-email", {
-    body: { reference_no: reference },
+  const { data: { session } } = await getStaffSupabaseClient().auth.getSession();
+  if (!session) throw new RegistrarError("access", "Sign in again to send the email.");
+  const response = await fetch("/api/staff/status-email", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.access_token}` },
+    body: JSON.stringify({ reference_no: reference }),
   });
-  if (error) throw new RegistrarError("unavailable", "The status email could not be sent.");
+  if (!response.ok) throw new RegistrarError("unavailable", "The status email could not be sent.");
 }
 
 export type StatusCount = { count: number; more: boolean; oldest?: string };

@@ -10,7 +10,7 @@ staff dashboard, shown only to an active Registrar account.
 | «include» Review Application Details & Documents | `RegistrarApplicationDetail.vue` → `get_registrar_application` (all fields, parents/guardian, last school, uploaded documents, Next/Previous, not-found state) |
 | «include» View Dynamic Requirement Checklist | `supabase/functions/_shared/requirements.ts` derives the list from grade level and applicant type; the Registrar ticks items received onsite → `set_application_requirement` |
 | «include» Update Application Status & Registrar Remarks | Confirmation before saving → `update_application_status` (For Review / Complete / Incomplete; Pending is submission-only) |
-| Trigger Outbound Status Email | **Not automatic.** After a status change, or with "Email applicant an update", the Registrar previews the email (status, remarks, received and missing requirements) and must confirm. Edge function `send-application-status-email` |
+| Trigger Outbound Status Email | **Not automatic.** After a status change, or with "Email applicant an update", the Registrar previews the email (status, remarks, the documents still to bring for onsite verification, received requirements, office hours and address) and must confirm. Sent from the Vercel backend through Gmail (`POST /api/staff/status-email`, `server/status-email.ts`) to the applicant's own email address. |
 | «extend» Print A4 Verification Form | Browser print of the full record, checklist, remarks and signature lines. Printing never changes the application. |
 
 > Diagram note: since the adviser requires the Registrar to confirm each email,
@@ -65,12 +65,18 @@ new wording.
    revokes direct table access, drops the `notify-application-status-change` webhook
    (it emailed on every update and pointed at a mistyped project URL), creates
    `application_requirement_checks` and the Registrar functions.
-2. **Edge function.** Deploy `send-application-status-email` together with
-   `supabase/functions/_shared/requirements.ts`
-   (`supabase functions deploy send-application-status-email`).
-3. **Function secrets.** `RESEND_API_KEY` (already set). Optional: `EMAIL_FROM` (a sender
-   on a domain verified in Resend; the default `onboarding@resend.dev` can only deliver to
-   the Resend account owner's address) and `APP_ORIGIN` (the site origin, to restrict CORS).
+2. **Gmail sender.** Status emails are sent by `server/status-email.ts` through a dedicated
+   Gmail account, so they reach any applicant address without owning a domain. Turn on
+   2-Step Verification for that account, create an App Password
+   (https://myaccount.google.com/apppasswords) and add these Vercel environment variables
+   (Production): `GMAIL_USER` (the Gmail address) and `GMAIL_APP_PASSWORD` (the App
+   Password, marked Sensitive). The route also uses `SUPABASE_URL` and
+   `SUPABASE_PUBLISHABLE_KEY`, which are already set. Without the Gmail variables the
+   Registrar sees "The status email could not be sent" and the attempt is audited as failed.
+   Gmail allows about 500 messages a day. Replies go to the Registrar's address.
+3. **Old edge function.** `send-application-status-email` (Resend) is no longer called.
+   Resend's test sender only delivers to the Resend account owner, so applicants never
+   received it. Remove the function from Supabase once this change is live.
 
 ## Undo
 
